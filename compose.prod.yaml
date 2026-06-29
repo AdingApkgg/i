@@ -3,9 +3,9 @@
 #   cp .env.example .env   # set real JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL
 #   docker compose -f compose.prod.yaml up -d --build
 #
-# App ports bind to 127.0.0.1 only — put your existing reverse proxy (see
-# deploy/Caddyfile.example) in front of them. Separate project name + volumes
-# from the dev stack so the two can coexist on the same host.
+# App ports bind to 127.0.0.1 only — put your existing reverse proxy in front
+# of them (route your domains to these local ports). Separate project name +
+# volumes from the dev stack so the two can coexist on the same host.
 
 name: i-prod
 

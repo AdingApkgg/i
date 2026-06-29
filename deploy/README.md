@@ -24,9 +24,9 @@ App ports bind to `127.0.0.1` only:
 | admin | `127.0.0.1:${ADMIN_PORT}` | 3001 |
 | api | `127.0.0.1:${API_PORT}` | 8080 |
 
-Put your reverse proxy in front of them — see [Caddyfile.example](Caddyfile.example).
-If 3000/3001/8080 collide with the dev stack or other services, override the
-`*_PORT` vars in `.env`.
+Front them with your existing reverse proxy — route your public domains to these
+local ports (and lock down the admin one). If 3000/3001/8080 collide with the dev
+stack or other services, override the `*_PORT` vars in `.env`.
 
 ## Update / redeploy
 
