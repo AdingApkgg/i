@@ -1,0 +1,13 @@
+/* Shared design tokens. Import once at the app root. */
+:root {
+  --i-accent: #db2777;
+  --i-bg: #ffffff;
+  --i-fg: #18181b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --i-bg: #0a0a0a;
+    --i-fg: #ededed;
+  }
+}
