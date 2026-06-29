@@ -1,0 +1,9 @@
+{
+  "home": {
+    "title": "i · 个人空间",
+    "subtitle": "Rust axum + Next.js monorepo 骨架",
+    "health": "API health",
+    "pageViews": "本页访问",
+    "recount": "再数一次"
+  }
+}

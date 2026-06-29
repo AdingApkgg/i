@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "@i/ui/styles.css";
+
+body {
+  background: var(--i-bg);
+  color: var(--i-fg);
+}
