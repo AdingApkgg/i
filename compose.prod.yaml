@@ -1,0 +1,92 @@
+# Production stack for alice (the dev+prod host). Built images, no source mounts.
+#
+#   cp .env.example .env   # set real JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL
+#   docker compose -f compose.prod.yaml up -d --build
+#
+# App ports bind to 127.0.0.1 only — put your existing reverse proxy (see
+# deploy/Caddyfile.example) in front of them. Separate project name + volumes
+# from the dev stack so the two can coexist on the same host.
+
+name: i-prod
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-i}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-i}
+      POSTGRES_DB: ${POSTGRES_DB:-i}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-i} -d ${POSTGRES_DB:-i}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set a strong MinIO password}
+    volumes:
+      - minio:/data
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      API_BIND: 0.0.0.0:8080
+      JWT_SECRET: ${JWT_SECRET:?set a real JWT secret}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set a real admin password}
+      RUST_LOG: ${RUST_LOG:-info}
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-3001}:3001"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  minio:
