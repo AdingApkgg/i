@@ -1,11 +1,26 @@
 # Production stack for alice (the dev+prod host). Built images, no source mounts.
 #
-#   cp .env.example .env   # set real JWT_SECRET / ADMIN_PASSWORD / NEXT_PUBLIC_API_URL
-#   docker compose -f compose.prod.yaml up -d --build
+#   cp .env.example .env   # set real JWT_SECRET / ADMIN_PASSWORD / MINIO_ROOT_PASSWORD
+#   COMPOSE_BAKE=true docker compose -f compose.prod.yaml up -d --build
 #
-# App ports bind to 127.0.0.1 only — put your existing reverse proxy in front
-# of them (route your domains to these local ports). Separate project name +
-# volumes from the dev stack so the two can coexist on the same host.
+# BUILD SPEED (128 cores, near-idle):
+#   * COMPOSE_BAKE=true makes `--build` delegate to `docker buildx bake`, which
+#     builds api + web + admin CONCURRENTLY (instead of one-at-a-time) and shares
+#     a single BuildKit instance — so the cargo/bun `--mount=type=cache` stores in
+#     the Dockerfiles are reused across all three builds and across reruns.
+#     Set it once in your shell (export COMPOSE_BAKE=true) or in .env.
+#   * The cache mounts live inside BuildKit and survive `compose down`. They are
+#     ONLY wiped by `docker builder prune` — so DON'T prune between rebuilds.
+#   * web/admin take NEXT_PUBLIC_API_URL as a build arg; changing it (and only it)
+#     busts their build layers. The api image is independent of that arg.
+#   * For CI / a second host, uncomment the cache_from/cache_to blocks below to
+#     push the layer cache to a registry (needs the `containerd` image store or a
+#     `docker-container` buildx builder; the default host builder ignores them).
+#
+# A bundled nginx is the single entry (self-contained); it routes same-origin:
+#   /        -> web        /dash/  -> admin        /api/ /health /openapi.json -> api
+# Only the proxy publishes a host port (127.0.0.1). Front it with the host's
+# nginx/apache or a domain. Separate project name + volumes from the dev stack.
 
 name: i-prod
 
@@ -45,9 +60,20 @@ services:
     restart: unless-stopped
 
   api:
+    image: i-prod-api:latest
     build:
       context: .
       dockerfile: services/api/Dockerfile
+      # Stable tag so the BuildKit inline cache has a consistent reference and the
+      # image is reused as a `cache_from` base on rebuild.
+      tags:
+        - i-prod-api:latest
+      # Registry layer cache for CI / multi-host. Requires a docker-container
+      # buildx builder (`docker buildx create --use`) or the containerd store.
+      # cache_from:
+      #   - type=registry,ref=ghcr.io/OWNER/i-api:buildcache
+      # cache_to:
+      #   - type=registry,ref=ghcr.io/OWNER/i-api:buildcache,mode=max
     env_file:
       - path: .env
         required: false
@@ -58,8 +84,6 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set a real JWT secret}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set a real admin password}
       RUST_LOG: ${RUST_LOG:-info}
-    ports:
-      - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -68,23 +92,47 @@ services:
     restart: unless-stopped
 
   web:
+    image: i-prod-web:latest
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      tags:
+        - i-prod-web:latest
+      # Empty = same-origin (the browser calls /api and /health through nginx).
+      # Only a change to this arg busts the web build layers.
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-    ports:
-      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL-}
+      # cache_from:
+      #   - type=registry,ref=ghcr.io/OWNER/i-web:buildcache
+      # cache_to:
+      #   - type=registry,ref=ghcr.io/OWNER/i-web:buildcache,mode=max
     restart: unless-stopped
 
   admin:
+    image: i-prod-admin:latest
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+      tags:
+        - i-prod-admin:latest
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL-}
+      # cache_from:
+      #   - type=registry,ref=ghcr.io/OWNER/i-admin:buildcache
+      # cache_to:
+      #   - type=registry,ref=ghcr.io/OWNER/i-admin:buildcache,mode=max
+    restart: unless-stopped
+
+  proxy:
+    image: nginx:alpine
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "127.0.0.1:${ADMIN_PORT:-3001}:3001"
+      - "127.0.0.1:${PROXY_PORT:-8099}:80"
+    depends_on:
+      - web
+      - admin
+      - api
     restart: unless-stopped
 
 volumes:

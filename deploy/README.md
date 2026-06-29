@@ -4,6 +4,18 @@ Target: a single host (alice) that runs both dev and prod. The prod stack uses
 built images and a separate compose project (`i-prod`) so it can coexist with
 the dev stack (`i`).
 
+A bundled **nginx** container is the single entry point (self-contained), routing
+everything same-origin:
+
+| path | upstream |
+|---|---|
+| `/` | web (front site) |
+| `/dash/` | admin CMS (built with `basePath=/dash`) |
+| `/api/`, `/health`, `/openapi.json` | api |
+
+Only the proxy publishes a host port; web/admin/api are reachable only inside the
+compose network.
+
 ## First deploy
 
 ```bash
@@ -12,21 +24,17 @@ cp .env.example .env
 #   JWT_SECRET=...            (not the dev placeholder)
 #   ADMIN_PASSWORD=...
 #   MINIO_ROOT_PASSWORD=...
-#   NEXT_PUBLIC_API_URL=https://api.example.com   # baked into the web build
 docker compose -f compose.prod.yaml up -d --build
 ```
 
-App ports bind to `127.0.0.1` only:
+The proxy binds to `127.0.0.1:${PROXY_PORT:-8099}`:
 
-| service | local bind | default |
-|---|---|---|
-| web | `127.0.0.1:${WEB_PORT}` | 3000 |
-| admin | `127.0.0.1:${ADMIN_PORT}` | 3001 |
-| api | `127.0.0.1:${API_PORT}` | 8080 |
+- front site → `http://127.0.0.1:8099/`
+- admin CMS → `http://127.0.0.1:8099/dash/`
 
-Front them with your existing reverse proxy — route your public domains to these
-local ports (and lock down the admin one). If 3000/3001/8080 collide with the dev
-stack or other services, override the `*_PORT` vars in `.env`.
+Front that single port with the host's nginx/apache or a domain. Override
+`PROXY_PORT` in `.env` if 8099 collides. **Lock down `/dash/`** (basic auth / IP
+allowlist / VPN) — it's the CMS.
 
 ## Update / redeploy
 
@@ -40,7 +48,9 @@ No registry needed — images build on the host. (CI only verifies fmt/clippy/te
 
 ## Notes
 
-- `NEXT_PUBLIC_API_URL` is inlined at **build** time, so changing the public API
-  URL requires a rebuild (`--build`), not just a restart.
-- Lock down `admin.*` (basic auth / IP allowlist / VPN) — it's the CMS.
+- The web/admin browser code calls the API **same-origin** (`/api`, `/health`)
+  through nginx, so `NEXT_PUBLIC_API_URL` is left empty. Only set it (and rebuild)
+  if you instead serve the API on a separate origin.
+- `NEXT_PUBLIC_*` is inlined at **build** time, so changing it requires a rebuild
+  (`--build`), not just a restart.
 - Dev stack lives in [../compose.yaml](../compose.yaml) (`docker compose up`).
