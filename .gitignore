@@ -1,0 +1,25 @@
+# Rust
+/target
+**/target
+
+# Node / Bun
+node_modules
+**/node_modules
+.next
+**/.next
+next-env.d.ts
+**/next-env.d.ts
+dist
+**/dist
+.turbo
+**/.turbo
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.log

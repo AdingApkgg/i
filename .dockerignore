@@ -1,0 +1,11 @@
+target
+**/target
+node_modules
+**/node_modules
+.next
+**/.next
+.turbo
+.git
+.env
+.env.*
+!.env.example
