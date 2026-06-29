@@ -1,11 +1,48 @@
+# Keep the build context tiny so `COPY . .` and the context upload are fast.
+# Anything that is a build output, a downloaded dependency, VCS metadata, or docs
+# is regenerated in-image (or simply unneeded) and must not enter the context.
+#
+# NOTE: `migrations/` is intentionally NOT ignored — services/api/Dockerfile's
+# runtime stage does `COPY migrations ./migrations`, and the JS Dockerfiles need
+# the per-package package.json manifests, so source dirs stay in the context.
+
+# --- Rust build output (rebuilt via cargo-chef + BuildKit cache mounts) ---
 target
 **/target
+
+# --- Node / Bun deps + framework output (reinstalled / rebuilt in-image) ---
 node_modules
 **/node_modules
 .next
 **/.next
 .turbo
+**/.turbo
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+next-env.d.ts
+**/next-env.d.ts
+
+# --- VCS / CI / local tooling (never needed to build an image) ---
 .git
+.gitignore
+.github
+.dockerignore
+
+# --- Env / secrets: passed at runtime, never baked into an image layer ---
 .env
 .env.*
 !.env.example
+
+# --- Docs / licenses / editor / OS cruft (not referenced by any build) ---
+*.md
+LICENSE
+.DS_Store
+*.log
+.vscode
+.idea
+
+# --- Compose files are not part of any image build context ---
+compose.yaml
+compose.prod.yaml

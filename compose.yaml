@@ -56,7 +56,18 @@ services:
   api:
     image: rust:1-bookworm
     working_dir: /app
-    command: bash -c "cargo run -p api"
+    # On first start, install the toolchain accelerators (mold linker, clang
+    # driver, sccache) into the shared cargo-bin volume so subsequent `up`s skip
+    # it. .cargo/config.toml wires mold; RUSTC_WRAPPER below wires sccache.
+    # apt-get only runs when the marker is absent (i.e. fresh cargo-bin volume).
+    command: >
+      bash -c '
+      if ! command -v sccache >/dev/null 2>&1; then
+        apt-get update && apt-get install -y --no-install-recommends mold clang &&
+        curl -fsSL https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp &&
+        install -m0755 /tmp/sccache-v0.8.2-x86_64-unknown-linux-musl/sccache /usr/local/cargo/bin/sccache;
+      fi;
+      exec cargo run -p api'
     # .env is optional: defaults below apply on a fresh clone. .env overrides them.
     env_file:
       - path: .env
@@ -69,12 +80,22 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       RUST_LOG: ${RUST_LOG:-info,api=debug,tower_http=debug}
       CARGO_TERM_COLOR: always
+      # Compiler cache: warm rebuilds after a source edit reuse cached crates.
+      RUSTC_WRAPPER: sccache
+      SCCACHE_DIR: /sccache
+      # sccache cannot cache incremental builds; .cargo + profile disable it, and
+      # we belt-and-suspenders it here so the wrapper always gets cache hits.
+      CARGO_INCREMENTAL: "0"
     ports:
       - "${API_PORT:-8080}:8080"
     volumes:
       - ./:/app
       - cargo-registry:/usr/local/cargo/registry
       - cargo-target:/app/target
+      # Persisted compiler cache — the key to near-instant warm rebuilds.
+      - sccache:/sccache
+      # Persist installed sccache/cargo-installed bins across container restarts.
+      - cargo-bin:/usr/local/cargo/bin
     healthcheck:
       # bash /dev/tcp probe (curl isn't in rust:1-bookworm). Generous start_period
       # so the first (multi-minute) cold cargo build doesn't show as unhealthy.
@@ -90,13 +111,19 @@ services:
         condition: service_healthy
 
   # One-shot: installs JS deps into the shared node_modules volume, then exits.
+  # bun-cache persists bun's global install cache across recreates, so a fresh
+  # `up` (even after `down`) re-links from cache instead of re-downloading from
+  # the registry. --frozen-lockfile keeps the volume in sync with bun.lock.
   install:
     image: oven/bun:1
     working_dir: /app
-    command: bun install
+    command: bun install --frozen-lockfile
+    environment:
+      BUN_INSTALL_CACHE_DIR: /bun-cache
     volumes:
       - ./:/app
       - node_modules:/app/node_modules
+      - bun-cache:/bun-cache
 
   web:
     image: oven/bun:1
@@ -133,4 +160,8 @@ volumes:
   minio:
   cargo-registry:
   cargo-target:
+  sccache:
+  cargo-bin:
   node_modules:
+  # bun's global install cache — persists registry tarballs across recreates.
+  bun-cache:

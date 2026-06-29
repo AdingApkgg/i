@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": ["NEXT_TELEMETRY_DISABLED"],
   "tasks": {
     "dev": {
       "cache": false,
@@ -8,7 +10,12 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["NEXT_PUBLIC_API_URL"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }

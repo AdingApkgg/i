@@ -66,5 +66,36 @@ i-monitor = { path = "crates/monitor" }
 i-maimai = { path = "crates/maimai" }
 
 [profile.dev]
-# Faster incremental dev builds inside the container.
+# Faster dev builds inside the container.
+#
+# debug = 1: line tables only (enough for backtraces) instead of full debuginfo,
+#   which together with split-debuginfo=unpacked (.cargo/config.toml) keeps the
+#   final link cheap.
+# incremental = false: sccache cannot cache incremental compilation and silently
+#   disables itself when it's on. We turn incremental OFF so RUSTC_WRAPPER=sccache
+#   gets full crate-level cache hits — a warm rebuild after editing one crate only
+#   recompiles that crate + the `api` bin, everything else is a cache hit. On 128
+#   cores the lost intra-crate incrementality is dwarfed by the cache wins.
 debug = 1
+incremental = false
+# Spread codegen across many cores within each crate (default for dev is 256 on
+# new cargo; pinning keeps it parallel even on older toolchains).
+codegen-units = 256
+
+# Dependencies are rebuilt rarely; compile them with optimizations so the dev
+# binary (sqlx/tokio/axum heavy) runs at a usable speed, without slowing down
+# the inner edit-compile loop on first-party crates (which stay at opt-level 0).
+[profile.dev.package."*"]
+opt-level = 1
+
+[profile.release]
+# Build-speed first. LTO is OFF: thin-LTO is largely single-threaded, re-runs on
+# every rebuild, and runs AFTER sccache (so it's uncacheable) — it turned a
+# one-line change into a ~9-minute relink with 127 of 128 cores idle. Without it,
+# codegen fans out across all cores and mold links in a blink. The runtime cost
+# is negligible for an I/O-bound axum API.
+lto = false
+# Max codegen parallelism across the 128 cores (vs the LTO-friendly 16).
+codegen-units = 256
+debug = "line-tables-only"
+strip = "debuginfo"

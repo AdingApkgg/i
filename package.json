@@ -9,7 +9,10 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "build": "turbo run build",
+    "build": "turbo run build --concurrency=100%",
+    "build:web": "turbo run build --filter=web",
+    "build:admin": "turbo run build --filter=admin",
+    "typecheck": "turbo run typecheck --concurrency=100%",
     "dev:web": "bun run --filter web dev",
     "dev:admin": "bun run --filter admin dev"
   },

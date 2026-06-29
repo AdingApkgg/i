@@ -1,0 +1,39 @@
+# Build-performance config for the Rust workspace.
+#
+# This file is committed and applies to every `cargo` invocation in the repo:
+# dev (compose `api` container), prod (services/api/Dockerfile) and CI.
+#
+# It is host-agnostic on purpose: the linker/rustflags tweaks are scoped to the
+# Linux GNU target, so a developer running `cargo` on macOS/Windows is unaffected
+# (the container and CI are linux x86_64, which is where the speedups land).
+
+# Note: cargo's default job count = available CPUs, which is correct everywhere
+# (128 on this host, 2-4 in CI). We deliberately do NOT pin `jobs` — a hardcoded
+# 128 would oversubscribe and OOM smaller machines / CI runners.
+
+[target.x86_64-unknown-linux-gnu]
+# mold is a massively parallel linker; on a 128-core box it turns the
+# single-threaded final-link step (the usual tail latency of a Rust build) into
+# a fraction of a second. Installed in the dev container and the Dockerfile.
+# `-fuse-ld=mold` requires `clang` OR a gcc new enough to accept it (bookworm's
+# gcc 12 does). We pass it via cc so both C deps (ring, etc.) and the Rust link
+# step use mold.
+linker = "clang"
+rustflags = [
+    "-C", "link-arg=-fuse-ld=mold",
+    # Keep debug info in separate .dwo/.o files instead of forcing the linker to
+    # copy it into the final binary — big link-time win for dev builds.
+    "-C", "split-debuginfo=unpacked",
+]
+
+# Use the sparse registry protocol: cargo fetches only the index entries it
+# needs instead of cloning the entire crates.io-index git repo on a cold cache.
+# This is the default on modern cargo but we pin it so cold `cargo chef cook`
+# and first-run dev installs never do the multi-minute full-index clone.
+[registries.crates-io]
+protocol = "sparse"
+
+[net]
+# More parallel crate downloads on a fat pipe; avoids serialized fetches that
+# dominate cold-cache wall time.
+git-fetch-with-cli = false
