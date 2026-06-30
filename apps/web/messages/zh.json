@@ -5,5 +5,84 @@
     "health": "API health",
     "pageViews": "本页访问",
     "recount": "再数一次"
+  },
+  "nav": {
+    "brand": "个人空间",
+    "home": "首页",
+    "blog": "博客",
+    "music": "音乐",
+    "gal": "视觉小说",
+    "maimai": "舞萌",
+    "movie": "影视",
+    "touhou": "东方",
+    "devices": "设备",
+    "theme": "切换主题",
+    "like": "点赞"
+  },
+  "hero": {
+    "name": "Asuna",
+    "handle": "@AdingApkgg",
+    "tagline": "独属于某个变态的后花园 · 用 Rust 和 Next 慢慢长大的地方",
+    "online": "在线",
+    "offline": "离线",
+    "checking": "连接中…",
+    "mascot": "看板娘 / Live2D"
+  },
+  "social": {
+    "github": "GitHub",
+    "email": "邮箱",
+    "rss": "RSS",
+    "about": "关于"
+  },
+  "posts": {
+    "title": "最近文章",
+    "more": "全部 →",
+    "empty": "还没有文章,先去后台写一篇吧 ✿"
+  },
+  "tracking": {
+    "title": "最近在……",
+    "more": "追踪库 →",
+    "listening": "在听",
+    "playing": "在玩",
+    "watching": "在看",
+    "musicEmpty": "曲库空空",
+    "galEmpty": "还没在玩的 gal",
+    "movieTodo": "影视模块待接入"
+  },
+  "moments": {
+    "title": "说说",
+    "more": "更多 →",
+    "todo": "TODO · 说说后端待接入",
+    "i1": "今天把首页的看板娘接上了,粉粉的好可爱 (｡･ω･｡)",
+    "i2": "axum + sqlx 的模块化单体越写越顺手,每个领域一个 crate 真香。",
+    "i3": "舞萌 rating 又涨了一点点,继续啃谱面中。"
+  },
+  "gallery": {
+    "title": "相册",
+    "more": "全部 →",
+    "todo": "TODO · 相册后端待接入"
+  },
+  "anime": {
+    "title": "番剧追踪",
+    "more": "Bangumi →",
+    "todo": "TODO · 番剧追踪待接入",
+    "i1Title": "葬送的芙莉莲",
+    "i1Sub": "第 2 季 · 在看",
+    "i2Title": "电锯人",
+    "i2Sub": "剧场版 · 想看",
+    "i3Title": "孤独摇滚!",
+    "i3Sub": "已看完 · 想二刷",
+    "i4Title": "莉可丽丝",
+    "i4Sub": "已看完"
+  },
+  "friends": {
+    "title": "友链",
+    "more": "申请 →",
+    "todo": "TODO · 友链待做成后台可配置"
+  },
+  "footer": {
+    "siteViews": "本站访问",
+    "pageViews": "本页",
+    "made": "用 Rust · Next.js · 爱发电 慢慢做着 · AGPL-3.0"
   }
 }
