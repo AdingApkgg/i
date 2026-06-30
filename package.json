@@ -19,5 +19,10 @@
   "devDependencies": {
     "turbo": "^2",
     "typescript": "^5"
+  },
+  "//overrides": "@live2d-loader 0.1.1 published with `workspace:*` transitive deps (a publish-config bug in the live2d-loader repo). Pin them to 0.1.1 so bun can resolve them from npm.",
+  "overrides": {
+    "@live2d-loader/core": "0.1.1",
+    "@live2d-loader/renderer-webgl": "0.1.1"
   }
 }
