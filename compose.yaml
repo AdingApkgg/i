@@ -62,11 +62,8 @@ services:
     # apt-get only runs when the marker is absent (i.e. fresh cargo-bin volume).
     command: >
       bash -c '
-      if ! command -v sccache >/dev/null 2>&1; then
-        apt-get update && apt-get install -y --no-install-recommends mold clang &&
-        curl -fsSL https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp &&
-        install -m0755 /tmp/sccache-v0.8.2-x86_64-unknown-linux-musl/sccache /usr/local/cargo/bin/sccache;
-      fi;
+      command -v mold >/dev/null 2>&1 || { apt-get update && apt-get install -y --no-install-recommends mold clang; };
+      command -v sccache >/dev/null 2>&1 || { curl -fsSL https://github.com/mozilla/sccache/releases/download/v0.8.2/sccache-v0.8.2-x86_64-unknown-linux-musl.tar.gz | tar -xz -C /tmp && install -m0755 /tmp/sccache-v0.8.2-x86_64-unknown-linux-musl/sccache /usr/local/cargo/bin/sccache; };
       exec cargo run -p api'
     # .env is optional: defaults below apply on a fresh clone. .env overrides them.
     env_file:
