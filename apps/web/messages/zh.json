@@ -57,38 +57,27 @@
     "watching": "在看",
     "musicEmpty": "曲库空空",
     "galEmpty": "还没在玩的 gal",
-    "movieTodo": "影视模块待接入"
+    "movieEmpty": "还没在看的影视"
   },
   "moments": {
     "title": "说说",
     "more": "更多 →",
-    "todo": "TODO · 说说后端待接入",
-    "i1": "今天把首页的看板娘接上了,粉粉的好可爱 (｡･ω･｡)",
-    "i2": "axum + sqlx 的模块化单体越写越顺手,每个领域一个 crate 真香。",
-    "i3": "舞萌 rating 又涨了一点点,继续啃谱面中。"
+    "empty": "还没有说说,先去后台唠两句吧 ✿"
   },
   "gallery": {
     "title": "相册",
     "more": "全部 →",
-    "todo": "TODO · 相册后端待接入"
+    "empty": "相册还空着,等着装满好看的照片 ✿"
   },
   "anime": {
     "title": "番剧追踪",
     "more": "Bangumi →",
-    "todo": "TODO · 番剧追踪待接入",
-    "i1Title": "葬送的芙莉莲",
-    "i1Sub": "第 2 季 · 在看",
-    "i2Title": "电锯人",
-    "i2Sub": "剧场版 · 想看",
-    "i3Title": "孤独摇滚!",
-    "i3Sub": "已看完 · 想二刷",
-    "i4Title": "莉可丽丝",
-    "i4Sub": "已看完"
+    "empty": "还没有在追的番,先去后台加一部吧 ✿"
   },
   "friends": {
     "title": "友链",
     "more": "申请 →",
-    "todo": "TODO · 友链待做成后台可配置"
+    "empty": "还没有友链,欢迎来交换 ✿"
   },
   "footer": {
     "siteViews": "本站访问",

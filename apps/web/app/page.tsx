@@ -47,6 +47,59 @@ function excerpt(md: string, max = 56): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
+/** Short, human date for 说说 — "刚刚" / "3 小时前" / falls back to M 月 D 日. */
+function shortWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const diffMs = Date.now() - d.getTime();
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min} 分钟前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} 小时前`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day} 天前`;
+  return formatDate(iso);
+}
+
+/* ---- domain row types (fields we actually render) -------------------- */
+
+type MovieItem = {
+  id: string;
+  title: string;
+  status: string;
+  cover_url?: string | null;
+  link?: string | null;
+  year?: number | null;
+};
+type AnimeItem = {
+  id: string;
+  title: string;
+  status: string;
+  progress?: string | null;
+  cover_url?: string | null;
+  link?: string | null;
+};
+type MomentItem = {
+  id: string;
+  content: string;
+  mood?: string | null;
+  created_at: string;
+};
+type PhotoItem = {
+  id: string;
+  title: string;
+  image_url: string;
+  thumb_url?: string | null;
+};
+type FriendItem = {
+  id: string;
+  name: string;
+  url: string;
+  avatar_url?: string | null;
+  description?: string | null;
+};
+
 const NAV_LINKS: Array<{ key: string; href: string; active?: boolean }> = [
   { key: "nav.home", href: "/", active: true },
   { key: "nav.blog", href: "/blog" },
@@ -58,23 +111,12 @@ const NAV_LINKS: Array<{ key: string; href: string; active?: boolean }> = [
   { key: "nav.devices", href: "/devices" },
 ];
 
-const GALLERY_TILES = [
+const ANIME_GRADIENTS = [
   "from-violet-300 to-violet-400",
   "from-rose-300 to-rose-400",
   "from-sky-300 to-sky-400",
   "from-amber-300 to-amber-400",
-  "from-pink-300 to-pink-400",
-  "from-teal-300 to-teal-400",
 ];
-
-const ANIME_TILES = [
-  { titleKey: "anime.i1Title", subKey: "anime.i1Sub", grad: "from-violet-300 to-violet-400" },
-  { titleKey: "anime.i2Title", subKey: "anime.i2Sub", grad: "from-rose-300 to-rose-400" },
-  { titleKey: "anime.i3Title", subKey: "anime.i3Sub", grad: "from-sky-300 to-sky-400" },
-  { titleKey: "anime.i4Title", subKey: "anime.i4Sub", grad: "from-amber-300 to-amber-400" },
-];
-
-const FRIENDS = ["wikimoe", "lemonkoi", "imaegoo", "paul.ren", "u.sb"];
 
 /* ---- page ------------------------------------------------------------ */
 
@@ -84,6 +126,11 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [tracks, setTracks] = useState<Track[] | null>(null);
   const [vns, setVns] = useState<Vn[] | null>(null);
+  const [movies, setMovies] = useState<MovieItem[] | null>(null);
+  const [animes, setAnimes] = useState<AnimeItem[] | null>(null);
+  const [moments, setMoments] = useState<MomentItem[] | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[] | null>(null);
+  const [friends, setFriends] = useState<FriendItem[] | null>(null);
 
   useEffect(() => {
     // Each fetch is isolated — one failing endpoint must not blank the page.
@@ -104,12 +151,42 @@ export default function Home() {
       .GET("/api/gal/items")
       .then(({ data }) => setVns(data ?? []))
       .catch(() => setVns([]));
+    // The generated OpenAPI schema collapses every /items list to one shared
+    // shape, so these domain rows come back structurally untyped — cast at the
+    // boundary to the fields we actually render.
+    api
+      .GET("/api/movie/items")
+      .then(({ data }) => setMovies((data as MovieItem[] | undefined) ?? []))
+      .catch(() => setMovies([]));
+    api
+      .GET("/api/anime/items")
+      .then(({ data }) => setAnimes((data as AnimeItem[] | undefined) ?? []))
+      .catch(() => setAnimes([]));
+    api
+      .GET("/api/moments/items")
+      .then(({ data }) => setMoments((data as MomentItem[] | undefined) ?? []))
+      .catch(() => setMoments([]));
+    api
+      .GET("/api/gallery/items")
+      .then(({ data }) => setPhotos((data as PhotoItem[] | undefined) ?? []))
+      .catch(() => setPhotos([]));
+    api
+      .GET("/api/friends/items")
+      .then(({ data }) => setFriends((data as FriendItem[] | undefined) ?? []))
+      .catch(() => setFriends([]));
   }, []);
 
   const online = health ? health.db && health.redis : null;
   const recentPosts = (posts ?? []).slice(0, 3);
   const topTrack = (tracks ?? [])[0];
   const topVn = (vns ?? [])[0];
+  // Prefer something actually 在看 for the tracking tile; otherwise newest.
+  const topMovie =
+    (movies ?? []).find((m) => m.status === "在看") ?? (movies ?? [])[0];
+  const recentAnime = (animes ?? []).slice(0, 4);
+  const recentMoments = (moments ?? []).slice(0, 3);
+  const recentPhotos = (photos ?? []).slice(0, 6);
+  const recentFriends = (friends ?? []).slice(0, 12);
 
   return (
     <main className="bg-page min-h-screen pb-10 font-sans text-ink">
@@ -223,78 +300,120 @@ export default function Home() {
               gradient="from-violet-300 to-violet-400"
               href={topVn?.link ?? undefined}
             />
-            {/* 在看 — movie module not built yet (placeholder) */}
             <TrackingCard
               status={t("tracking.watching")}
-              title={t("anime.i1Title")}
-              subtitle={t("anime.i1Sub")}
+              title={topMovie?.title ?? t("tracking.movieEmpty")}
+              subtitle={
+                topMovie?.status ??
+                (topMovie?.year != null ? String(topMovie.year) : undefined)
+              }
+              coverUrl={topMovie?.cover_url}
               gradient="from-sky-300 to-sky-400"
+              href={topMovie?.link ?? undefined}
             />
+            {/* Top anime doubles as the 4th tracking tile. */}
             <TrackingCard
               status={t("tracking.watching")}
-              title="—"
-              subtitle={t("tracking.movieTodo")}
+              title={recentAnime[0]?.title ?? t("anime.empty")}
+              subtitle={recentAnime[0]?.progress ?? recentAnime[0]?.status}
+              coverUrl={recentAnime[0]?.cover_url}
               gradient="from-amber-300 to-amber-400"
+              href={recentAnime[0]?.link ?? undefined}
             />
           </div>
         </Section>
 
-        {/* ---- 说说 (TODO backend) ---- */}
+        {/* ---- 说说 ---- */}
         <Section title={t("moments.title")} moreLabel={t("moments.more")} moreHref="/moments">
-          <TodoNote>{t("moments.todo")}</TodoNote>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {["moments.i1", "moments.i2", "moments.i3"].map((k) => (
-              <Card key={k} className="p-[18px]">
-                <p className="text-sm leading-relaxed text-ink">{t(k)}</p>
-              </Card>
-            ))}
-          </div>
+          {recentMoments.length === 0 ? (
+            <EmptyCard>{t("moments.empty")}</EmptyCard>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {recentMoments.map((m) => (
+                <Card key={m.id} className="p-[18px]">
+                  <p className="mb-3 whitespace-pre-line text-sm leading-relaxed text-ink">
+                    {m.content}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                    {m.mood ? <Badge variant="soft">{m.mood}</Badge> : null}
+                    <span>{shortWhen(m.created_at)}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </Section>
 
-        {/* ---- 相册 (TODO backend) ---- */}
+        {/* ---- 相册 ---- */}
         <Section title={t("gallery.title")} moreLabel={t("gallery.more")} moreHref="/gallery">
-          <TodoNote>{t("gallery.todo")}</TodoNote>
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
-            {GALLERY_TILES.map((g, i) => (
-              <div
-                key={i}
-                className={`aspect-square rounded-card-sm bg-gradient-to-br ${g} shadow-soft-sm`}
-              />
-            ))}
-          </div>
+          {recentPhotos.length === 0 ? (
+            <EmptyCard>{t("gallery.empty")}</EmptyCard>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+              {recentPhotos.map((p) => (
+                <a
+                  key={p.id}
+                  href="/gallery"
+                  title={p.title}
+                  className="group relative aspect-square overflow-hidden rounded-card-sm bg-soft shadow-soft-sm"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.thumb_url ?? p.image_url}
+                    alt={p.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                </a>
+              ))}
+            </div>
+          )}
         </Section>
 
-        {/* ---- 番剧追踪 (TODO backend) ---- */}
+        {/* ---- 番剧追踪 ---- */}
         <Section title={t("anime.title")} moreLabel={t("anime.more")} moreHref="/anime">
-          <TodoNote>{t("anime.todo")}</TodoNote>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {ANIME_TILES.map((a) => (
-              <TrackingCard
-                key={a.titleKey}
-                status={t(a.subKey).split(" · ")[1] ?? t("tracking.watching")}
-                title={t(a.titleKey)}
-                subtitle={t(a.subKey)}
-                gradient={a.grad}
-              />
-            ))}
-          </div>
+          {recentAnime.length === 0 ? (
+            <EmptyCard>{t("anime.empty")}</EmptyCard>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {recentAnime.map((a, i) => (
+                <TrackingCard
+                  key={a.id}
+                  status={a.status}
+                  title={a.title}
+                  subtitle={a.progress ?? undefined}
+                  coverUrl={a.cover_url}
+                  gradient={ANIME_GRADIENTS[i % ANIME_GRADIENTS.length]!}
+                  href={a.link ?? undefined}
+                />
+              ))}
+            </div>
+          )}
         </Section>
 
-        {/* ---- 友链 (TODO admin-configurable) ---- */}
+        {/* ---- 友链 ---- */}
         <Section title={t("friends.title")} moreLabel={t("friends.more")} moreHref="/friends">
-          <TodoNote>{t("friends.todo")}</TodoNote>
-          <div className="flex flex-wrap gap-3">
-            {FRIENDS.map((name) => (
-              <a
-                key={name}
-                href="#"
-                className="flex items-center gap-2 rounded-pill bg-surface py-2 pl-2 pr-3.5 shadow-soft-sm transition hover:-translate-y-0.5 hover:shadow-soft"
-              >
-                <Avatar size="sm">{name[0]?.toUpperCase()}</Avatar>
-                <span className="text-[13px] text-ink">{name}</span>
-              </a>
-            ))}
-          </div>
+          {recentFriends.length === 0 ? (
+            <EmptyCard>{t("friends.empty")}</EmptyCard>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {recentFriends.map((f) => (
+                <a
+                  key={f.id}
+                  href={f.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  title={f.description ?? f.name}
+                  className="flex items-center gap-2 rounded-pill bg-surface py-2 pl-2 pr-3.5 shadow-soft-sm transition hover:-translate-y-0.5 hover:shadow-soft"
+                >
+                  <Avatar size="sm" src={f.avatar_url ?? undefined} alt={f.name}>
+                    {f.name[0]?.toUpperCase()}
+                  </Avatar>
+                  <span className="text-[13px] text-ink">{f.name}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </Section>
 
         {/* ---- footer ---- */}
@@ -348,11 +467,3 @@ function EmptyCard({ children }: { children: ReactNode }) {
   );
 }
 
-function TodoNote({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-3 inline-flex items-center gap-1.5 rounded-pill bg-soft px-3 py-1 text-xs font-semibold text-accent-ink">
-      <span>✎</span>
-      {children}
-    </div>
-  );
-}
