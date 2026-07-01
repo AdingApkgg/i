@@ -15,7 +15,6 @@
         "tags": [
           "analytics"
         ],
-        "operationId": "count",
         "parameters": [
           {
             "name": "path",
@@ -46,7 +45,6 @@
         "tags": [
           "anime"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -78,7 +76,6 @@
         "tags": [
           "anime"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -111,7 +108,6 @@
         "tags": [
           "anime"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -156,7 +152,6 @@
         "tags": [
           "anime"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -186,7 +181,6 @@
         "tags": [
           "auth"
         ],
-        "operationId": "login",
         "requestBody": {
           "content": {
             "application/json": {
@@ -219,7 +213,6 @@
         "tags": [
           "blog"
         ],
-        "operationId": "list_published",
         "responses": {
           "200": {
             "description": "",
@@ -240,7 +233,6 @@
         "tags": [
           "blog"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -273,7 +265,6 @@
         "tags": [
           "blog"
         ],
-        "operationId": "get_by_slug",
         "parameters": [
           {
             "name": "slug",
@@ -304,7 +295,6 @@
         "tags": [
           "blog"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "slug",
@@ -348,7 +338,6 @@
         "tags": [
           "blog"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "slug",
@@ -377,7 +366,6 @@
         "tags": [
           "device"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -409,7 +397,6 @@
         "tags": [
           "device"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -442,7 +429,6 @@
         "tags": [
           "device"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -487,7 +473,6 @@
         "tags": [
           "device"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -517,7 +502,6 @@
         "tags": [
           "friends"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -549,7 +533,6 @@
         "tags": [
           "friends"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -582,7 +565,6 @@
         "tags": [
           "friends"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -627,7 +609,6 @@
         "tags": [
           "friends"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -657,7 +638,6 @@
         "tags": [
           "gal"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -689,7 +669,6 @@
         "tags": [
           "gal"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -722,7 +701,6 @@
         "tags": [
           "gal"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -767,7 +745,6 @@
         "tags": [
           "gal"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -797,7 +774,6 @@
         "tags": [
           "gallery"
         ],
-        "operationId": "list",
         "responses": {
           "200": {
             "description": "",
@@ -818,7 +794,6 @@
         "tags": [
           "gallery"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -851,7 +826,6 @@
         "tags": [
           "gallery"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -896,7 +870,6 @@
         "tags": [
           "gallery"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -926,7 +899,6 @@
         "tags": [
           "moments"
         ],
-        "operationId": "list",
         "responses": {
           "200": {
             "description": "",
@@ -947,7 +919,6 @@
         "tags": [
           "moments"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -980,7 +951,6 @@
         "tags": [
           "moments"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -1025,7 +995,6 @@
         "tags": [
           "moments"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -1055,7 +1024,6 @@
         "tags": [
           "monitor"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -1087,7 +1055,6 @@
         "tags": [
           "monitor"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1120,7 +1087,6 @@
         "tags": [
           "monitor"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -1165,7 +1131,6 @@
         "tags": [
           "monitor"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -1195,7 +1160,6 @@
         "tags": [
           "monitor"
         ],
-        "operationId": "status",
         "responses": {
           "200": {
             "description": "",
@@ -1218,7 +1182,6 @@
         "tags": [
           "movie"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -1250,7 +1213,6 @@
         "tags": [
           "movie"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1283,7 +1245,6 @@
         "tags": [
           "movie"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -1328,7 +1289,6 @@
         "tags": [
           "movie"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -1358,7 +1318,6 @@
         "tags": [
           "music"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -1390,7 +1349,6 @@
         "tags": [
           "music"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1423,7 +1381,6 @@
         "tags": [
           "music"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -1468,7 +1425,6 @@
         "tags": [
           "music"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",
@@ -1498,7 +1454,6 @@
         "tags": [
           "touhou"
         ],
-        "operationId": "list",
         "parameters": [
           {
             "name": "status",
@@ -1530,7 +1485,6 @@
         "tags": [
           "touhou"
         ],
-        "operationId": "create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1563,7 +1517,6 @@
         "tags": [
           "touhou"
         ],
-        "operationId": "update",
         "parameters": [
           {
             "name": "id",
@@ -1608,7 +1561,6 @@
         "tags": [
           "touhou"
         ],
-        "operationId": "delete",
         "parameters": [
           {
             "name": "id",

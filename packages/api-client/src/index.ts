@@ -111,3 +111,26 @@ export async function getHealth(): Promise<Health> {
   if (!res.ok) throw new Error("health failed");
   return res.json() as Promise<Health>;
 }
+
+/**
+ * Generic authed request for the config-driven admin (dynamic per-domain paths
+ * that openapi-fetch can't type without a literal path). Attaches the admin
+ * Bearer token. Front-end code with known literal paths should prefer `api`.
+ */
+export async function apiRequest<T = unknown>(
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  const tok = getAuthToken();
+  if (tok) headers.authorization = `Bearer ${tok}`;
+  const res = await fetch(`${baseUrl}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}`);
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
