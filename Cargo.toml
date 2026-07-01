@@ -15,6 +15,10 @@ members = [
     "crates/comments",
     "crates/monitor",
     "crates/maimai",
+    "crates/anime",
+    "crates/moments",
+    "crates/gallery",
+    "crates/friends",
 ]
 
 [workspace.package]
@@ -64,6 +68,10 @@ i-device = { path = "crates/device" }
 i-comments = { path = "crates/comments" }
 i-monitor = { path = "crates/monitor" }
 i-maimai = { path = "crates/maimai" }
+i-anime = { path = "crates/anime" }
+i-moments = { path = "crates/moments" }
+i-gallery = { path = "crates/gallery" }
+i-friends = { path = "crates/friends" }
 
 [profile.dev]
 # Faster dev builds inside the container.

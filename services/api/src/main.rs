@@ -40,6 +40,39 @@ use utoipa::OpenApi;
         gal::create,
         gal::update,
         gal::delete,
+        movie::list,
+        movie::create,
+        movie::update,
+        movie::delete,
+        touhou::list,
+        touhou::create,
+        touhou::update,
+        touhou::delete,
+        device::list,
+        device::create,
+        device::update,
+        device::delete,
+        anime::list,
+        anime::create,
+        anime::update,
+        anime::delete,
+        moments::list,
+        moments::create,
+        moments::update,
+        moments::delete,
+        gallery::list,
+        gallery::create,
+        gallery::update,
+        gallery::delete,
+        friends::list,
+        friends::create,
+        friends::update,
+        friends::delete,
+        monitor::list,
+        monitor::create,
+        monitor::update,
+        monitor::delete,
+        monitor::status,
     ),
     components(schemas(
         auth::LoginReq,
@@ -51,6 +84,23 @@ use utoipa::OpenApi;
         music::UpsertTrack,
         gal::Vn,
         gal::UpsertVn,
+        movie::Movie,
+        movie::UpsertMovie,
+        touhou::Work,
+        touhou::UpsertWork,
+        device::Device,
+        device::UpsertDevice,
+        anime::Anime,
+        anime::UpsertAnime,
+        moments::Moment,
+        moments::UpsertMoment,
+        gallery::Photo,
+        gallery::UpsertPhoto,
+        friends::Friend,
+        friends::UpsertFriend,
+        monitor::Target,
+        monitor::UpsertTarget,
+        monitor::StatusItem,
     ))
 )]
 struct ApiDoc;
@@ -105,6 +155,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/api/movie", movie::router())
         .nest("/api/touhou", touhou::router())
         .nest("/api/device", device::router())
+        .nest("/api/anime", anime::router())
+        .nest("/api/moments", moments::router())
+        .nest("/api/gallery", gallery::router())
+        .nest("/api/friends", friends::router())
         .nest("/api/comments", comments::router())
         .nest("/api/monitor", monitor::router())
         .nest("/api/maimai", maimai::router())

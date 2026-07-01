@@ -1,5 +1,5 @@
-//! Device tracking — its own table with device-specific fields (category/spec/acquired).
-//! Status e.g. 在用 / 退役 / 想要. Per-domain table (not a shared `works`).
+//! Friends links (友链) — its own table with friend-link fields (url/avatar).
+//! Status e.g. active / pending. Per-domain table (not a shared `works`).
 
 use appcore::{AppError, AppResult, AppState};
 use auth::AdminClaims;
@@ -13,28 +13,24 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]
-pub struct Device {
+pub struct Friend {
     pub id: Uuid,
     pub name: String,
-    pub category: Option<String>,
-    pub spec: Option<String>,
+    pub url: String,
+    pub avatar_url: Option<String>,
+    pub description: Option<String>,
     pub status: String,
-    pub acquired: Option<String>,
-    pub link: Option<String>,
-    pub note: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct UpsertDevice {
+pub struct UpsertFriend {
     pub name: String,
-    pub category: Option<String>,
-    pub spec: Option<String>,
+    pub url: String,
+    pub avatar_url: Option<String>,
+    pub description: Option<String>,
     pub status: String,
-    pub acquired: Option<String>,
-    pub link: Option<String>,
-    pub note: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -43,16 +39,16 @@ pub struct ListQuery {
 }
 
 #[utoipa::path(
-    get, path = "/api/device/items",
+    get, path = "/api/friends/items",
     params(("status" = Option<String>, Query, description = "filter by status")),
-    responses((status = 200, body = Vec<Device>))
+    responses((status = 200, body = Vec<Friend>))
 )]
 pub async fn list(
     State(st): State<AppState>,
     Query(q): Query<ListQuery>,
-) -> AppResult<Json<Vec<Device>>> {
-    let rows = sqlx::query_as::<_, Device>(
-        "SELECT * FROM device WHERE ($1::text IS NULL OR status = $1) ORDER BY updated_at DESC",
+) -> AppResult<Json<Vec<Friend>>> {
+    let rows = sqlx::query_as::<_, Friend>(
+        "SELECT * FROM friends WHERE ($1::text IS NULL OR status = $1) ORDER BY updated_at DESC",
     )
     .bind(q.status)
     .fetch_all(&st.db)
@@ -61,55 +57,51 @@ pub async fn list(
 }
 
 #[utoipa::path(
-    post, path = "/api/device/items", request_body = UpsertDevice,
-    responses((status = 200, body = Device), (status = 401))
+    post, path = "/api/friends/items", request_body = UpsertFriend,
+    responses((status = 200, body = Friend), (status = 401))
 )]
 pub async fn create(
     _admin: AdminClaims,
     State(st): State<AppState>,
-    Json(b): Json<UpsertDevice>,
-) -> AppResult<Json<Device>> {
-    let row = sqlx::query_as::<_, Device>(
-        "INSERT INTO device (id, name, category, spec, status, acquired, link, note)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+    Json(b): Json<UpsertFriend>,
+) -> AppResult<Json<Friend>> {
+    let row = sqlx::query_as::<_, Friend>(
+        "INSERT INTO friends (id, name, url, avatar_url, description, status)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
     )
     .bind(Uuid::new_v4())
     .bind(b.name)
-    .bind(b.category)
-    .bind(b.spec)
+    .bind(b.url)
+    .bind(b.avatar_url)
+    .bind(b.description)
     .bind(b.status)
-    .bind(b.acquired)
-    .bind(b.link)
-    .bind(b.note)
     .fetch_one(&st.db)
     .await?;
     Ok(Json(row))
 }
 
 #[utoipa::path(
-    put, path = "/api/device/items/{id}", request_body = UpsertDevice,
+    put, path = "/api/friends/items/{id}", request_body = UpsertFriend,
     params(("id" = Uuid, Path)),
-    responses((status = 200, body = Device), (status = 401), (status = 404))
+    responses((status = 200, body = Friend), (status = 401), (status = 404))
 )]
 pub async fn update(
     _admin: AdminClaims,
     State(st): State<AppState>,
     Path(id): Path<Uuid>,
-    Json(b): Json<UpsertDevice>,
-) -> AppResult<Json<Device>> {
-    let row = sqlx::query_as::<_, Device>(
-        "UPDATE device SET name = $2, category = $3, spec = $4, status = $5, acquired = $6,
-            link = $7, note = $8, updated_at = now()
+    Json(b): Json<UpsertFriend>,
+) -> AppResult<Json<Friend>> {
+    let row = sqlx::query_as::<_, Friend>(
+        "UPDATE friends SET name = $2, url = $3, avatar_url = $4, description = $5,
+            status = $6, updated_at = now()
          WHERE id = $1 RETURNING *",
     )
     .bind(id)
     .bind(b.name)
-    .bind(b.category)
-    .bind(b.spec)
+    .bind(b.url)
+    .bind(b.avatar_url)
+    .bind(b.description)
     .bind(b.status)
-    .bind(b.acquired)
-    .bind(b.link)
-    .bind(b.note)
     .fetch_optional(&st.db)
     .await?
     .ok_or(AppError::NotFound)?;
@@ -117,7 +109,7 @@ pub async fn update(
 }
 
 #[utoipa::path(
-    delete, path = "/api/device/items/{id}", params(("id" = Uuid, Path)),
+    delete, path = "/api/friends/items/{id}", params(("id" = Uuid, Path)),
     responses((status = 204), (status = 401), (status = 404))
 )]
 pub async fn delete(
@@ -125,7 +117,7 @@ pub async fn delete(
     State(st): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AppResult<axum::http::StatusCode> {
-    let r = sqlx::query("DELETE FROM device WHERE id = $1")
+    let r = sqlx::query("DELETE FROM friends WHERE id = $1")
         .bind(id)
         .execute(&st.db)
         .await?;

@@ -1,5 +1,5 @@
-//! Device tracking — its own table with device-specific fields (category/spec/acquired).
-//! Status e.g. 在用 / 退役 / 想要. Per-domain table (not a shared `works`).
+//! Anime tracking — its own table with anime-specific fields (progress/link).
+//! Status e.g. 在看 / 看完 / 想看 / 搁置. Per-domain table (not a shared `works`).
 
 use appcore::{AppError, AppResult, AppState};
 use auth::AdminClaims;
@@ -13,13 +13,13 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]
-pub struct Device {
+pub struct Anime {
     pub id: Uuid,
-    pub name: String,
-    pub category: Option<String>,
-    pub spec: Option<String>,
+    pub title: String,
     pub status: String,
-    pub acquired: Option<String>,
+    pub rating: Option<i32>,
+    pub progress: Option<String>,
+    pub cover_url: Option<String>,
     pub link: Option<String>,
     pub note: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -27,12 +27,12 @@ pub struct Device {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct UpsertDevice {
-    pub name: String,
-    pub category: Option<String>,
-    pub spec: Option<String>,
+pub struct UpsertAnime {
+    pub title: String,
     pub status: String,
-    pub acquired: Option<String>,
+    pub rating: Option<i32>,
+    pub progress: Option<String>,
+    pub cover_url: Option<String>,
     pub link: Option<String>,
     pub note: Option<String>,
 }
@@ -43,16 +43,16 @@ pub struct ListQuery {
 }
 
 #[utoipa::path(
-    get, path = "/api/device/items",
+    get, path = "/api/anime/items",
     params(("status" = Option<String>, Query, description = "filter by status")),
-    responses((status = 200, body = Vec<Device>))
+    responses((status = 200, body = Vec<Anime>))
 )]
 pub async fn list(
     State(st): State<AppState>,
     Query(q): Query<ListQuery>,
-) -> AppResult<Json<Vec<Device>>> {
-    let rows = sqlx::query_as::<_, Device>(
-        "SELECT * FROM device WHERE ($1::text IS NULL OR status = $1) ORDER BY updated_at DESC",
+) -> AppResult<Json<Vec<Anime>>> {
+    let rows = sqlx::query_as::<_, Anime>(
+        "SELECT * FROM anime WHERE ($1::text IS NULL OR status = $1) ORDER BY updated_at DESC",
     )
     .bind(q.status)
     .fetch_all(&st.db)
@@ -61,24 +61,24 @@ pub async fn list(
 }
 
 #[utoipa::path(
-    post, path = "/api/device/items", request_body = UpsertDevice,
-    responses((status = 200, body = Device), (status = 401))
+    post, path = "/api/anime/items", request_body = UpsertAnime,
+    responses((status = 200, body = Anime), (status = 401))
 )]
 pub async fn create(
     _admin: AdminClaims,
     State(st): State<AppState>,
-    Json(b): Json<UpsertDevice>,
-) -> AppResult<Json<Device>> {
-    let row = sqlx::query_as::<_, Device>(
-        "INSERT INTO device (id, name, category, spec, status, acquired, link, note)
+    Json(b): Json<UpsertAnime>,
+) -> AppResult<Json<Anime>> {
+    let row = sqlx::query_as::<_, Anime>(
+        "INSERT INTO anime (id, title, status, rating, progress, cover_url, link, note)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
     )
     .bind(Uuid::new_v4())
-    .bind(b.name)
-    .bind(b.category)
-    .bind(b.spec)
+    .bind(b.title)
     .bind(b.status)
-    .bind(b.acquired)
+    .bind(b.rating)
+    .bind(b.progress)
+    .bind(b.cover_url)
     .bind(b.link)
     .bind(b.note)
     .fetch_one(&st.db)
@@ -87,27 +87,27 @@ pub async fn create(
 }
 
 #[utoipa::path(
-    put, path = "/api/device/items/{id}", request_body = UpsertDevice,
+    put, path = "/api/anime/items/{id}", request_body = UpsertAnime,
     params(("id" = Uuid, Path)),
-    responses((status = 200, body = Device), (status = 401), (status = 404))
+    responses((status = 200, body = Anime), (status = 401), (status = 404))
 )]
 pub async fn update(
     _admin: AdminClaims,
     State(st): State<AppState>,
     Path(id): Path<Uuid>,
-    Json(b): Json<UpsertDevice>,
-) -> AppResult<Json<Device>> {
-    let row = sqlx::query_as::<_, Device>(
-        "UPDATE device SET name = $2, category = $3, spec = $4, status = $5, acquired = $6,
-            link = $7, note = $8, updated_at = now()
+    Json(b): Json<UpsertAnime>,
+) -> AppResult<Json<Anime>> {
+    let row = sqlx::query_as::<_, Anime>(
+        "UPDATE anime SET title = $2, status = $3, rating = $4, progress = $5,
+            cover_url = $6, link = $7, note = $8, updated_at = now()
          WHERE id = $1 RETURNING *",
     )
     .bind(id)
-    .bind(b.name)
-    .bind(b.category)
-    .bind(b.spec)
+    .bind(b.title)
     .bind(b.status)
-    .bind(b.acquired)
+    .bind(b.rating)
+    .bind(b.progress)
+    .bind(b.cover_url)
     .bind(b.link)
     .bind(b.note)
     .fetch_optional(&st.db)
@@ -117,7 +117,7 @@ pub async fn update(
 }
 
 #[utoipa::path(
-    delete, path = "/api/device/items/{id}", params(("id" = Uuid, Path)),
+    delete, path = "/api/anime/items/{id}", params(("id" = Uuid, Path)),
     responses((status = 204), (status = 401), (status = 404))
 )]
 pub async fn delete(
@@ -125,7 +125,7 @@ pub async fn delete(
     State(st): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AppResult<axum::http::StatusCode> {
-    let r = sqlx::query("DELETE FROM device WHERE id = $1")
+    let r = sqlx::query("DELETE FROM anime WHERE id = $1")
         .bind(id)
         .execute(&st.db)
         .await?;

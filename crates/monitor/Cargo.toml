@@ -10,5 +10,11 @@ path = "src/lib.rs"
 
 [dependencies]
 i-core = { workspace = true }
+i-auth = { workspace = true }
 axum = { workspace = true }
-serde_json = { workspace = true }
+serde = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+utoipa = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }

@@ -22,6 +22,10 @@ i-device = { workspace = true }
 i-comments = { workspace = true }
 i-monitor = { workspace = true }
 i-maimai = { workspace = true }
+i-anime = { workspace = true }
+i-moments = { workspace = true }
+i-gallery = { workspace = true }
+i-friends = { workspace = true }
 
 axum = { workspace = true }
 tokio = { workspace = true }
