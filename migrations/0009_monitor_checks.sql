@@ -1,25 +1,21 @@
 -- 0009_monitor_checks.sql
 --
--- Uptime monitor. Targets are stored in the shared `monitors` table already
--- created in 0001_init.sql; the monitor CRUD in crate `i-monitor` operates on
--- that table directly. The public GET /api/monitor/status endpoint probes each
--- enabled HTTP target ON-DEMAND (via reqwest, 5s timeout) and returns results
--- inline, so no persistence table is required for current behaviour.
---
--- Follow-up (out of scope): a tokio background scheduler probing on
--- `interval_sec` could persist history into an optional `monitor_checks` table.
--- Provided (commented) as a starting point:
---
--- CREATE TABLE IF NOT EXISTS monitor_checks (
---     id          UUID PRIMARY KEY,
---     monitor_id  UUID NOT NULL REFERENCES monitors(id) ON DELETE CASCADE,
---     ok          BOOLEAN NOT NULL,
---     status_code INT,
---     latency_ms  BIGINT,
---     checked_at  TIMESTAMPTZ NOT NULL DEFAULT now()
--- );
--- CREATE INDEX IF NOT EXISTS idx_monitor_checks_monitor_id_checked_at
---     ON monitor_checks (monitor_id, checked_at DESC);
+-- Uptime monitor history. Targets live in the shared `monitors` table (created
+-- in 0001_init.sql). A tokio background scheduler (crate `i-monitor`,
+-- `run_scheduler`) probes every enabled target on a fixed tick and persists one
+-- row per check here. GET /api/monitor/status reads the LATEST row per target.
 
--- Helpful index for the CRUD list ordering / enabled-http status probe.
+CREATE TABLE IF NOT EXISTS monitor_checks (
+    id          UUID PRIMARY KEY,
+    monitor_id  UUID NOT NULL REFERENCES monitors(id) ON DELETE CASCADE,
+    ok          BOOLEAN NOT NULL,
+    status_code INT,
+    latency_ms  INT,
+    checked_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_monitor_checks_monitor_id_checked_at
+    ON monitor_checks (monitor_id, checked_at DESC);
+
+-- Helpful index for the scheduler's enabled-target scan.
 CREATE INDEX IF NOT EXISTS idx_monitors_enabled_kind ON monitors (enabled, kind);

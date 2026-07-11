@@ -1868,9 +1868,11 @@ export interface components {
             updated_at: string;
         };
         StatusItem: {
+            /** Format: date-time */
+            checked_at?: string | null;
             /** Format: uuid */
             id: string;
-            /** Format: int64 */
+            /** Format: int32 */
             latency_ms?: number | null;
             name: string;
             ok: boolean;

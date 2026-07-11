@@ -1,9 +1,10 @@
 //! Self-implemented uptime monitor. Admin-configured targets live in the shared
-//! `monitors` table (from 0001_init.sql). CRUD is admin-guarded; a public
-//! `/status` endpoint probes each enabled HTTP target on-demand.
+//! `monitors` table (from 0001_init.sql). CRUD is admin-guarded.
 //!
-//! Follow-up: a tokio background scheduler that probes on `interval_sec` and
-//! persists history (e.g. a `monitor_checks` table) is out of scope here.
+//! A tokio background scheduler ([`run_scheduler`]) probes every enabled target
+//! on a fixed tick (~30s) and persists one row per check into `monitor_checks`
+//! (0009). The public `/status` endpoint reads the LATEST check per target
+//! instead of live-probing.
 
 use appcore::{AppError, AppResult, AppState};
 use auth::AdminClaims;
@@ -13,8 +14,14 @@ use axum::{Json, Router};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use std::time::Duration;
 use utoipa::ToSchema;
 use uuid::Uuid;
+
+/// How often the scheduler probes all enabled targets.
+const TICK: Duration = Duration::from_secs(30);
+/// Per-probe timeout for both HTTP and TCP checks.
+const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Serialize, FromRow, ToSchema)]
 pub struct Target {
@@ -43,7 +50,20 @@ pub struct StatusItem {
     pub target: String,
     pub ok: bool,
     pub status_code: Option<i32>,
-    pub latency_ms: Option<i64>,
+    pub latency_ms: Option<i32>,
+    pub checked_at: Option<DateTime<Utc>>,
+}
+
+/// Row shape for the latest-check-per-target query backing `/status`.
+#[derive(FromRow)]
+struct StatusRow {
+    id: Uuid,
+    name: String,
+    target: String,
+    ok: Option<bool>,
+    status_code: Option<i32>,
+    latency_ms: Option<i32>,
+    checked_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -145,40 +165,139 @@ pub async fn delete(
     responses((status = 200, body = Vec<StatusItem>))
 )]
 pub async fn status(State(st): State<AppState>) -> AppResult<Json<Vec<StatusItem>>> {
-    let targets = sqlx::query_as::<_, Target>(
-        "SELECT * FROM monitors WHERE enabled = true AND kind = 'http' ORDER BY created_at DESC",
+    // Latest check per enabled target via LEFT JOIN LATERAL. Targets with no
+    // check yet come back with NULL check columns -> ok=false / nulls.
+    let rows = sqlx::query_as::<_, StatusRow>(
+        "SELECT m.id, m.name, m.target,
+                c.ok, c.status_code, c.latency_ms, c.checked_at
+           FROM monitors m
+           LEFT JOIN LATERAL (
+                SELECT ok, status_code, latency_ms, checked_at
+                  FROM monitor_checks
+                 WHERE monitor_id = m.id
+                 ORDER BY checked_at DESC
+                 LIMIT 1
+           ) c ON true
+          WHERE m.enabled = true
+          ORDER BY m.created_at DESC",
     )
     .fetch_all(&st.db)
     .await?;
 
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
-        .build()
-        .map_err(|e| AppError::Internal(e.to_string()))?;
+    let items = rows
+        .into_iter()
+        .map(|r| StatusItem {
+            id: r.id,
+            name: r.name,
+            target: r.target,
+            ok: r.ok.unwrap_or(false),
+            status_code: r.status_code,
+            latency_ms: r.latency_ms,
+            checked_at: r.checked_at,
+        })
+        .collect();
+    Ok(Json(items))
+}
 
-    let mut items = Vec::with_capacity(targets.len());
-    for t in targets {
-        let started = std::time::Instant::now();
-        let resp = client.get(&t.target).send().await;
-        let latency_ms = started.elapsed().as_millis() as i64;
-        let (ok, status_code) = match resp {
+/// A probe outcome for one target.
+struct Probe {
+    ok: bool,
+    status_code: Option<i32>,
+    latency_ms: i32,
+}
+
+/// Probe a single target. HTTP: GET, ok on 2xx/3xx. TCP: connect to host:port,
+/// ok if the connection succeeds. Any error / timeout -> ok=false.
+async fn probe(client: &reqwest::Client, t: &Target) -> Probe {
+    let started = std::time::Instant::now();
+    let (ok, status_code) = match t.kind.as_str() {
+        "http" => match client.get(&t.target).send().await {
             Ok(r) => {
                 let code = r.status().as_u16() as i32;
                 let ok = r.status().is_success() || r.status().is_redirection();
                 (ok, Some(code))
             }
             Err(_) => (false, None),
-        };
-        items.push(StatusItem {
-            id: t.id,
-            name: t.name,
-            target: t.target,
-            ok,
-            status_code,
-            latency_ms: Some(latency_ms),
-        });
+        },
+        "tcp" => {
+            // Expect host:port; strip an optional scheme prefix for tolerance.
+            let addr = t
+                .target
+                .trim()
+                .rsplit("://")
+                .next()
+                .unwrap_or(t.target.as_str());
+            let connected =
+                match tokio::time::timeout(PROBE_TIMEOUT, tokio::net::TcpStream::connect(addr))
+                    .await
+                {
+                    Ok(Ok(_)) => true,
+                    _ => false,
+                };
+            (connected, None)
+        }
+        other => {
+            tracing::warn!(kind = other, target = %t.target, "monitor: unknown kind, marking down");
+            (false, None)
+        }
+    };
+    let latency_ms = started.elapsed().as_millis().min(i32::MAX as u128) as i32;
+    Probe {
+        ok,
+        status_code,
+        latency_ms,
     }
-    Ok(Json(items))
+}
+
+/// Background uptime scheduler: every [`TICK`], probe all enabled targets and
+/// persist one `monitor_checks` row each. Never panics or exits the loop;
+/// per-tick and per-target errors are logged and swallowed.
+pub async fn run_scheduler(state: AppState) {
+    let client = match reqwest::Client::builder().timeout(PROBE_TIMEOUT).build() {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!(error = %e, "monitor: failed to build reqwest client; scheduler disabled");
+            return;
+        }
+    };
+
+    let mut ticker = tokio::time::interval(TICK);
+    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+    loop {
+        ticker.tick().await;
+
+        let targets = match sqlx::query_as::<_, Target>(
+            "SELECT * FROM monitors WHERE enabled = true",
+        )
+        .fetch_all(&state.db)
+        .await
+        {
+            Ok(t) => t,
+            Err(e) => {
+                tracing::error!(error = %e, "monitor: failed to load targets this tick");
+                continue;
+            }
+        };
+
+        for t in &targets {
+            let p = probe(&client, t).await;
+            if let Err(e) = sqlx::query(
+                "INSERT INTO monitor_checks (id, monitor_id, ok, status_code, latency_ms)
+                 VALUES ($1, $2, $3, $4, $5)",
+            )
+            .bind(Uuid::new_v4())
+            .bind(t.id)
+            .bind(p.ok)
+            .bind(p.status_code)
+            .bind(p.latency_ms)
+            .execute(&state.db)
+            .await
+            {
+                tracing::error!(error = %e, target = %t.target, "monitor: failed to persist check");
+            }
+        }
+    }
 }
 
 pub fn router() -> Router<AppState> {

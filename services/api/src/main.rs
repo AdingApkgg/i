@@ -12,10 +12,11 @@ use std::sync::Arc;
 
 use appcore::{AppState, Config};
 use axum::extract::State;
+use axum::http::HeaderValue;
 use axum::routing::get;
 use axum::{Json, Router};
 use serde_json::{json, Value};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 
@@ -130,6 +131,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config: Arc::new(config),
     };
 
+    // Background uptime monitor: probes enabled targets on a 30s schedule and
+    // records each result in monitor_checks. GET /api/monitor/status reads the
+    // latest check per target (no live probing on the request path).
+    tokio::spawn(monitor::run_scheduler(state.clone()));
+
     let openapi_spec = ApiDoc::openapi().to_json()?;
 
     let app = Router::new()
@@ -163,13 +169,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nest("/api/monitor", monitor::router())
         .nest("/api/maimai", maimai::router())
         .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::permissive())
+        .layer(cors_layer())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("listening on http://{bind_addr}");
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+/// CORS policy. Same-origin deploys (web + api behind one nginx) don't need CORS
+/// at all, so this only matters for cross-origin callers.
+///
+/// `CORS_ALLOWED_ORIGINS` — a comma-separated allow-list (e.g.
+/// `https://i.example.com,https://www.example.com`) locks responses to those
+/// origins. Left unset (dev) it stays permissive so `localhost:3000/3001` and
+/// tooling can call `:8080` freely. Set it before going public.
+fn cors_layer() -> CorsLayer {
+    match std::env::var("CORS_ALLOWED_ORIGINS") {
+        Ok(raw) if !raw.trim().is_empty() => {
+            let origins: Vec<HeaderValue> = raw
+                .split(',')
+                .filter_map(|s| {
+                    let s = s.trim();
+                    match s.parse::<HeaderValue>() {
+                        Ok(v) => Some(v),
+                        Err(_) => {
+                            tracing::warn!(origin = s, "CORS: ignoring invalid origin");
+                            None
+                        }
+                    }
+                })
+                .collect();
+            tracing::info!(count = origins.len(), "CORS: restricting to allow-list");
+            CorsLayer::new()
+                .allow_origin(origins)
+                .allow_methods(Any)
+                .allow_headers(Any)
+        }
+        _ => {
+            tracing::info!("CORS: permissive (set CORS_ALLOWED_ORIGINS to restrict)");
+            CorsLayer::permissive()
+        }
+    }
 }
 
 async fn root() -> Json<Value> {

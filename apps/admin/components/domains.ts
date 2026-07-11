@@ -8,7 +8,7 @@
  * is a data change — no hand-written editors.
  */
 
-export type FieldType = "text" | "textarea" | "number" | "boolean" | "select";
+export type FieldType = "text" | "textarea" | "number" | "boolean" | "select" | "image";
 
 export interface FieldSpec {
   name: string;
@@ -164,7 +164,7 @@ export const DOMAINS: DomainSpec[] = [
     columns: ["title", "taken_at"],
     fields: [
       { name: "title", label: "标题", type: "text", required: true },
-      { name: "image_url", label: "图片链接", type: "text", required: true, placeholder: "https://…" },
+      { name: "image_url", label: "图片", type: "image", required: true, placeholder: "上传或粘贴链接" },
       { name: "thumb_url", label: "缩略图链接", type: "text", placeholder: "https://…" },
       { name: "description", label: "描述", type: "textarea" },
       { name: "taken_at", label: "拍摄时间", type: "text", placeholder: "2024-01-01" },

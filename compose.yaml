@@ -76,6 +76,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-change-me}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
       RUST_LOG: ${RUST_LOG:-info,api=debug,tower_http=debug}
+      # MinIO (S3) for gallery uploads — creds must match the minio service.
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+      MINIO_BUCKET: ${MINIO_BUCKET:-gallery}
       CARGO_TERM_COLOR: always
       # Compiler cache: warm rebuilds after a source edit reuse cached crates.
       RUSTC_WRAPPER: sccache
@@ -106,6 +111,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_started
 
   # One-shot: installs JS deps into the shared node_modules volume, then exits.
   # bun-cache persists bun's global install cache across recreates, so a fresh

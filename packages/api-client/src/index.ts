@@ -101,6 +101,39 @@ export async function deletePost(slug: string): Promise<void> {
   if (error) throw new Error("blog/delete failed");
 }
 
+/* ---- media ------------------------------------------------------------
+ * Uploaded gallery images are stored in MinIO and served by the API at a
+ * RELATIVE path (`/api/gallery/files/<key>`). Resolve such paths against the
+ * API base so they load in dev (cross-origin :8080); in prod the base is empty
+ * (same-origin through nginx) and the path is returned unchanged.
+ */
+export function resolveMedia(url: string | null | undefined): string {
+  if (!url) return "";
+  if (/^https?:\/\//.test(url) || url.startsWith("data:")) return url;
+  if (url.startsWith("/")) return `${baseUrl}${url}`;
+  return url;
+}
+
+/**
+ * Upload an image to the gallery bucket (admin-only, multipart). Returns the
+ * relative `image_url` the backend stored it under; feed it back into a Photo's
+ * `image_url` and render via {@link resolveMedia}.
+ */
+export async function uploadGalleryImage(file: File): Promise<{ image_url: string }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const headers: Record<string, string> = {};
+  const tok = getAuthToken();
+  if (tok) headers.authorization = `Bearer ${tok}`;
+  const res = await fetch(`${baseUrl}/api/gallery/upload`, {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`gallery/upload -> ${res.status}`);
+  return res.json() as Promise<{ image_url: string }>;
+}
+
 // /health is intentionally undocumented (dynamic), so it stays a raw fetch.
 export interface Health {
   db: boolean;

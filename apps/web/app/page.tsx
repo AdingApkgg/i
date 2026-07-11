@@ -20,6 +20,7 @@ import {
   getCount,
   getHealth,
   listPosts,
+  resolveMedia,
   type CountResp,
   type Health,
   type Post,
@@ -359,7 +360,7 @@ export default function Home() {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={p.thumb_url ?? p.image_url}
+                    src={resolveMedia(p.thumb_url ?? p.image_url)}
                     alt={p.title}
                     loading="lazy"
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-105"

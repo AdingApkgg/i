@@ -1,8 +1,8 @@
 "use client";
 
-import { apiRequest } from "@i/api-client";
+import { apiRequest, resolveMedia, uploadGalleryImage } from "@i/api-client";
 import { Button, Card, Section } from "@i/ui";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type DomainSpec, type FieldSpec, type Row } from "./domains";
 
 const inputCls =
@@ -67,6 +67,89 @@ function bodyFromForm(spec: DomainSpec, form: FormState): Record<string, unknown
   return body;
 }
 
+/**
+ * Image field: upload a file to MinIO (fills the value with the stored relative
+ * path) or paste a URL directly. Shows a live preview via resolveMedia so both
+ * relative uploads and absolute links render.
+ */
+function ImageField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldSpec;
+  value: string;
+  onChange: (v: FormValue) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function onPick(file: File | undefined) {
+    if (!file) return;
+    setErr(null);
+    setUploading(true);
+    try {
+      const { image_url } = await uploadGalleryImage(file);
+      onChange(image_url);
+    } catch {
+      setErr("上传失败(需先登录)");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <label className="block sm:col-span-2">
+      <span className="mb-1.5 block text-sm font-medium text-muted">
+        {field.label}
+        {field.required && <span className="ml-1 text-accent">*</span>}
+      </span>
+      <div className="flex items-start gap-3">
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={resolveMedia(value)}
+            alt=""
+            className="h-20 w-20 shrink-0 rounded-card border border-line object-cover"
+          />
+        ) : (
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border border-dashed border-line text-xs text-muted">
+            无图
+          </div>
+        )}
+        <div className="min-w-0 flex-1 space-y-2">
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder}
+            className={inputCls}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => void onPick(e.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? "上传中…" : "上传图片"}
+            </Button>
+            {err && <span className="text-xs text-red-500">{err}</span>}
+          </div>
+        </div>
+      </div>
+    </label>
+  );
+}
+
 function FieldControl({
   field,
   value,
@@ -101,6 +184,10 @@ function FieldControl({
         </button>
       </div>
     );
+  }
+
+  if (field.type === "image") {
+    return <ImageField field={field} value={typeof value === "string" ? value : ""} onChange={onChange} />;
   }
 
   if (field.type === "textarea") {
@@ -226,7 +313,7 @@ export function DomainEditor({
     for (const f of spec.fields) {
       if (!f.required) continue;
       const v = form[f.name];
-      if (f.type === "text" || f.type === "textarea" || f.type === "select") {
+      if (f.type === "text" || f.type === "textarea" || f.type === "select" || f.type === "image") {
         if (typeof v !== "string" || !v.trim()) {
           setError(`「${f.label}」不能为空`);
           return;
