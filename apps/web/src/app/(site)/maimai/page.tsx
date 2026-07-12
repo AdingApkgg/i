@@ -1,6 +1,7 @@
 import { Card } from "@i/ui";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
+import { adxChartUrl } from "@/lib/adx";
 import { trpcServer } from "@/lib/trpc/server";
 
 export const metadata = { title: "舞萌" };
@@ -75,6 +76,13 @@ function Board({ title, items }: { title: string; items: Rec[] }) {
 function ScoreCard({ r }: { r: Rec }) {
   const color = DIFF[r.levelIndex] ?? "#a855f7";
   return (
+    <a
+      href={adxChartUrl(r.songId)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`在 adx-dl 打开：${r.title}`}
+      className="block transition hover:-translate-y-0.5"
+    >
     <Card className="overflow-hidden">
       <div className="relative">
         {r.coverUrl ? (
@@ -110,5 +118,6 @@ function ScoreCard({ r }: { r: Rec }) {
         </div>
       </div>
     </Card>
+    </a>
   );
 }

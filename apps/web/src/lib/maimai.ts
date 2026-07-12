@@ -97,8 +97,10 @@ async function fetchDivingFish(username: string, importToken?: string | null) {
 // biome-ignore lint/suspicious/noExplicitAny: external
 function mapLxns(r: any, pool: "b35" | "b15" | null, order: number): MappedRecord {
   const type = r.type === "dx" ? "dx" : "standard";
+  const base = Number(r.id) % 10000;
   return {
-    songId: Number(r.id) % 10000,
+    // Normalize to the diving-fish music_data id (= adx-dl shortid): dx gets +10000.
+    songId: (type === "dx" ? 10000 : 0) + base,
     title: String(r.song_name ?? ""),
     type,
     levelIndex: Number(r.level_index ?? 0),

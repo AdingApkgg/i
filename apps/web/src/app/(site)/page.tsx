@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/public/collection";
 import { Mascot } from "@/components/public/mascot";
+import { adxChartUrl } from "@/lib/adx";
 import { trpcServer } from "@/lib/trpc/server";
 
 function fmtDate(d: Date | string) {
@@ -68,7 +69,13 @@ export default async function Home() {
         <Section title={`舞萌 DX · Rating ${mmProfile.rating}`} moreHref="/maimai" moreLabel="全部成绩">
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {mmTop.map((r) => (
-              <Link key={r.id} href="/maimai" className="group">
+              <a
+                key={r.id}
+                href={adxChartUrl(r.songId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block transition hover:-translate-y-0.5"
+              >
                 <Card className="overflow-hidden">
                   <div className="relative aspect-square bg-soft">
                     {r.coverUrl && (
@@ -83,7 +90,7 @@ export default async function Home() {
                     {r.achievements.toFixed(2)}%
                   </div>
                 </Card>
-              </Link>
+              </a>
             ))}
           </div>
         </Section>
