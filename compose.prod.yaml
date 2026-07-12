@@ -24,6 +24,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+      start_period: 40s
 
   redis:
     image: redis:8-alpine
@@ -44,14 +45,21 @@ services:
       - minio:/data
     restart: unless-stopped
 
+  # One-shot schema push. Uses a plain bun image (no Next build) — installs deps,
+  # generates the Prisma client, pushes the schema, then exits.
   migrate:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      target: builder
-    command: bun run --filter @i/db db:push
+    image: oven/bun:1
+    working_dir: /app
+    command: >
+      bash -lc '
+      bun install --frozen-lockfile &&
+      bun run --filter @i/db db:generate &&
+      bun run --filter @i/db db:push'
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
+    volumes:
+      - ./:/app
+      - prod_node_modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -101,3 +109,4 @@ services:
 volumes:
   pgdata:
   minio:
+  prod_node_modules:
