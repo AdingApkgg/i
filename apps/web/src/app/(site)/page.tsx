@@ -12,14 +12,17 @@ function fmtDate(d: Date | string) {
 
 export default async function Home() {
   const api = await trpcServer();
-  const [posts, music, movie, vn, moments, photos] = await Promise.all([
+  const [posts, music, movie, vn, moments, photos, mmProfile, mmB50] = await Promise.all([
     api.blog.list().catch(() => []),
     api.music.list().catch(() => []),
     api.movie.list().catch(() => []),
     api.vn.list().catch(() => []),
     api.moments.list().catch(() => []),
     api.gallery.list().catch(() => []),
+    api.maimai.profile().catch(() => null),
+    api.maimai.b50().catch(() => ({ b35: [], b15: [] })),
   ]);
+  const mmTop = [...mmB50.b35, ...mmB50.b15].sort((a, b) => b.ra - a.ra).slice(0, 6);
 
   return (
     <div className="space-y-8">
@@ -59,6 +62,32 @@ export default async function Home() {
           <TrackTile label="在玩" title={vn[0]?.title} subtitle={vn[0]?.brand} cover={vn[0]?.coverUrl} href={vn[0]?.link} />
         </div>
       </Section>
+
+      {/* 舞萌 DX */}
+      {mmProfile && mmTop.length > 0 && (
+        <Section title={`舞萌 DX · Rating ${mmProfile.rating}`} moreHref="/maimai" moreLabel="全部成绩">
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {mmTop.map((r) => (
+              <Link key={r.id} href="/maimai" className="group">
+                <Card className="overflow-hidden">
+                  <div className="relative aspect-square bg-soft">
+                    {r.coverUrl && (
+                      // biome-ignore lint/a11y/useAltText: cover
+                      <img src={r.coverUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    )}
+                    <span className="absolute bottom-1 left-1 rounded-pill bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      ↑{r.ra}
+                    </span>
+                  </div>
+                  <div className="p-1.5 text-center text-[11px] font-semibold text-primary">
+                    {r.achievements.toFixed(2)}%
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* 说说 */}
       <Section title="说说" moreHref="/moments">
