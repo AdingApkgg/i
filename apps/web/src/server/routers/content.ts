@@ -132,20 +132,4 @@ export const friendsRouter = crudRouter({
 
 // ---- 监控 ---- lives in ./monitor (adds a `status` query + scheduler)
 
-// ---- 舞萌 maimaiDX ----
-export const maimaiRouter = crudRouter({
-  model: (db) => db.maimaiScore,
-  orderBy: [{ sortOrder: "asc" as const }, { achievement: "desc" as const }],
-  createSchema: z.object({
-    songTitle: z.string().min(1),
-    difficulty: z.enum(["BASIC", "ADVANCED", "EXPERT", "MASTER", "RE:MASTER"]).default("MASTER"),
-    level: str,
-    achievement: z.number().nullish(),
-    rank: str,
-    comboFlag: str,
-    syncFlag: str,
-    coverUrl: str,
-    note: text,
-    sortOrder,
-  }),
-});
+// ---- 舞萌 maimaiDX ---- lives in ./maimai (查分器 sync, not manual CRUD)

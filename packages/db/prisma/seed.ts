@@ -93,14 +93,6 @@ async function main() {
       ],
     });
 
-  if ((await db.maimaiScore.count()) === 0)
-    await db.maimaiScore.createMany({
-      data: [
-        { songTitle: "系ぐ", difficulty: "MASTER", level: "13", achievement: 100.5, rank: "SSS+", comboFlag: "AP" },
-        { songTitle: "PANDORA PARADOXXX", difficulty: "RE:MASTER", level: "15", achievement: 99.8, rank: "SSS" },
-      ],
-    });
-
   console.log("✓ seeded sample content across domains");
 }
 

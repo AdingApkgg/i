@@ -16,5 +16,7 @@ export type {
   Friend,
   Monitor,
   MonitorCheck,
-  MaimaiScore,
+  MaimaiConfig,
+  MaimaiProfile,
+  MaimaiRecord,
 } from "./generated/prisma/client";

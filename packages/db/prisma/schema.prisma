@@ -288,22 +288,48 @@ model MonitorCheck {
   @@index([monitorId, checkedAt])
 }
 
-// ==================== 舞萌 maimaiDX (maimai) ====================
+// ==================== 舞萌 maimaiDX — 查分器对接 (maimai) ====================
+// Scores are synced from 水鱼(diving-fish) / 落雪(lxns). Single-row config +
+// profile + a records table (union of b50 + all scores).
 
-model MaimaiScore {
+model MaimaiConfig {
+  id                   String   @id @default("current")
+  source               String   @default("diving-fish") // "diving-fish" | "lxns" — active display source
+  divingFishUsername   String?
+  divingFishImportToken String?
+  lxnsPersonalToken    String?
+  updatedAt            DateTime @updatedAt
+}
+
+model MaimaiProfile {
+  id        String   @id @default("current")
+  source    String
+  nickname  String
+  rating    Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model MaimaiRecord {
   id          String   @id @default(cuid())
-  songTitle   String
-  difficulty  String   @default("MASTER") // BASIC | ADVANCED | EXPERT | MASTER | RE:MASTER
-  level       String?  // e.g. "14+"
-  achievement Float?   // 达成率 %
-  rank        String?  // SSS+ / SSS / SS+ …
-  comboFlag   String?  // FC / FC+ / AP / AP+
-  syncFlag    String?  // FS / FS+ / FDX / FDX+
+  source      String   // "diving-fish" | "lxns"
+  songId      Int
+  title       String
+  type        String   // "standard" | "dx"
+  levelIndex  Int      // 0 Basic .. 4 Re:MASTER
+  levelLabel  String   // displayed level, e.g. "14+"
+  ds          Float?   // chart constant 定数
+  achievements Float   @default(0)
+  dxScore     Int      @default(0)
+  ra          Int      @default(0) // this chart's rating contribution
+  fc          String?  // "" | fc | fcp | ap | app
+  fs          String?  // "" | fs | fsp | fsd | fsdp | sync
+  rate        String?  // sssp | sss | ...
   coverUrl    String?
-  note        String?  @db.Text
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  pool        String?  // "b35" | "b15" | null (null = only in all-scores)
+  boardOrder  Int      @default(0) // order within its b50 pool
+  syncedAt    DateTime @default(now())
 
-  @@index([difficulty, achievement])
+  @@index([pool, boardOrder])
+  @@index([achievements])
+  @@unique([songId, type, levelIndex])
 }

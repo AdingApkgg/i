@@ -3,7 +3,6 @@ import {
   deviceRouter,
   friendsRouter,
   galleryRouter,
-  maimaiRouter,
   momentsRouter,
   movieRouter,
   musicRouter,
@@ -11,6 +10,7 @@ import {
   vnRouter,
 } from "./routers/content";
 import { healthRouter } from "./routers/health";
+import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
 import { postRouter } from "./routers/post";
 import { createCallerFactory, router } from "./trpc";
