@@ -121,3 +121,189 @@ model Comment {
   @@index([path, createdAt])
   @@index([postId])
 }
+
+// ==================== 音乐 (music) ====================
+
+model Track {
+  id        String   @id @default(cuid())
+  title     String
+  artist    String?
+  album     String?
+  status    String   @default("在听") // 在听 | 听过 | 想听
+  rating    Int?
+  coverUrl  String?
+  link      String?
+  note      String?  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ==================== 影视 (movie) ====================
+
+model Movie {
+  id        String   @id @default(cuid())
+  title     String
+  category  String?  // 电影 / 剧集…
+  status    String   @default("在看") // 在看 | 看过 | 想看
+  rating    Int?
+  year      Int?
+  coverUrl  String?
+  link      String?
+  note      String?  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ==================== 视觉小说 / Galgame (vn) ====================
+
+model Vn {
+  id        String   @id @default(cuid())
+  title     String
+  brand     String?
+  status    String   @default("在玩") // 在玩 | 通关 | 想玩 | 搁置
+  rating    Int?
+  playHours Int?
+  coverUrl  String?
+  link      String?
+  note      String?  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ==================== 东方 (touhou) ====================
+
+model Touhou {
+  id        String   @id @default(cuid())
+  title     String
+  category  String?  // game | music | print | doujin
+  status    String   @default("收藏")
+  rating    Int?
+  coverUrl  String?
+  link      String?
+  note      String?  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, createdAt])
+}
+
+// ==================== 设备 (device) ====================
+
+model Device {
+  id        String   @id @default(cuid())
+  name      String
+  category  String?  // 手机 / 电脑…
+  spec      String?
+  status    String   @default("在用") // 在用 | 退役 | 想要
+  acquired  String?  // 入手日期 (YYYY-MM-DD, free text)
+  link      String?
+  note      String?  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// ==================== 相册 (gallery) ====================
+
+model Photo {
+  id          String   @id @default(cuid())
+  title       String
+  imageUrl    String
+  thumbUrl    String?
+  description String?  @db.Text
+  takenAt     String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+// ==================== 说说 (moments) ====================
+
+model Moment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  mood      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+// ==================== 友链 (friends) ====================
+
+model Friend {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  avatarUrl   String?
+  description String?  @db.Text
+  status      String   @default("active") // active | pending
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, sortOrder])
+}
+
+// ==================== 监控 (monitor) ====================
+
+model Monitor {
+  id          String    @id @default(cuid())
+  name        String
+  target      String    // https://… or host:port
+  kind        String    @default("http") // http | tcp
+  intervalSec Int       @default(60)
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  checks MonitorCheck[]
+
+  @@index([enabled, kind])
+}
+
+model MonitorCheck {
+  id         String   @id @default(cuid())
+  monitorId  String
+  monitor    Monitor  @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  ok         Boolean
+  statusCode Int?
+  latencyMs  Int?
+  checkedAt  DateTime @default(now())
+
+  @@index([monitorId, checkedAt])
+}
+
+// ==================== 舞萌 maimaiDX (maimai) ====================
+
+model MaimaiScore {
+  id          String   @id @default(cuid())
+  songTitle   String
+  difficulty  String   @default("MASTER") // BASIC | ADVANCED | EXPERT | MASTER | RE:MASTER
+  level       String?  // e.g. "14+"
+  achievement Float?   // 达成率 %
+  rank        String?  // SSS+ / SSS / SS+ …
+  comboFlag   String?  // FC / FC+ / AP / AP+
+  syncFlag    String?  // FS / FS+ / FDX / FDX+
+  coverUrl    String?
+  note        String?  @db.Text
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([difficulty, achievement])
+}

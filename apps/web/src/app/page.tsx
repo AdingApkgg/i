@@ -6,7 +6,7 @@ import { trpcServer } from "@/lib/trpc/server";
 export default async function Home() {
   const api = await trpcServer();
   const health = await api.health.status().catch(() => ({ db: false, redis: false, posts: 0 }));
-  const posts = await api.post.list().catch(() => []);
+  const posts = await api.blog.list().catch(() => []);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
