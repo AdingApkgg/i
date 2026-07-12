@@ -48,6 +48,7 @@ export function DashShell({
           {ADMIN_ORDER.map((k) =>
             item(`/dash/${k}`, ADMIN_FIELDS[k]?.label ?? k, pathname === `/dash/${k}`),
           )}
+          {item("/dash/settings", "设置", pathname === "/dash/settings")}
         </nav>
         <div className="mt-6 border-t border-border px-3 pt-4">
           <div className="truncate text-xs text-muted-foreground">{userName}</div>

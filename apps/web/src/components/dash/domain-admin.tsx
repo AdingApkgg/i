@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody, cn } from "@i/ui";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FIELDS, type FieldSpec } from "@/lib/admin-fields";
 import { useTRPCClient } from "@/lib/trpc/client";
@@ -251,6 +251,9 @@ function Field({
       </label>
     );
   }
+  if (field.type === "image") {
+    return <ImageField label={label} value={String(value ?? "")} onChange={onChange} placeholder={field.placeholder} />;
+  }
   return (
     <label className="block">
       {label}
@@ -261,6 +264,63 @@ function Field({
         placeholder={field.placeholder}
         className={inputCls}
       />
+    </label>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: ReactNode;
+  value: string;
+  onChange: (v: unknown) => void;
+  placeholder?: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function pick(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/gallery/upload", { method: "POST", body: fd, credentials: "include" });
+      if (!res.ok) throw new Error();
+      const { imageUrl } = (await res.json()) as { imageUrl: string };
+      onChange(imageUrl);
+      toast.success("上传成功 ✿");
+    } catch {
+      toast.error("上传失败");
+    } finally {
+      setUploading(false);
+      if (ref.current) ref.current.value = "";
+    }
+  }
+
+  return (
+    <label className="block sm:col-span-2">
+      {label}
+      <div className="flex items-start gap-3">
+        {value ? (
+          // biome-ignore lint/a11y/useAltText: preview
+          <img src={value} alt="" className="size-20 shrink-0 rounded-[var(--radius-md)] border border-border object-cover" />
+        ) : (
+          <div className="grid size-20 shrink-0 place-items-center rounded-[var(--radius-md)] border border-dashed border-border text-xs text-muted-foreground">
+            无图
+          </div>
+        )}
+        <div className="min-w-0 flex-1 space-y-2">
+          <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={inputCls} />
+          <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => void pick(e.target.files?.[0])} />
+          <Button type="button" variant="ghost" size="sm" onClick={() => ref.current?.click()} disabled={uploading}>
+            {uploading ? "上传中…" : "上传图片"}
+          </Button>
+        </div>
+      </div>
     </label>
   );
 }

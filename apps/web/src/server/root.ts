@@ -1,16 +1,17 @@
+import { commentRouter } from "./routers/comment";
 import {
   deviceRouter,
   friendsRouter,
   galleryRouter,
   maimaiRouter,
   momentsRouter,
-  monitorRouter,
   movieRouter,
   musicRouter,
   touhouRouter,
   vnRouter,
 } from "./routers/content";
 import { healthRouter } from "./routers/health";
+import { monitorRouter } from "./routers/monitor";
 import { postRouter } from "./routers/post";
 import { createCallerFactory, router } from "./trpc";
 
@@ -27,6 +28,7 @@ export const appRouter = router({
   friends: friendsRouter,
   monitor: monitorRouter,
   maimai: maimaiRouter,
+  comment: commentRouter,
 });
 
 export type AppRouter = typeof appRouter;

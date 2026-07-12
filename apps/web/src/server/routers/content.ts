@@ -130,18 +130,7 @@ export const friendsRouter = crudRouter({
   }),
 });
 
-// ---- 监控 ---- (scheduler + status added in Phase 2)
-export const monitorRouter = crudRouter({
-  model: (db) => db.monitor,
-  orderBy: bySort,
-  createSchema: z.object({
-    name: z.string().min(1),
-    target: z.string().min(1),
-    kind: z.enum(["http", "tcp"]).default("http"),
-    intervalSec: z.number().int().default(60),
-    enabled: z.boolean().default(true),
-  }),
-});
+// ---- 监控 ---- lives in ./monitor (adds a `status` query + scheduler)
 
 // ---- 舞萌 maimaiDX ----
 export const maimaiRouter = crudRouter({

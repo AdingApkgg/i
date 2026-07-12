@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/public/collection";
+import { Comments } from "@/components/public/comments";
 import { trpcServer } from "@/lib/trpc/server";
 
 function fmt(d: Date | string) {
@@ -28,6 +29,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       >
         <Markdown remarkPlugins={[remarkGfm]}>{post.contentMd}</Markdown>
       </div>
+      <Comments path={`/blog/${slug}`} postId={post.id} />
     </article>
   );
 }
