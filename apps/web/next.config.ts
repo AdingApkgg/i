@@ -1,16 +1,22 @@
 import type { NextConfig } from "next";
-import { join } from "node:path";
 
-const nextConfig: NextConfig = {
+const config: NextConfig = {
+  reactStrictMode: true,
   output: "standalone",
-  // Trace workspace deps from the monorepo root (build runs with cwd = apps/web).
-  outputFileTracingRoot: join(process.cwd(), "../../"),
-  // Workspace packages ship raw TS/TSX; let Next transpile them.
-  transpilePackages: ["@i/ui", "@i/api-client"],
-  // Keep TS type errors fatal at build time — correctness must hold.
-  typescript: { ignoreBuildErrors: false },
-  // Production browser source maps are expensive to emit and not served.
-  productionBrowserSourceMaps: false,
+  // Transpile the workspace TS packages (they ship raw src, not built dist).
+  transpilePackages: ["@i/ui", "@i/db", "@i/config"],
+  // @i/db's node deps must resolve at runtime, not be bundled by the server
+  // compiler (Prisma's generated client + pg/ioredis native bits).
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "ioredis"],
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
+    ],
+  },
+  experimental: {
+    serverActions: { bodySizeLimit: "32mb" },
+  },
 };
 
-export default nextConfig;
+export default config;

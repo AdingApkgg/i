@@ -1,28 +1,13 @@
-# Production stack for alice (the dev+prod host). Built images, no source mounts.
+# Production stack for alice. Built image, no source mounts.
 #
-#   cp .env.example .env   # set real JWT_SECRET / ADMIN_PASSWORD / MINIO_ROOT_PASSWORD
-#   COMPOSE_BAKE=true docker compose -f compose.prod.yaml up -d --build
+#   cp .env.example .env   # set real BETTER_AUTH_SECRET / passwords
+#   docker compose -f compose.prod.yaml up -d --build
 #
-# BUILD SPEED (128 cores, near-idle):
-#   * COMPOSE_BAKE=true makes `--build` delegate to `docker buildx bake`, which
-#     builds api + web + admin CONCURRENTLY (instead of one-at-a-time) and shares
-#     a single BuildKit instance — so the cargo/bun `--mount=type=cache` stores in
-#     the Dockerfiles are reused across all three builds and across reruns.
-#     Set it once in your shell (export COMPOSE_BAKE=true) or in .env.
-#   * The cache mounts live inside BuildKit and survive `compose down`. They are
-#     ONLY wiped by `docker builder prune` — so DON'T prune between rebuilds.
-#   * web/admin take NEXT_PUBLIC_API_URL as a build arg; changing it (and only it)
-#     busts their build layers. The api image is independent of that arg.
-#   * For CI / a second host, uncomment the cache_from/cache_to blocks below to
-#     push the layer cache to a registry (needs the `containerd` image store or a
-#     `docker-container` buildx builder; the default host builder ignores them).
-#
-# A bundled nginx is the single entry (self-contained); it routes same-origin:
-#   /        -> web        /dash/  -> admin        /api/ /health /openapi.json -> api
-# Only the proxy publishes a host port (127.0.0.1). Front it with the host's
-# nginx/apache or a domain. Separate project name + volumes from the dev stack.
+# A bundled nginx is the single entry; it routes same-origin:
+#   /  -> web (Next handles /api/trpc, /api/auth, /dash internally)
+# Only the proxy publishes a host port (127.0.0.1); front it with a cf tunnel.
 
-name: i-prod
+name: iv2-prod
 
 services:
   db:
@@ -59,79 +44,48 @@ services:
       - minio:/data
     restart: unless-stopped
 
-  api:
-    image: i-prod-api:latest
+  migrate:
     build:
       context: .
-      dockerfile: services/api/Dockerfile
-      # Stable tag so the BuildKit inline cache has a consistent reference and the
-      # image is reused as a `cache_from` base on rebuild.
-      tags:
-        - i-prod-api:latest
-      # Registry layer cache for CI / multi-host. Requires a docker-container
-      # buildx builder (`docker buildx create --use`) or the containerd store.
-      # cache_from:
-      #   - type=registry,ref=ghcr.io/OWNER/i-api:buildcache
-      # cache_to:
-      #   - type=registry,ref=ghcr.io/OWNER/i-api:buildcache,mode=max
-    env_file:
-      - path: .env
-        required: false
+      dockerfile: apps/web/Dockerfile
+      target: builder
+    command: bun run --filter @i/db db:push
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    image: iv2-prod-web:latest
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      tags:
+        - iv2-prod-web:latest
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL-}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-      API_BIND: 0.0.0.0:8080
-      JWT_SECRET: ${JWT_SECRET:?set a real JWT secret}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set a real admin password}
-      RUST_LOG: ${RUST_LOG:-info}
-      # CORS allow-list; empty = permissive. Same-origin (nginx) deploys don't
-      # need it, but set it to your public origin(s) for defense in depth.
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS-}
-      # MinIO (S3) for gallery uploads. Creds come from .env (no insecure
-      # defaults in prod) and must match the minio service above.
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set a strong MinIO password}
-      MINIO_BUCKET: ${MINIO_BUCKET:-gallery}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set a real 32+ char secret}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set the public origin}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set the public origin}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minio}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set a strong MinIO password}
+      S3_BUCKET: ${S3_BUCKET:-gallery}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_started
-    restart: unless-stopped
-
-  web:
-    image: i-prod-web:latest
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-      tags:
-        - i-prod-web:latest
-      # Empty = same-origin (the browser calls /api and /health through nginx).
-      # Only a change to this arg busts the web build layers.
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL-}
-      # cache_from:
-      #   - type=registry,ref=ghcr.io/OWNER/i-web:buildcache
-      # cache_to:
-      #   - type=registry,ref=ghcr.io/OWNER/i-web:buildcache,mode=max
-    restart: unless-stopped
-
-  admin:
-    image: i-prod-admin:latest
-    build:
-      context: .
-      dockerfile: apps/admin/Dockerfile
-      tags:
-        - i-prod-admin:latest
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL-}
-      # cache_from:
-      #   - type=registry,ref=ghcr.io/OWNER/i-admin:buildcache
-      # cache_to:
-      #   - type=registry,ref=ghcr.io/OWNER/i-admin:buildcache,mode=max
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   proxy:
@@ -142,8 +96,6 @@ services:
       - "127.0.0.1:${PROXY_PORT:-8099}:80"
     depends_on:
       - web
-      - admin
-      - api
     restart: unless-stopped
 
 volumes:

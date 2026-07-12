@@ -1,7 +1,0 @@
-# Pinned to the version baked into the `rust:1-bookworm` image so containers use
-# the pre-installed toolchain instead of re-downloading "latest stable" on every
-# recreate (that fetch stalls badly on this host's link to static.rust-lang.org).
-# Bump this when you bump the base image (`docker run --rm rust:1-bookworm rustc --version`).
-[toolchain]
-channel = "1.96.0"
-components = ["rustfmt", "clippy"]

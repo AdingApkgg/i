@@ -1,25 +1,38 @@
-# Rust
-/target
-**/target
+# deps
+node_modules/
+.pnp.*
+.yarn/*
 
-# Node / Bun
-node_modules
-**/node_modules
-.next
-**/.next
-next-env.d.ts
-**/next-env.d.ts
-dist
-**/dist
-.turbo
-**/.turbo
+# builds
+.next/
+out/
+dist/
+build/
 *.tsbuildinfo
+next-env.d.ts
 
-# Env / secrets
+# turbo
+.turbo/
+
+# prisma generated client
+**/src/generated/
+
+# env & secrets
 .env
-.env.*
-!.env.example
+.env.*.local
+.env.local
 
-# OS / editor
-.DS_Store
+# logs
+logs/
 *.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+*.pem
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# docker volume data (if bind-mounted locally)
+data/

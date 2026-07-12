@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Scan the app + the shared ui package for class names. */
+@source "../";
+@source "../../../../packages/ui/src";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==================== moe / 樱粉 theme ==================== */
+:root {
+  --background: oklch(0.995 0.006 350);
+  --foreground: oklch(0.25 0.02 340);
+  --muted: oklch(0.97 0.012 345);
+  --muted-foreground: oklch(0.52 0.03 340);
+  --border: oklch(0.92 0.015 345);
+  --input: oklch(0.92 0.015 345);
+  --ring: oklch(0.72 0.16 350);
+  --primary: oklch(0.72 0.17 350);
+  --primary-foreground: oklch(0.99 0.005 350);
+  --secondary: oklch(0.96 0.02 345);
+  --secondary-foreground: oklch(0.3 0.03 340);
+  --accent: oklch(0.94 0.035 345);
+  --accent-foreground: oklch(0.3 0.05 350);
+  --soft: oklch(0.96 0.03 350);
+  --destructive: oklch(0.62 0.22 25);
+  --card: oklch(1 0.003 350);
+  --card-foreground: oklch(0.25 0.02 340);
+  --popover: oklch(1 0.003 350);
+  --popover-foreground: oklch(0.25 0.02 340);
+  --radius: 0.9rem;
+}
+
+.dark {
+  --background: oklch(0.17 0.02 335);
+  --foreground: oklch(0.95 0.01 345);
+  --muted: oklch(0.24 0.02 335);
+  --muted-foreground: oklch(0.68 0.02 340);
+  --border: oklch(0.3 0.02 335);
+  --input: oklch(0.28 0.02 335);
+  --ring: oklch(0.72 0.16 350);
+  --primary: oklch(0.78 0.16 350);
+  --primary-foreground: oklch(0.18 0.03 340);
+  --secondary: oklch(0.26 0.02 340);
+  --secondary-foreground: oklch(0.92 0.01 345);
+  --accent: oklch(0.3 0.05 345);
+  --accent-foreground: oklch(0.95 0.02 350);
+  --soft: oklch(0.28 0.04 345);
+  --destructive: oklch(0.66 0.2 25);
+  --card: oklch(0.2 0.02 338);
+  --card-foreground: oklch(0.95 0.01 345);
+  --popover: oklch(0.2 0.02 338);
+  --popover-foreground: oklch(0.95 0.01 345);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-soft: var(--soft);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.4rem);
+  --radius-pill: 999px;
+
+  --font-sans: var(--font-sans), "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
