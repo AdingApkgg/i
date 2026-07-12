@@ -36,3 +36,4 @@ npm-debug.log*
 
 # docker volume data (if bind-mounted locally)
 data/
+.import/

@@ -18,8 +18,10 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+    "gray-matter": "^4.0.3",
     "ioredis": "^5.10.1",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "yaml": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^22",
