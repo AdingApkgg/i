@@ -185,8 +185,30 @@ async function importMusic() {
   return n;
 }
 
+// ---------------- 富文本页：music / movie 整页(交给 HexoContent 渲染 meting/dplayer) ----------------
+async function importPages() {
+  let n = 0;
+  for (const [key, title, rel] of [
+    ["music", "音乐", "music/index.md"],
+    ["movie", "影视", "movie/index.md"],
+  ] as const) {
+    const file = join(SRC, rel);
+    if (!existsSync(file)) continue;
+    const { content } = matter(readFileSync(file, "utf8"));
+    await db.page.upsert({
+      where: { id: key },
+      update: { title, contentMd: content },
+      create: { id: key, title, contentMd: content },
+    });
+    n++;
+  }
+  return n;
+}
+
 async function main() {
   console.log("HEXO_SRC =", SRC);
+  const pages = await importPages();
+  console.log(`  pages=${pages}`);
   const posts = await importPosts();
   const friends = await importFriends();
   const moments = await importMoments();

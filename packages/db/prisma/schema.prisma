@@ -231,6 +231,15 @@ model Photo {
   @@index([createdAt])
 }
 
+// ==================== 富文本页 (curated pages: 音乐/影视 imported) ====================
+
+model Page {
+  id        String   @id // "music" | "movie" | ...
+  title     String
+  contentMd String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 // ==================== 说说 (moments) ====================
 
 model Moment {

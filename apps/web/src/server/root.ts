@@ -12,6 +12,7 @@ import {
 import { healthRouter } from "./routers/health";
 import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
+import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
 import { createCallerFactory, router } from "./trpc";
 
@@ -29,6 +30,7 @@ export const appRouter = router({
   monitor: monitorRouter,
   maimai: maimaiRouter,
   comment: commentRouter,
+  page: pageRouter,
 });
 
 export type AppRouter = typeof appRouter;

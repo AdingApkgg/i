@@ -6,6 +6,7 @@ export type {
   Session,
   Post,
   Comment,
+  Page,
   Track,
   Movie,
   Vn,

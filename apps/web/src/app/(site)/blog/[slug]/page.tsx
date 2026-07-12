@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/public/collection";
 import { Comments } from "@/components/public/comments";
+import { HexoContent } from "@/components/hexo/content";
 import { trpcServer } from "@/lib/trpc/server";
 
 function fmt(d: Date | string) {
@@ -24,11 +23,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           <Badge key={t}>{t}</Badge>
         ))}
       </div>
-      <div
+      <HexoContent
+        source={post.contentMd}
         className="mt-6 space-y-4 text-[15px] leading-relaxed [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:text-muted-foreground [&_code]:rounded [&_code]:bg-soft [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_img]:rounded-[var(--radius-lg)] [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-md)] [&_pre]:bg-soft [&_pre]:p-4 [&_ul]:list-disc [&_ul]:pl-5"
-      >
-        <Markdown remarkPlugins={[remarkGfm]}>{post.contentMd}</Markdown>
-      </div>
+      />
       <Comments path={`/blog/${slug}`} postId={post.id} />
     </article>
   );
