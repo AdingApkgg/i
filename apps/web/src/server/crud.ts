@@ -3,25 +3,29 @@ import type { Context } from "./trpc";
 import { adminProcedure, publicProcedure, router } from "./trpc";
 
 /**
- * A Prisma model delegate (db.track, db.movie, …). Typed as a loose record of
- * async methods because Prisma's generated delegate types don't structurally
- * unify — the factory only needs the standard CRUD verbs.
+ * A Prisma model delegate (db.track, db.movie, …), narrowed to the CRUD verbs
+ * the factory needs. `TRow` is inferred from the delegate so `list`/`byId`
+ * return properly-typed rows to the callers.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Prisma delegates don't structurally unify
-type Delegate = Record<"findMany" | "findUnique" | "create" | "update" | "delete", (args?: any) => Promise<any>>;
+// biome-ignore-start lint/suspicious/noExplicitAny: Prisma delegate args are structurally complex
+interface Delegate<TRow> {
+  findMany: (args?: any) => Promise<TRow[]>;
+  findUnique: (args: any) => Promise<TRow | null>;
+  create: (args: any) => Promise<TRow>;
+  update: (args: any) => Promise<TRow>;
+  delete: (args: any) => Promise<TRow>;
+}
+// biome-ignore-end lint/suspicious/noExplicitAny: see above
 
 const idSchema = z.object({ id: z.string().min(1) });
 
 /**
- * Build a standard CRUD router for a per-domain table:
+ * Standard CRUD router for a per-domain table:
  *   list/byId            → public reads
  *   create/update/delete → admin only (role admin|owner)
- *
- * `model` selects the Prisma delegate from ctx.db (e.g. `(db) => db.track`).
- * `createSchema` is a Zod object; update takes the same fields partially + id.
  */
-export function crudRouter<TShape extends z.ZodRawShape>(opts: {
-  model: (db: Context["db"]) => Delegate;
+export function crudRouter<TShape extends z.ZodRawShape, TRow>(opts: {
+  model: (db: Context["db"]) => Delegate<TRow>;
   createSchema: z.ZodObject<TShape>;
   orderBy?: unknown;
 }) {
