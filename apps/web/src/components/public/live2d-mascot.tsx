@@ -2,6 +2,7 @@
 
 import { Cubism2Adapter } from "@live2d-loader/adapter-cubism2";
 import type { Live2DModelElement } from "@live2d-loader/element";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 const DEFAULT_SRC = "/live2d/asuna/asuna_01/index.json";
@@ -17,6 +18,8 @@ const HIT_TIPS = [
 /** Minimal surface of the Cubism 2 core model we poke at. */
 interface Cubism2Core {
   setParamFloat(id: string, value: number): void;
+  loadParam(): void;
+  __gazeHooked?: boolean;
 }
 
 export interface Live2DMascotProps {
@@ -47,7 +50,8 @@ export default function Live2DMascot({
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setDpr(Math.min(window.devicePixelRatio || 1, 2));
+    // Always supersample ≥2x — at 1x-DPR screens the raw canvas looks soft.
+    setDpr(Math.min(Math.max(window.devicePixelRatio || 1, 2), 3));
     void import("@live2d-loader/element");
   }, []);
 
@@ -62,22 +66,36 @@ export default function Live2DMascot({
       const orig = adapter.updateModel.bind(adapter);
       adapter.updateModel = (model, dt) => {
         const cm = (model as { coreModel?: unknown }).coreModel as Cubism2Core | undefined;
-        const g = gaze.current;
-        if (cm?.setParamFloat) {
-          g.impulse *= 0.93; // decay the tap head-shake
-          cm.setParamFloat("PARAM_ANGLE_X", g.x * 30);
-          cm.setParamFloat("PARAM_ANGLE_Y", g.y * 30);
-          cm.setParamFloat("PARAM_ANGLE_Z", g.impulse * 18 * Math.sin(Date.now() / 60));
-          cm.setParamFloat("PARAM_BODY_ANGLE_X", g.x * 10);
-          cm.setParamFloat("PARAM_EYE_BALL_X", g.x);
-          cm.setParamFloat("PARAM_EYE_BALL_Y", g.y);
+        // The adapter's update starts with cm.loadParam(), which restores the
+        // saved snapshot and wipes anything set before the call. Hook loadParam
+        // once so gaze params land right after the restore — inside the
+        // pipeline, before saveParam — letting the adapter's idle sway
+        // (addToParamFloat) stack on top.
+        if (cm?.setParamFloat && !cm.__gazeHooked) {
+          cm.__gazeHooked = true;
+          const origLoad = cm.loadParam.bind(cm);
+          cm.loadParam = () => {
+            origLoad();
+            const g = gaze.current;
+            g.impulse *= 0.93; // decay the tap head-shake
+            cm.setParamFloat("PARAM_ANGLE_X", g.x * 30);
+            cm.setParamFloat("PARAM_ANGLE_Y", g.y * 30);
+            cm.setParamFloat("PARAM_ANGLE_Z", g.impulse * 18 * Math.sin(Date.now() / 60));
+            cm.setParamFloat("PARAM_BODY_ANGLE_X", g.x * 10);
+            cm.setParamFloat("PARAM_EYE_BALL_X", g.x);
+            cm.setParamFloat("PARAM_EYE_BALL_Y", g.y);
+          };
         }
         orig(model, dt);
       };
       el.configure({ adapters: [adapter] });
     };
     if (window.customElements?.get("live2d-model")) configure();
-    else window.customElements?.whenDefined("live2d-model").then(configure).catch(() => {});
+    else
+      window.customElements
+        ?.whenDefined("live2d-model")
+        .then(configure)
+        .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -114,18 +132,28 @@ export default function Live2DMascot({
   }, []);
 
   return (
-    <div
+    <motion.div
       className={className}
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.15 }}
       style={{ width, height, position: "relative", userSelect: "none", lineHeight: 0 }}
     >
-      {tip && (
-        <div
-          className="absolute -top-2 left-1/2 z-10 w-max max-w-[220px] -translate-x-1/2 rounded-[var(--radius-md)] border border-border bg-card/95 px-3 py-1.5 text-center text-xs text-foreground shadow-md backdrop-blur"
-          style={{ lineHeight: 1.5 }}
-        >
-          {tip}
-        </div>
-      )}
+      <AnimatePresence>
+        {tip && (
+          <motion.div
+            key={tip}
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+            className="absolute -top-2 left-1/2 z-10 w-max max-w-[220px] -translate-x-1/2 rounded-[var(--radius-md)] border border-border bg-card/95 px-3 py-1.5 text-center text-xs text-foreground shadow-md backdrop-blur"
+            style={{ lineHeight: 1.5 }}
+          >
+            {tip}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <live2d-model
         ref={ref}
         src={src}
@@ -133,6 +161,6 @@ export default function Live2DMascot({
         height={Math.round(height * dpr)}
         style={{ width: "100%", height: "100%", background: "transparent" }}
       />
-    </div>
+    </motion.div>
   );
 }
