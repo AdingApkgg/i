@@ -3,7 +3,6 @@ import { Card, CardBody } from "@i/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/public/collection";
-import { Mascot } from "@/components/public/mascot";
 import { adxChartUrl } from "@/lib/adx";
 import { trpcServer } from "@/lib/trpc/server";
 
@@ -27,8 +26,8 @@ export default async function Home() {
 
   return (
     <div className="space-y-8">
-      {/* hero + mascot */}
-      <div className="grid gap-4 md:grid-cols-[1fr_280px]">
+      {/* hero（看板娘在全站右下角悬浮，不占 hero） */}
+      <div>
         <Card className="relative overflow-hidden">
           <CardBody className="p-8">
             <span className="inline-flex items-center gap-1.5 rounded-pill bg-soft px-3 py-1 text-sm font-medium text-primary">
@@ -49,9 +48,6 @@ export default async function Home() {
               ))}
             </div>
           </CardBody>
-        </Card>
-        <Card className="overflow-hidden">
-          <Mascot />
         </Card>
       </div>
 
