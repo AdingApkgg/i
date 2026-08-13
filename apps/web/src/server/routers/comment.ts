@@ -33,13 +33,15 @@ export const commentRouter = router({
       }),
     ),
 
-  remove: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
-    const c = await ctx.db.comment.findUnique({ where: { id: input.id } });
-    if (!c) throw new TRPCError({ code: "NOT_FOUND" });
-    const role = (ctx.user as { role?: string }).role;
-    if (c.userId !== ctx.user.id && role !== "admin" && role !== "owner") {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
-    return ctx.db.comment.delete({ where: { id: input.id } });
-  }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const c = await ctx.db.comment.findUnique({ where: { id: input.id } });
+      if (!c) throw new TRPCError({ code: "NOT_FOUND" });
+      const role = (ctx.user as { role?: string }).role;
+      if (c.userId !== ctx.user.id && role !== "admin" && role !== "owner") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      return ctx.db.comment.delete({ where: { id: input.id } });
+    }),
 });

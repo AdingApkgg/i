@@ -28,7 +28,8 @@ export interface SyncResult {
 }
 
 const dfType = (t: string): "standard" | "dx" => (t.toUpperCase() === "DX" ? "dx" : "standard");
-const dfCover = (id: number) => `https://www.diving-fish.com/covers/${String(id).padStart(5, "0")}.png`;
+const dfCover = (id: number) =>
+  `https://www.diving-fish.com/covers/${String(id).padStart(5, "0")}.png`;
 const lxnsCover = (id: number) => `https://assets2.lxns.net/maimai/jacket/${id}.png`;
 
 // ---------------- 水鱼 diving-fish ----------------
@@ -67,8 +68,12 @@ async function fetchDivingFish(username: string, importToken?: string | null) {
   }
   // biome-ignore lint/suspicious/noExplicitAny: external
   const data: any = await res.json();
-  const b35: MappedRecord[] = (data.charts?.sd ?? []).map((r: unknown, i: number) => mapDivingFish(r, "b35", i));
-  const b15: MappedRecord[] = (data.charts?.dx ?? []).map((r: unknown, i: number) => mapDivingFish(r, "b15", i));
+  const b35: MappedRecord[] = (data.charts?.sd ?? []).map((r: unknown, i: number) =>
+    mapDivingFish(r, "b35", i),
+  );
+  const b15: MappedRecord[] = (data.charts?.dx ?? []).map((r: unknown, i: number) =>
+    mapDivingFish(r, "b15", i),
+  );
 
   const byKey = new Map<string, MappedRecord>();
   const put = (rec: MappedRecord) => byKey.set(`${rec.songId}:${rec.type}:${rec.levelIndex}`, rec);

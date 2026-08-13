@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { putObject } from "@/lib/s3";
+import { deleteObject, putObject } from "@/lib/s3";
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -36,4 +36,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `upload failed: ${String(e)}` }, { status: 500 });
   }
   return NextResponse.json({ imageUrl: `/api/gallery/files/${key}` });
+}
+
+/** 批量上传里 create 失败时的善后：按 imageUrl 删掉刚传的对象，避免存储孤儿 */
+export async function DELETE(req: Request) {
+  const session = await auth.api.getSession({ headers: req.headers }).catch(() => null);
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (role !== "admin" && role !== "owner") {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const key = new URL(req.url).searchParams.get("key");
+  // key 是 upload 生成的 `${uuid}.${ext}`，拒绝路径分隔符防目录逃逸
+  if (!key || key.includes("/") || key.includes("\\")) {
+    return NextResponse.json({ error: "bad key" }, { status: 400 });
+  }
+  try {
+    await deleteObject(key);
+  } catch (e) {
+    return NextResponse.json({ error: `delete failed: ${String(e)}` }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
 }

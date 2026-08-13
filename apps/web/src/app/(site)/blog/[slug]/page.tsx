@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
+import { HexoContent } from "@/components/hexo/content";
 import { Badge } from "@/components/public/collection";
 import { Comments } from "@/components/public/comments";
-import { HexoContent } from "@/components/hexo/content";
 import { trpcServer } from "@/lib/trpc/server";
 
 function fmt(d: Date | string) {

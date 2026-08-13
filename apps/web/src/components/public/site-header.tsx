@@ -1,8 +1,14 @@
-import { NAV_DOMAINS, siteConfig } from "@i/config";
-import Link from "next/link";
+"use client";
 
-/** Shared public top nav. */
+import { NAV_DOMAINS, siteConfig } from "@i/config";
+import { cn } from "@i/ui";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+/** Shared public top nav — 活动项带滑动下划线（layoutId 共享布局动画）。 */
 export function SiteHeader() {
+  const pathname = usePathname();
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
@@ -11,15 +17,28 @@ export function SiteHeader() {
           <span className="text-primary">.</span>
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          {NAV_DOMAINS.map((d) => (
-            <Link
-              key={d.key}
-              href={d.path}
-              className="text-muted-foreground transition hover:text-primary"
-            >
-              {d.label}
-            </Link>
-          ))}
+          {NAV_DOMAINS.map((d) => {
+            const active = pathname === d.path || pathname.startsWith(`${d.path}/`);
+            return (
+              <Link
+                key={d.key}
+                href={d.path}
+                className={cn(
+                  "relative pb-0.5 transition",
+                  active ? "font-medium text-primary" : "text-muted-foreground hover:text-primary",
+                )}
+              >
+                {d.label}
+                {active && (
+                  <motion.span
+                    layoutId="site-nav-underline"
+                    className="absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-primary"
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>

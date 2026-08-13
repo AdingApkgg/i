@@ -1,4 +1,6 @@
 import { Card } from "@i/ui";
+import { ArrowUp, Music } from "lucide-react";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { adxChartUrl } from "@/lib/adx";
@@ -50,8 +52,10 @@ export default async function MaimaiPage() {
         <EmptyCard>暂无成绩（水鱼未配 Import-Token 时只有 b50）</EmptyCard>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {(records as Rec[]).map((r) => (
-            <ScoreCard key={r.id} r={r} />
+          {(records as Rec[]).map((r, i) => (
+            <FadeIn key={r.id} delay={(i % 4) * 0.04} y={10}>
+              <ScoreCard r={r} />
+            </FadeIn>
           ))}
         </div>
       )}
@@ -64,11 +68,13 @@ function Board({ title, items }: { title: string; items: Rec[] }) {
   return (
     <section className="mb-6">
       <h2 className="mb-3 text-lg font-semibold">{title}</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+      <Stagger className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
         {items.map((r) => (
-          <ScoreCard key={r.id} r={r} />
+          <StaggerItem key={r.id} hover>
+            <ScoreCard r={r} />
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }
@@ -81,43 +87,53 @@ function ScoreCard({ r }: { r: Rec }) {
       target="_blank"
       rel="noopener noreferrer"
       title={`在 adx-dl 打开：${r.title}`}
-      className="block transition hover:-translate-y-0.5"
+      className="block transition hover:opacity-95"
     >
-    <Card className="overflow-hidden">
-      <div className="relative">
-        {r.coverUrl ? (
-          // biome-ignore lint/a11y/useAltText: cover
-          <img src={r.coverUrl} alt="" loading="lazy" className="aspect-square w-full object-cover" />
-        ) : (
-          <div className="grid aspect-square w-full place-items-center bg-soft text-primary/40">✿</div>
-        )}
-        <span
-          className="absolute right-1.5 top-1.5 rounded-pill px-2 py-0.5 text-[11px] font-bold text-white"
-          style={{ backgroundColor: color }}
-        >
-          {r.levelLabel}
-        </span>
-        {r.type === "dx" && (
-          <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
-            DX
+      <Card className="overflow-hidden">
+        <div className="relative">
+          {r.coverUrl ? (
+            // biome-ignore lint/performance/noImgElement: 外链曲绘，沿用原生 img
+            <img
+              src={r.coverUrl}
+              alt=""
+              loading="lazy"
+              className="aspect-square w-full object-cover"
+            />
+          ) : (
+            <div className="grid aspect-square w-full place-items-center bg-soft text-primary/40">
+              <Music className="size-7" />
+            </div>
+          )}
+          <span
+            className="absolute right-1.5 top-1.5 rounded-pill px-2 py-0.5 text-[11px] font-bold text-white"
+            style={{ backgroundColor: color }}
+          >
+            {r.levelLabel}
           </span>
-        )}
-      </div>
-      <div className="p-2.5">
-        <div className="truncate text-[13px] font-semibold" title={r.title}>
-          {r.title}
+          {r.type === "dx" && (
+            <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+              DX
+            </span>
+          )}
         </div>
-        <div className="mt-0.5 flex items-center justify-between text-xs">
-          <span className="font-semibold text-primary">{r.achievements.toFixed(4)}%</span>
-          <span className="text-muted-foreground">↑{r.ra}</span>
+        <div className="p-2.5">
+          <div className="truncate text-[13px] font-semibold" title={r.title}>
+            {r.title}
+          </div>
+          <div className="mt-0.5 flex items-center justify-between text-xs">
+            <span className="font-semibold text-primary">{r.achievements.toFixed(4)}%</span>
+            <span className="inline-flex items-center text-muted-foreground">
+              <ArrowUp className="size-3" />
+              {r.ra}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
+            {r.rate && <span className="font-bold text-primary">{r.rate}</span>}
+            {r.fc && <span>{r.fc}</span>}
+            {r.fs && <span>{r.fs}</span>}
+          </div>
         </div>
-        <div className="mt-1 flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
-          {r.rate && <span className="font-bold text-primary">{r.rate}</span>}
-          {r.fc && <span>{r.fc}</span>}
-          {r.fs && <span>{r.fs}</span>}
-        </div>
-      </div>
-    </Card>
+      </Card>
     </a>
   );
 }

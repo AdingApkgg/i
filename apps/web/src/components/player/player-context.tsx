@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 /**
  * 全站左下角音乐播放器 — 自写实现（不再用 APlayer），设计参考 adx-dl：
  * framer-motion 驱动、音频响应视觉（低频光晕 + EQ 条，CORS 不允许时静默降级）、
@@ -8,14 +9,24 @@
 import {
   AnimatePresence,
   animate,
-  motion,
   type MotionValue,
+  motion,
   motionValue,
   useMotionValue,
   useReducedMotion,
   useTransform,
 } from "framer-motion";
-import { ListMusic, Music2, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX, X } from "lucide-react";
+import {
+  ListMusic,
+  Music2,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import {
   createContext,
   type ReactNode,
@@ -25,7 +36,6 @@ import {
   useRef,
   useState,
 } from "react";
-import useSWRImmutable from "swr/immutable";
 
 export const METING_API = "https://api.injahow.cn/meting/";
 /** 旧站左下角全局歌单 (netease). */
@@ -62,8 +72,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-const fmt = (s: number) =>
-  `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // fftSize 256 → 128 bins；粗略对数分带（同 adx-dl）。
 const EQ_BANDS: ReadonlyArray<readonly [number, number]> = [
@@ -88,10 +97,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(0.3);
   const current = queue[index] ?? null;
 
-  // ---- 默认歌单（随机顺序，不自动播放）----
-  const { data: playlist } = useSWRImmutable(["meting", "netease", "playlist", DEFAULT_PLAYLIST], () =>
-    fetchMeting("netease", "playlist", DEFAULT_PLAYLIST),
-  );
+  // ---- 默认歌单（随机顺序，不自动播放；元数据不会变，永不过期）----
+  const { data: playlist } = useQuery({
+    queryKey: ["meting", "netease", "playlist", DEFAULT_PLAYLIST],
+    queryFn: () => fetchMeting("netease", "playlist", DEFAULT_PLAYLIST),
+    staleTime: Number.POSITIVE_INFINITY,
+  });
   useEffect(() => {
     if (playlist?.length && queue.length === 0) setQueue(shuffle(playlist));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅首次填充
@@ -344,11 +355,7 @@ function PlayerDock(p: DockProps) {
   return (
     <div className="fixed bottom-4 left-4 z-40 hidden md:block">
       <AnimatePresence mode="wait" initial={false}>
-        {p.expanded ? (
-          <ExpandedPanel key="panel" {...p} />
-        ) : (
-          <MiniDisc key="mini" {...p} />
-        )}
+        {p.expanded ? <ExpandedPanel key="panel" {...p} /> : <MiniDisc key="mini" {...p} />}
       </AnimatePresence>
     </div>
   );
@@ -406,7 +413,13 @@ function MiniDisc(p: DockProps) {
       transition={{ type: "spring", stiffness: 400, damping: 26 }}
       className="group relative block"
     >
-      <Cover song={p.current!} size={52} spinning={p.playing} glowOpacity={p.glowOpacity} glowScale={p.glowScale} />
+      <Cover
+        song={p.current!}
+        size={52}
+        spinning={p.playing}
+        glowOpacity={p.glowOpacity}
+        glowScale={p.glowScale}
+      />
       <span
         className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm"
         onClick={(e) => {
@@ -414,7 +427,11 @@ function MiniDisc(p: DockProps) {
           p.onToggle();
         }}
       >
-        {p.playing ? <Pause className="size-3 fill-current" /> : <Play className="size-3 fill-current" />}
+        {p.playing ? (
+          <Pause className="size-3 fill-current" />
+        ) : (
+          <Play className="size-3 fill-current" />
+        )}
       </span>
     </motion.button>
   );
@@ -432,7 +449,13 @@ function ExpandedPanel(p: DockProps) {
     >
       {/* header */}
       <div className="flex items-center gap-3">
-        <Cover song={song} size={44} spinning={p.playing} glowOpacity={p.glowOpacity} glowScale={p.glowScale} />
+        <Cover
+          song={song}
+          size={44}
+          spinning={p.playing}
+          glowOpacity={p.glowOpacity}
+          glowScale={p.glowScale}
+        />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold">{song.name}</div>
           <div className="truncate text-xs text-muted-foreground">{song.artist}</div>
@@ -484,7 +507,11 @@ function ExpandedPanel(p: DockProps) {
             onClick={p.onToggle}
             className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-105 active:scale-95"
           >
-            {p.playing ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}
+            {p.playing ? (
+              <Pause className="size-4 fill-current" />
+            ) : (
+              <Play className="size-4 fill-current" />
+            )}
           </button>
           <IconBtn onClick={p.onNext} label="下一首">
             <SkipForward className="size-4 fill-current" />

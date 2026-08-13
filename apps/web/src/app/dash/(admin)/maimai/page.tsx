@@ -2,6 +2,8 @@
 
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTRPC } from "@/lib/trpc/client";
@@ -30,9 +32,11 @@ export default function MaimaiAdmin() {
     onSuccess: () => toast.success("已保存 ✿"),
     onError: () => toast.error("保存失败"),
   });
+
   const sync = useMutation({
     ...trpc.maimai.sync.mutationOptions(),
-    onSuccess: (r) => toast.success(`同步成功：${r.nickname} · rating ${r.rating} · ${r.count} 谱面 ✿`),
+    onSuccess: (r) =>
+      toast.success(`同步成功：${r.nickname} · rating ${r.rating} · ${r.count} 谱面 ✿`),
     onError: (e) => toast.error(e.message),
   });
 
@@ -53,37 +57,85 @@ export default function MaimaiAdmin() {
                   key={s}
                   type="button"
                   onClick={() => setSource(s)}
-                  className={`rounded-pill px-4 py-1.5 text-sm font-medium transition ${
-                    source === s ? "bg-primary text-primary-foreground" : "bg-soft text-muted-foreground"
+                  className={`relative rounded-pill px-4 py-1.5 text-sm font-medium transition ${
+                    source === s ? "text-primary-foreground" : "bg-soft text-muted-foreground"
                   }`}
                 >
-                  {s === "diving-fish" ? "水鱼" : "落雪"}
+                  {source === s && (
+                    <motion.span
+                      layoutId="maimai-source-pill"
+                      className="absolute inset-0 rounded-pill bg-primary"
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <span className="relative z-10">{s === "diving-fish" ? "水鱼" : "落雪"}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {source === "diving-fish" ? (
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-muted-foreground">水鱼用户名 *</span>
-                <input value={df} onChange={(e) => setDf(e.target.value)} placeholder="diving-fish 用户名" className={input} />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-muted-foreground">Import-Token（可选，拉全部成绩用）</span>
-                <input value={dfToken} onChange={(e) => setDfToken(e.target.value)} placeholder="不填则只同步 b50" className={input} />
-              </label>
-              <p className="text-xs text-muted-foreground">b50 走公开查询（需你在水鱼里未开隐私）。Import-Token 在水鱼「账号详情」生成。</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-muted-foreground">落雪个人 API 密钥 *</span>
-                <input value={lx} onChange={(e) => setLx(e.target.value)} placeholder="lxns 个人 API 密钥" className={input} />
-              </label>
-              <p className="text-xs text-muted-foreground">在落雪「账号详情 → 个人 API 密钥」获取，读你自己的成绩，无需好友码。</p>
-            </div>
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            {source === "diving-fish" ? (
+              <motion.div
+                key="diving-fish"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="space-y-3"
+              >
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-muted-foreground">
+                    水鱼用户名 *
+                  </span>
+                  <input
+                    value={df}
+                    onChange={(e) => setDf(e.target.value)}
+                    placeholder="diving-fish 用户名"
+                    className={input}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-muted-foreground">
+                    Import-Token（可选，拉全部成绩用）
+                  </span>
+                  <input
+                    value={dfToken}
+                    onChange={(e) => setDfToken(e.target.value)}
+                    placeholder="不填则只同步 b50"
+                    className={input}
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  b50 走公开查询（需你在水鱼里未开隐私）。Import-Token 在水鱼「账号详情」生成。
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="lxns"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="space-y-3"
+              >
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-muted-foreground">
+                    落雪个人 API 密钥 *
+                  </span>
+                  <input
+                    value={lx}
+                    onChange={(e) => setLx(e.target.value)}
+                    placeholder="lxns 个人 API 密钥"
+                    className={input}
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  在落雪「账号详情 → 个人 API 密钥」获取，读你自己的成绩，无需好友码。
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="flex gap-2">
             <Button
@@ -98,9 +150,15 @@ export default function MaimaiAdmin() {
               disabled={save.isPending}
               variant="soft"
             >
+              {save.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
               {save.isPending ? "保存中…" : "保存配置"}
             </Button>
             <Button onClick={() => sync.mutate(undefined)} disabled={sync.isPending}>
+              <RefreshCw className={`size-4 ${sync.isPending ? "animate-spin" : ""}`} />
               {sync.isPending ? "同步中…" : "立即同步"}
             </Button>
           </div>

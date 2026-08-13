@@ -1,7 +1,8 @@
+import { Card, CardBody } from "@i/ui";
+import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { trpcServer } from "@/lib/trpc/server";
-import { Card, CardBody } from "@i/ui";
 
 export const metadata = { title: "说说" };
 
@@ -22,19 +23,21 @@ export default async function MomentsPage() {
       {items.length === 0 ? (
         <EmptyCard>还没有说说,先去 /dash 记录一句吧 ✿</EmptyCard>
       ) : (
-        <div className="flex flex-col gap-4">
+        <Stagger className="flex flex-col gap-4">
           {items.map((m) => (
-            <Card key={m.id}>
-              <CardBody>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  {m.mood && <Badge>{m.mood}</Badge>}
-                  <time>{fmt.format(new Date(m.createdAt))}</time>
-                </div>
-              </CardBody>
-            </Card>
+            <StaggerItem key={m.id}>
+              <Card>
+                <CardBody>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</p>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    {m.mood && <Badge>{m.mood}</Badge>}
+                    <time>{fmt.format(new Date(m.createdAt))}</time>
+                  </div>
+                </CardBody>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
     </>
   );

@@ -22,7 +22,10 @@ function resolveImg(u: string): string {
   return `${IMG_BASE}${s.startsWith("/") ? "" : "/"}${s}`;
 }
 
-const attr = (s: string) => String(s ?? "").replace(/"/g, "&quot;").trim();
+const attr = (s: string) =>
+  String(s ?? "")
+    .replace(/"/g, "&quot;")
+    .trim();
 const wrap = (s: string) => `\n\n${s.trim()}\n\n`;
 
 /** Split a hexo comma-arg list respecting nothing fancy (these tags are simple). */
@@ -48,7 +51,12 @@ export function hexoToMdx(input: string): string {
     const parts = body.split(/<!--\s*tab\s+/i).slice(1);
     const tabs = parts.map((p) => {
       const nl = p.indexOf("\n");
-      const label = attr(p.slice(0, nl).replace(/-->\s*$/, "").trim());
+      const label = attr(
+        p
+          .slice(0, nl)
+          .replace(/-->\s*$/, "")
+          .trim(),
+      );
       let content = p.slice(nl + 1);
       content = content.replace(/<!--\s*endtab\s*-->/gi, "").trim();
       return `<Tab label="${label}">${wrap(content)}</Tab>`;
@@ -62,8 +70,16 @@ export function hexoToMdx(input: string): string {
     const parts = body.split(/<!--\s*timeline\s+/i).slice(1);
     const items = parts.map((p) => {
       const nl = p.indexOf("\n");
-      const label = attr(p.slice(0, nl).replace(/-->\s*$/, "").trim());
-      const content = p.slice(nl + 1).replace(/<!--\s*endtimeline\s*-->/gi, "").trim();
+      const label = attr(
+        p
+          .slice(0, nl)
+          .replace(/-->\s*$/, "")
+          .trim(),
+      );
+      const content = p
+        .slice(nl + 1)
+        .replace(/<!--\s*endtimeline\s*-->/gi, "")
+        .trim();
       return `<TimelineItem label="${label}">${wrap(content)}</TimelineItem>`;
     });
     return `\n\n<Timeline title="${title}">${items.join("")}</Timeline>\n\n`;

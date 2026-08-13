@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@i/ui";
+import { AnimatePresence, motion } from "framer-motion";
+import { LogIn, UserRoundPlus } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -37,17 +39,51 @@ export function VisitorAuth() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2 rounded-[var(--radius-lg)] border border-border bg-soft/40 p-4">
+    <form
+      onSubmit={submit}
+      className="space-y-2 rounded-[var(--radius-lg)] border border-border bg-soft/40 p-4"
+    >
       <div className="text-sm text-muted-foreground">
         {mode === "in" ? "登录后即可评论" : "注册一个访客账号"}
       </div>
-      {mode === "up" && (
-        <input placeholder="昵称" value={name} onChange={(e) => setName(e.target.value)} className={input} />
-      )}
-      <input type="email" placeholder="邮箱" value={email} onChange={(e) => setEmail(e.target.value)} required className={input} />
-      <input type="password" placeholder="密码" value={password} onChange={(e) => setPassword(e.target.value)} required className={input} />
+      <AnimatePresence initial={false}>
+        {mode === "up" && (
+          <motion.div
+            key="name"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <input
+              placeholder="昵称"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={input}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <input
+        type="email"
+        placeholder="邮箱"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className={input}
+      />
+      <input
+        type="password"
+        placeholder="密码"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        className={input}
+      />
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={busy}>
+          {mode === "in" ? <LogIn className="size-3.5" /> : <UserRoundPlus className="size-3.5" />}
           {busy ? "…" : mode === "in" ? "登录" : "注册"}
         </Button>
         <button

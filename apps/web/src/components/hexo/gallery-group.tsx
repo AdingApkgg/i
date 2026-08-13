@@ -12,7 +12,7 @@ export function GalleryGroup({ name, desc, url, cover }: GalleryGroupProps) {
       href={url}
       className="group relative block aspect-video overflow-hidden rounded-[var(--radius-lg)] no-underline transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      {/* biome-ignore lint/a11y/useAltText: 装饰性封面,信息由浮层文字提供 */}
+      {/* biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img */}
       <img
         src={cover}
         alt={name}

@@ -1,11 +1,13 @@
 "use client";
 
 import { cn } from "@i/ui";
+import { AnimatePresence, motion } from "framer-motion";
+import { ExternalLink, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 /**
  * 懒加载 HLS (.m3u8) 视频播放器。
- * 先展示封面 + ▶ 播放按钮，点击后才挂载 <video> 并接入 hls.js。
+ * 先展示封面 + 播放按钮，点击后才挂载 <video> 并接入 hls.js（封面淡出交叉过渡）。
  */
 export function DPlayer({ url, pic }: { url: string; pic?: string }) {
   const [playing, setPlaying] = useState(false);
@@ -68,59 +70,61 @@ export function DPlayer({ url, pic }: { url: string; pic?: string }) {
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="rounded-pill bg-card px-4 py-1.5 text-sm text-primary"
+          className="inline-flex items-center gap-1.5 rounded-pill bg-card px-4 py-1.5 text-sm text-primary"
         >
-          在新窗口打开
+          <ExternalLink className="size-3.5" /> 在新窗口打开
         </a>
       </div>
     );
   }
 
-  if (!playing) {
-    return (
-      <button
-        type="button"
-        onClick={() => setPlaying(true)}
-        aria-label="播放视频"
-        className={cn(frame, "group block cursor-pointer")}
-      >
-        {pic ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={pic}
-            alt="视频封面"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="h-full w-full bg-soft" />
-        )}
-        <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
-          <span className="flex h-16 w-16 items-center justify-center rounded-pill bg-card/90 text-primary shadow-lg backdrop-blur transition-transform group-hover:scale-110">
-            <svg
-              viewBox="0 0 24 24"
-              className="ml-1 h-7 w-7"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
-        </span>
-      </button>
-    );
-  }
-
   return (
-    <video
-      ref={videoRef}
-      controls
-      autoPlay
-      playsInline
-      poster={pic}
-      onError={() => setFailed(true)}
-      className={cn(frame, "bg-black")}
-    >
-      <track kind="captions" />
-    </video>
+    <div className={cn(frame, playing && "bg-black")}>
+      {playing && (
+        <motion.video
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          ref={videoRef}
+          controls
+          autoPlay
+          playsInline
+          poster={pic}
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full"
+        >
+          <track kind="captions" />
+        </motion.video>
+      )}
+      <AnimatePresence>
+        {!playing && (
+          <motion.button
+            key="poster"
+            type="button"
+            onClick={() => setPlaying(true)}
+            aria-label="播放视频"
+            exit={{ opacity: 0, scale: 1.03 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="group absolute inset-0 block cursor-pointer"
+          >
+            {pic ? (
+              // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
+              <img
+                src={pic}
+                alt="视频封面"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : (
+              <div className="h-full w-full bg-soft" />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
+              <span className="flex h-16 w-16 items-center justify-center rounded-pill bg-card/90 text-primary shadow-lg backdrop-blur transition-transform group-hover:scale-110">
+                <Play aria-hidden className="ml-1 h-7 w-7 fill-current" />
+              </span>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

@@ -3,9 +3,7 @@ import { publicProcedure, router } from "../trpc";
 
 export const healthRouter = router({
   status: publicProcedure.query(async ({ ctx }) => {
-    const db = await ctx.db
-      .$queryRaw`SELECT 1`.then(() => true)
-      .catch(() => false);
+    const db = await ctx.db.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
     const redisOk = await redis
       .ping()
       .then((r) => r === "PONG")

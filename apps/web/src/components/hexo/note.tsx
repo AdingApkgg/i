@@ -1,5 +1,6 @@
-import type * as React from "react";
 import { cn } from "@i/ui";
+import type * as React from "react";
+import { faIcon } from "./fa-icon";
 
 const COLOR_MAP: Record<string, string> = {
   blue: "#3b82f6",
@@ -28,24 +29,18 @@ export function Note({
   children?: React.ReactNode;
 }) {
   const accent = (color && COLOR_MAP[color]) || "var(--primary)";
-  const showIcon = Boolean(icon) && icon !== "none";
+  const Icon = faIcon(icon);
 
   return (
     <div
-      className={cn(
-        "my-4 flex items-start gap-3 rounded-[var(--radius-md)] px-4 py-3",
-      )}
+      className={cn("my-4 flex items-start gap-3 rounded-[var(--radius-md)] px-4 py-3")}
       style={{
         borderLeft: `3px solid ${accent}`,
         background: `color-mix(in srgb, ${accent} 10%, transparent)`,
       }}
     >
-      {showIcon && (
-        <span
-          aria-hidden
-          className="mt-[0.45em] inline-block h-2 w-2 shrink-0 rounded-pill"
-          style={{ background: accent }}
-        />
+      {Icon && (
+        <Icon aria-hidden className="mt-[0.2em] size-4 shrink-0" style={{ color: accent }} />
       )}
       <div className="min-w-0 flex-1 text-foreground [&>:first-child]:mt-0 [&>:last-child]:mb-0">
         {children}

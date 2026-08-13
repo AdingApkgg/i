@@ -60,7 +60,11 @@ export const maimaiRouter = router({
   }),
 
   records: publicProcedure
-    .input(z.object({ q: z.string().optional(), limit: z.number().int().min(1).max(500).default(200) }).optional())
+    .input(
+      z
+        .object({ q: z.string().optional(), limit: z.number().int().min(1).max(500).default(200) })
+        .optional(),
+    )
     .query(({ ctx, input }) =>
       ctx.db.maimaiRecord.findMany({
         where: input?.q ? { title: { contains: input.q, mode: "insensitive" } } : undefined,

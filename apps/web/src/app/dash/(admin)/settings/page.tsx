@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody } from "@i/ui";
+import { KeyRound, LoaderCircle } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
@@ -43,9 +44,28 @@ export default function SettingsPage() {
         <CardBody className="space-y-3">
           <div className="font-semibold">修改密码</div>
           <form onSubmit={submit} className="space-y-3">
-            <input type="password" placeholder="当前密码" value={current} onChange={(e) => setCurrent(e.target.value)} required className={input} />
-            <input type="password" placeholder="新密码（≥6 位）" value={next} onChange={(e) => setNext(e.target.value)} required className={input} />
+            <input
+              type="password"
+              placeholder="当前密码"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              required
+              className={input}
+            />
+            <input
+              type="password"
+              placeholder="新密码（≥6 位）"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              required
+              className={input}
+            />
             <Button type="submit" disabled={busy}>
+              {busy ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <KeyRound className="size-4" />
+              )}
               {busy ? "修改中…" : "修改密码"}
             </Button>
           </form>

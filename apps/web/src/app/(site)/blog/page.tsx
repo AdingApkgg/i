@@ -1,8 +1,9 @@
+import { Card, CardBody } from "@i/ui";
 import Link from "next/link";
+import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { trpcServer } from "@/lib/trpc/server";
-import { Card, CardBody } from "@i/ui";
 
 export const metadata = { title: "博客" };
 
@@ -17,28 +18,30 @@ export default async function BlogPage() {
       {items.length === 0 ? (
         <EmptyCard>还没有文章,先去 /dash 写一篇吧 ✿</EmptyCard>
       ) : (
-        <div className="flex flex-col gap-4">
+        <Stagger className="flex flex-col gap-4">
           {items.map((p) => (
-            <Link key={p.slug} href={`/blog/${p.slug}`}>
-              <Card className="transition hover:-translate-y-0.5 hover:shadow-md">
-                <CardBody>
-                  <div className="font-semibold">{p.title}</div>
-                  {p.excerpt && (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.excerpt}</p>
-                  )}
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {p.tags.map((t) => (
-                      <Badge key={t}>{t}</Badge>
-                    ))}
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {fmtDate(p.publishedAt ?? p.createdAt)}
-                    </span>
-                  </div>
-                </CardBody>
-              </Card>
-            </Link>
+            <StaggerItem key={p.slug} hover>
+              <Link href={`/blog/${p.slug}`}>
+                <Card className="transition hover:shadow-md">
+                  <CardBody>
+                    <div className="font-semibold">{p.title}</div>
+                    {p.excerpt && (
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.excerpt}</p>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {p.tags.map((t) => (
+                        <Badge key={t}>{t}</Badge>
+                      ))}
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {fmtDate(p.publishedAt ?? p.createdAt)}
+                      </span>
+                    </div>
+                  </CardBody>
+                </Card>
+              </Link>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
     </>
   );

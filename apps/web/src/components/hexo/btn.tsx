@@ -1,9 +1,11 @@
 import { cn } from "@i/ui";
+import { ArrowUpRight } from "lucide-react";
+import { faIcon } from "./fa-icon";
 
 type BtnProps = {
   url: string;
   text: string;
-  /** 原 Hexo 主题的 FontAwesome 类名,这里忽略。 */
+  /** 原 Hexo 主题的 FontAwesome 类名，映射到 lucide。 */
   icon?: string;
   /** 空格分隔的修饰词:颜色(pink/blue/…)与布局(block)。 */
   variant?: string;
@@ -21,7 +23,7 @@ const COLOR: Record<string, string> = {
   gray: "bg-soft text-accent-foreground hover:brightness-95",
 };
 
-export function Btn({ url, text, variant = "" }: BtnProps) {
+export function Btn({ url, text, icon, variant = "" }: BtnProps) {
   const words = variant.toLowerCase().split(/\s+/).filter(Boolean);
   const block = words.includes("block");
   const colorWord = words.find((w) => w in COLOR);
@@ -30,6 +32,7 @@ export function Btn({ url, text, variant = "" }: BtnProps) {
     : "bg-soft text-accent-foreground hover:brightness-95";
 
   const external = /^https?:\/\//.test(url);
+  const Icon = faIcon(icon);
 
   return (
     <a
@@ -42,8 +45,9 @@ export function Btn({ url, text, variant = "" }: BtnProps) {
         block && "flex w-full justify-center",
       )}
     >
+      {Icon && <Icon aria-hidden className="size-3.5" />}
       <span>{text}</span>
-      {external && <span aria-hidden>→</span>}
+      {external && <ArrowUpRight aria-hidden className="size-3.5" />}
     </a>
   );
 }

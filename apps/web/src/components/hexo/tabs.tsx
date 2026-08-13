@@ -1,12 +1,14 @@
 "use client";
 
 import { cn } from "@i/ui";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Children,
   isValidElement,
-  useState,
   type ReactElement,
   type ReactNode,
+  useId,
+  useState,
 } from "react";
 
 type TabProps = { label: string; children?: ReactNode };
@@ -20,10 +22,11 @@ export function Tab(_props: TabProps) {
 }
 
 export function Tabs({ children }: { children: ReactNode }) {
-  const tabs = Children.toArray(children).filter(
-    (child): child is ReactElement<TabProps> => isValidElement(child),
+  const tabs = Children.toArray(children).filter((child): child is ReactElement<TabProps> =>
+    isValidElement(child),
   );
   const [active, setActive] = useState(0);
+  const uid = useId();
 
   if (tabs.length === 0) return null;
   const current = Math.min(active, tabs.length - 1);
@@ -38,19 +41,33 @@ export function Tabs({ children }: { children: ReactNode }) {
             type="button"
             onClick={() => setActive(i)}
             className={cn(
-              "rounded-pill px-3.5 py-1.5 text-sm font-medium transition",
-              i === current
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-soft",
+              "relative rounded-pill px-3.5 py-1.5 text-sm font-medium transition",
+              i === current ? "text-primary-foreground" : "text-muted-foreground hover:bg-soft",
             )}
           >
-            {tab.props.label}
+            {i === current && (
+              <motion.span
+                layoutId={`tab-pill-${uid}`}
+                className="absolute inset-0 rounded-pill bg-primary"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">{tab.props.label}</span>
           </button>
         ))}
       </div>
-      <div className="mt-3 rounded-[var(--radius-md)] bg-card p-4 text-[15px] leading-relaxed">
-        {tabs[current]?.props.children}
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={current}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.16, ease: "easeOut" }}
+          className="mt-3 rounded-[var(--radius-md)] bg-card p-4 text-[15px] leading-relaxed"
+        >
+          {tabs[current]?.props.children}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

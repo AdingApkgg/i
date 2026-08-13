@@ -1,5 +1,5 @@
-import { Collection } from "@/components/public/collection";
 import { HexoContent } from "@/components/hexo/content";
+import { Collection } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { trpcServer } from "@/lib/trpc/server";
 

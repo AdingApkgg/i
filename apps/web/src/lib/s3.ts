@@ -1,5 +1,6 @@
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
@@ -45,4 +46,8 @@ export async function putObject(key: string, body: Uint8Array, contentType: stri
 
 export async function getObject(key: string) {
   return s3().send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+}
+
+export async function deleteObject(key: string) {
+  await s3().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }

@@ -1,5 +1,7 @@
 import { Card } from "@i/ui";
+import { Image as ImageIcon, Star } from "lucide-react";
 import type { ReactNode } from "react";
+import { Stagger, StaggerItem } from "@/components/motion";
 
 export function Badge({ children }: { children: ReactNode }) {
   return (
@@ -31,12 +33,12 @@ export interface CollectionItem {
 export function Collection({ items, empty }: { items: CollectionItem[]; empty?: string }) {
   if (items.length === 0) return <EmptyCard>{empty ?? "还没有内容,先去 /dash 添加吧 ✿"}</EmptyCard>;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+    <Stagger className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
       {items.map((it) => {
         const inner = (
-          <Card className="h-full overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
+          <Card className="h-full overflow-hidden transition hover:shadow-md">
             {it.coverUrl ? (
-              // biome-ignore lint/a11y/useAltText: alt provided via title
+              // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
               <img
                 src={it.coverUrl}
                 alt={it.title}
@@ -44,8 +46,8 @@ export function Collection({ items, empty }: { items: CollectionItem[]; empty?: 
                 className="aspect-[3/4] w-full object-cover"
               />
             ) : (
-              <div className="flex aspect-[3/4] w-full items-center justify-center bg-soft text-2xl text-primary/40">
-                ✿
+              <div className="flex aspect-[3/4] w-full items-center justify-center bg-soft text-primary/40">
+                <ImageIcon className="size-8" />
               </div>
             )}
             <div className="p-3">
@@ -57,21 +59,27 @@ export function Collection({ items, empty }: { items: CollectionItem[]; empty?: 
                 <div className="mt-1.5 flex items-center gap-2">
                   {it.status && <Badge>{it.status}</Badge>}
                   {it.rating != null && (
-                    <span className="text-xs font-medium text-primary">★ {it.rating}</span>
+                    <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary">
+                      <Star className="size-3 fill-current" /> {it.rating}
+                    </span>
                   )}
                 </div>
               )}
             </div>
           </Card>
         );
-        return it.link ? (
-          <a key={it.id} href={it.link} target="_blank" rel="noopener noreferrer">
-            {inner}
-          </a>
-        ) : (
-          <div key={it.id}>{inner}</div>
+        return (
+          <StaggerItem key={it.id} hover>
+            {it.link ? (
+              <a href={it.link} target="_blank" rel="noopener noreferrer">
+                {inner}
+              </a>
+            ) : (
+              inner
+            )}
+          </StaggerItem>
         );
       })}
-    </div>
+    </Stagger>
   );
 }

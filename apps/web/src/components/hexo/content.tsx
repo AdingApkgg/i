@@ -28,6 +28,7 @@ const components: Record<string, any> = {
   // give raw <img> in content lazy loading + rounded corners
   img: (p: React.ImgHTMLAttributes<HTMLImageElement>) => (
     // biome-ignore lint/a11y/useAltText: passthrough
+    // biome-ignore lint/performance/noImgElement: 正文透传原生 img
     <img {...p} loading="lazy" className="rounded-[var(--radius-md)]" />
   ),
 };

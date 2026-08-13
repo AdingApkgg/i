@@ -14,9 +14,9 @@ export const monitorRouter = router({
     ctx.db.monitor.findMany({ orderBy: { createdAt: "desc" } }),
   ),
 
-  create: adminProcedure.input(upsert).mutation(({ ctx, input }) =>
-    ctx.db.monitor.create({ data: input }),
-  ),
+  create: adminProcedure
+    .input(upsert)
+    .mutation(({ ctx, input }) => ctx.db.monitor.create({ data: input })),
 
   update: adminProcedure
     .input(upsert.partial().extend({ id: z.string().min(1) }))
