@@ -6,4 +6,6 @@ export async function register() {
   g.__monitorStarted = true;
   const { startMonitorScheduler } = await import("./server/monitor-scheduler");
   startMonitorScheduler();
+  const { startFriendCheckScheduler } = await import("./server/friend-check");
+  startFriendCheckScheduler();
 }

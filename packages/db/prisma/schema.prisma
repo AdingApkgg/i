@@ -217,18 +217,34 @@ model Device {
 
 // ==================== 相册 (gallery) ====================
 
+model Album {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  coverUrl    String? // 不填则前台取图集第一张
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  photos      Photo[]
+
+  @@index([sortOrder, createdAt])
+}
+
 model Photo {
   id          String   @id @default(cuid())
-  title       String
+  title       String   @default("") // 单张图标题，可空串
   imageUrl    String
   thumbUrl    String?
   description String?  @db.Text
   takenAt     String?
   sortOrder   Int      @default(0)
+  albumId     String? // null = 未分类
+  album       Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([albumId])
 }
 
 // ==================== 富文本页 (curated pages: 音乐/影视 imported) ====================
@@ -254,16 +270,28 @@ model Moment {
 
 // ==================== 友链 (friends) ====================
 
+// MX Space 式友链：自助申请(pending) → 审核(active/rejected)，定时存活检测
+// 失联标记 outdate，反链检测结果仅供后台审核参考。
 model Friend {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   url         String
   avatarUrl   String?
-  description String?  @db.Text
-  status      String   @default("active") // active | pending
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String?   @db.Text
+  group       String?   // 分组（旧站 link.yml 的 class_name；申请默认进「朋友」）
+  status      String    @default("active") // active | pending | rejected | outdate
+  // -- 申请信息（不对外暴露）--
+  email       String?   // 申请人邮箱，审核结果通知用
+  message     String?   @db.Text // 申请留言，仅后台可见
+  applicantId String?   // 登录用户申请时记录 user id
+  // -- 检测状态 --
+  reachable   Boolean?  // 最近一次存活探测结果
+  backlinked  Boolean?  // 对方页面是否挂了本站链接（反链）
+  failCount   Int       @default(0) // 连续探测失败次数，≥3 时 active → outdate
+  checkedAt   DateTime? // 最近检测时间
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status, sortOrder])
 }

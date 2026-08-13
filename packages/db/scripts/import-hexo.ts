@@ -4,7 +4,7 @@
  *
  *   HEXO_SRC=/app/.import/hexo/source bun packages/db/scripts/import-hexo.ts
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { parse as parseYaml } from "yaml";
@@ -46,8 +46,25 @@ async function importPosts() {
     const cover = data.cover ?? data.top_img ?? null;
     await db.post.upsert({
       where: { slug },
-      update: { title, excerpt, contentMd: content, tags, status: "published", publishedAt: date, coverUrl: cover ? String(cover) : null },
-      create: { slug, title, excerpt, contentMd: content, tags, status: "published", publishedAt: date, coverUrl: cover ? String(cover) : null },
+      update: {
+        title,
+        excerpt,
+        contentMd: content,
+        tags,
+        status: "published",
+        publishedAt: date,
+        coverUrl: cover ? String(cover) : null,
+      },
+      create: {
+        slug,
+        title,
+        excerpt,
+        contentMd: content,
+        tags,
+        status: "published",
+        publishedAt: date,
+        coverUrl: cover ? String(cover) : null,
+      },
     });
     n++;
   }
@@ -62,8 +79,9 @@ async function importFriends() {
     class_name?: string;
     link_list?: { name?: string; link?: string; avatar?: string; descr?: string }[];
   }[];
-  // Skip the "技术支持" credits group; keep real friend groups.
-  await db.friend.deleteMany({});
+  // Skip the "技术支持" credits group; keep real friend groups (incl. class_name).
+  // Only wipe imported/published rows — live pending/rejected applications survive.
+  await db.friend.deleteMany({ where: { status: { in: ["active", "outdate"] } } });
   let n = 0;
   for (const g of groups ?? []) {
     if (!g.class_name || g.class_name.includes("技术支持")) continue;
@@ -75,6 +93,7 @@ async function importFriends() {
           url: String(l.link),
           avatarUrl: l.avatar ? String(l.avatar) : null,
           description: l.descr ? String(l.descr) : null,
+          group: String(g.class_name).trim(),
           status: "active",
           sortOrder: n,
         },
@@ -89,7 +108,11 @@ async function importFriends() {
 async function importMoments() {
   const file = join(SRC, "_data", "shuoshuo.yml");
   if (!existsSync(file)) return 0;
-  const list = parseYaml(readFileSync(file, "utf8")) as { date?: string; content?: string; tag?: string }[];
+  const list = parseYaml(readFileSync(file, "utf8")) as {
+    date?: string;
+    content?: string;
+    tag?: string;
+  }[];
   await db.moment.deleteMany({});
   let n = 0;
   for (const s of list ?? []) {
@@ -145,7 +168,9 @@ async function importGallery() {
   const idx = join(SRC, "gallery", "index.md");
   if (!existsSync(idx)) return 0;
   const groups = [
-    ...readFileSync(idx, "utf8").matchAll(/galleryGroup\s+'([^']+)'\s+'[^']*'\s+'\/gallery\/([^/']+)\//g),
+    ...readFileSync(idx, "utf8").matchAll(
+      /galleryGroup\s+'([^']+)'\s+'[^']*'\s+'\/gallery\/([^/']+)\//g,
+    ),
   ];
   await db.photo.deleteMany({});
   let n = 0;
@@ -205,19 +230,30 @@ async function importPages() {
   return n;
 }
 
+// Optional arg re-imports a single domain (each importer wipes its own table):
+//   bun packages/db/scripts/import-hexo.ts friends
+const IMPORTERS = {
+  pages: importPages,
+  posts: importPosts,
+  friends: importFriends,
+  moments: importMoments,
+  movies: importMovies,
+  photos: importGallery,
+  tracks: importMusic,
+} as const;
+
 async function main() {
   console.log("HEXO_SRC =", SRC);
-  const pages = await importPages();
-  console.log(`  pages=${pages}`);
-  const posts = await importPosts();
-  const friends = await importFriends();
-  const moments = await importMoments();
-  const movies = await importMovies();
-  const photos = await importGallery();
-  const tracks = await importMusic();
-  console.log(
-    `✓ imported: posts=${posts} friends=${friends} moments=${moments} movies=${movies} photos=${photos} tracks=${tracks}`,
-  );
+  const only = process.argv[2] as keyof typeof IMPORTERS | undefined;
+  if (only && !IMPORTERS[only]) {
+    throw new Error(`unknown domain "${only}" — one of: ${Object.keys(IMPORTERS).join(", ")}`);
+  }
+  const parts: string[] = [];
+  for (const [key, run] of Object.entries(IMPORTERS)) {
+    if (only && key !== only) continue;
+    parts.push(`${key}=${await run()}`);
+  }
+  console.log(`✓ imported: ${parts.join(" ")}`);
 }
 
 main()

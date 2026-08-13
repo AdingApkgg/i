@@ -23,7 +23,12 @@ export interface AdminDomain {
 }
 
 const rating: FieldSpec = { name: "rating", label: "评分", type: "number", placeholder: "0–10" };
-const cover: FieldSpec = { name: "coverUrl", label: "封面链接", type: "text", placeholder: "https://…" };
+const cover: FieldSpec = {
+  name: "coverUrl",
+  label: "封面链接",
+  type: "text",
+  placeholder: "https://…",
+};
 const link: FieldSpec = { name: "link", label: "外链", type: "text", placeholder: "https://…" };
 const note: FieldSpec = { name: "note", label: "备注", type: "textarea", placeholder: "可选…" };
 const sortOrder: FieldSpec = { name: "sortOrder", label: "排序", type: "number", placeholder: "0" };
@@ -39,7 +44,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       { name: "excerpt", label: "摘要", type: "textarea" },
       { name: "contentMd", label: "正文 (Markdown)", type: "textarea", required: true },
       cover,
-      { name: "status", label: "状态", type: "select", required: true, options: ["draft", "published"] },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        required: true,
+        options: ["draft", "published"],
+      },
     ],
   },
   music: {
@@ -50,7 +61,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       { name: "title", label: "标题", type: "text", required: true },
       { name: "artist", label: "艺术家", type: "text" },
       { name: "album", label: "专辑", type: "text" },
-      { name: "status", label: "状态", type: "select", required: true, options: ["在听", "听过", "想听"] },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        required: true,
+        options: ["在听", "听过", "想听"],
+      },
       rating,
       cover,
       link,
@@ -64,7 +81,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     columns: ["songTitle", "difficulty", "achievement"],
     fields: [
       { name: "songTitle", label: "曲名", type: "text", required: true },
-      { name: "difficulty", label: "难度", type: "select", required: true, options: ["BASIC", "ADVANCED", "EXPERT", "MASTER", "RE:MASTER"] },
+      {
+        name: "difficulty",
+        label: "难度",
+        type: "select",
+        required: true,
+        options: ["BASIC", "ADVANCED", "EXPERT", "MASTER", "RE:MASTER"],
+      },
       { name: "level", label: "定数", type: "text", placeholder: "14+" },
       { name: "achievement", label: "达成率", type: "number", placeholder: "100.5000" },
       { name: "rank", label: "评级", type: "text", placeholder: "SSS+" },
@@ -82,7 +105,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     fields: [
       { name: "title", label: "标题", type: "text", required: true },
       { name: "category", label: "分类", type: "text", placeholder: "电影 / 剧集…" },
-      { name: "status", label: "状态", type: "select", required: true, options: ["在看", "看过", "想看"] },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        required: true,
+        options: ["在看", "看过", "想看"],
+      },
       rating,
       { name: "year", label: "年份", type: "number", placeholder: "2024" },
       cover,
@@ -98,7 +127,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     fields: [
       { name: "title", label: "标题", type: "text", required: true },
       { name: "brand", label: "品牌", type: "text" },
-      { name: "status", label: "状态", type: "select", required: true, options: ["在玩", "通关", "想玩", "搁置"] },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        required: true,
+        options: ["在玩", "通关", "想玩", "搁置"],
+      },
       rating,
       { name: "playHours", label: "游玩时长(h)", type: "number" },
       cover,
@@ -113,7 +148,12 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     columns: ["title", "category"],
     fields: [
       { name: "title", label: "标题", type: "text", required: true },
-      { name: "category", label: "分类", type: "select", options: ["game", "music", "print", "doujin"] },
+      {
+        name: "category",
+        label: "分类",
+        type: "select",
+        options: ["game", "music", "print", "doujin"],
+      },
       { name: "status", label: "状态", type: "text", placeholder: "收藏 / 通关…" },
       rating,
       cover,
@@ -130,23 +170,48 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       { name: "name", label: "名称", type: "text", required: true },
       { name: "category", label: "分类", type: "text", placeholder: "手机 / 电脑…" },
       { name: "spec", label: "规格", type: "text" },
-      { name: "status", label: "状态", type: "select", required: true, options: ["在用", "退役", "想要"] },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        required: true,
+        options: ["在用", "退役", "想要"],
+      },
       { name: "acquired", label: "入手日期", type: "text", placeholder: "2024-01-01" },
       link,
       note,
       sortOrder,
     ],
   },
+  // 相册照片走专属管理页 app/dash/(admin)/gallery（网格多选/批量上传/移动图集），
+  // fields 供该页的编辑表单复用（图集下拉在页内单独渲染）。
   gallery: {
     key: "gallery",
     label: "相册",
     columns: ["title", "takenAt"],
     fields: [
-      { name: "title", label: "标题", type: "text", required: true },
-      { name: "imageUrl", label: "图片链接", type: "image", required: true, placeholder: "https://…" },
+      { name: "title", label: "标题", type: "text", placeholder: "可选" },
+      {
+        name: "imageUrl",
+        label: "图片链接",
+        type: "image",
+        required: true,
+        placeholder: "https://…",
+      },
       { name: "thumbUrl", label: "缩略图链接", type: "text", placeholder: "https://…" },
       { name: "description", label: "描述", type: "textarea" },
       { name: "takenAt", label: "拍摄时间", type: "text", placeholder: "2024-01-01" },
+      sortOrder,
+    ],
+  },
+  albums: {
+    key: "albums",
+    label: "图集",
+    columns: ["name", "sortOrder"],
+    fields: [
+      { name: "name", label: "名称", type: "text", required: true },
+      { name: "description", label: "描述", type: "textarea" },
+      { name: "coverUrl", label: "封面", type: "image", placeholder: "不填则取图集第一张" },
       sortOrder,
     ],
   },
@@ -155,20 +220,34 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     label: "说说",
     columns: ["content", "mood"],
     fields: [
-      { name: "content", label: "内容", type: "textarea", required: true, placeholder: "此刻在想…" },
+      {
+        name: "content",
+        label: "内容",
+        type: "textarea",
+        required: true,
+        placeholder: "此刻在想…",
+      },
       { name: "mood", label: "心情", type: "text", placeholder: "开心 / emo…" },
     ],
   },
+  // 友链有专属管理页 app/dash/(admin)/friends（申请审核 + 存活/反链检测），
+  // 这里只保留侧边栏 label；fields 仅作字段参考，不再走通用 CRUD 编辑器。
   friends: {
     key: "friends",
     label: "友链",
-    columns: ["name", "url"],
+    columns: ["name", "url", "group", "status"],
     fields: [
       { name: "name", label: "名称", type: "text", required: true },
       { name: "url", label: "链接", type: "text", required: true, placeholder: "https://…" },
       { name: "avatarUrl", label: "头像链接", type: "text", placeholder: "https://…" },
       { name: "description", label: "描述", type: "textarea" },
-      { name: "status", label: "状态", type: "select", options: ["active", "pending"] },
+      { name: "group", label: "分组", type: "text", placeholder: "朋友 / 收藏…" },
+      {
+        name: "status",
+        label: "状态",
+        type: "select",
+        options: ["active", "pending", "rejected", "outdate"],
+      },
       sortOrder,
     ],
   },
@@ -178,7 +257,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     columns: ["name", "target", "kind"],
     fields: [
       { name: "name", label: "名称", type: "text", required: true },
-      { name: "target", label: "目标", type: "text", required: true, placeholder: "https://… 或 host:port" },
+      {
+        name: "target",
+        label: "目标",
+        type: "text",
+        required: true,
+        placeholder: "https://… 或 host:port",
+      },
       { name: "kind", label: "类型", type: "select", options: ["http", "tcp"] },
       { name: "intervalSec", label: "间隔(秒)", type: "number", placeholder: "60" },
       { name: "enabled", label: "启用", type: "boolean" },
@@ -187,5 +272,16 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
 };
 
 export const ADMIN_ORDER = [
-  "blog", "moments", "gallery", "music", "movie", "vn", "maimai", "touhou", "device", "friends", "monitor",
+  "blog",
+  "moments",
+  "gallery",
+  "albums",
+  "music",
+  "movie",
+  "vn",
+  "maimai",
+  "touhou",
+  "device",
+  "friends",
+  "monitor",
 ];

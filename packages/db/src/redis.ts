@@ -18,4 +18,5 @@ export const KEYS = {
   pageViews: (path: string) => `views:${path}`,
   monitorLatest: (targetId: string) => `monitor:latest:${targetId}`,
   siteCounter: (name: string) => `counter:${name}`,
+  friendApply: (ip: string) => `friend:apply:${ip}`,
 };

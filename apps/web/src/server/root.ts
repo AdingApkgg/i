@@ -1,14 +1,15 @@
 import { commentRouter } from "./routers/comment";
 import {
+  albumsRouter,
   deviceRouter,
-  friendsRouter,
-  galleryRouter,
   momentsRouter,
   movieRouter,
   musicRouter,
   touhouRouter,
   vnRouter,
 } from "./routers/content";
+import { friendsRouter } from "./routers/friends";
+import { galleryRouter } from "./routers/gallery";
 import { healthRouter } from "./routers/health";
 import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
@@ -25,6 +26,7 @@ export const appRouter = router({
   touhou: touhouRouter,
   device: deviceRouter,
   gallery: galleryRouter,
+  albums: albumsRouter,
   moments: momentsRouter,
   friends: friendsRouter,
   monitor: monitorRouter,
@@ -34,5 +36,5 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
-export { createCallerFactory };
 export { createTRPCContext } from "./trpc";
+export { createCallerFactory };
