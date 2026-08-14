@@ -14,7 +14,7 @@ const Live2DMascot = dynamic(() => import("./live2d-mascot"), {
 
 export function MascotWidget() {
   return (
-    <div aria-hidden className="fixed bottom-0 right-0 z-40 hidden md:block">
+    <div className="fixed bottom-0 right-0 z-40 hidden md:block">
       <Live2DMascot width={230} height={320} />
     </div>
   );

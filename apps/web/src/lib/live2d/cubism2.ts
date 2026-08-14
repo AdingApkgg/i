@@ -69,6 +69,7 @@ async function fetchBuf(url: string): Promise<ArrayBuffer> {
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous"; // CDN 贴图需带 CORS，否则 texImage2D 因画布污染抛错
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`texture ${url}`));
     img.src = url;
@@ -118,13 +119,41 @@ export class Cubism2Mascot {
     canvas.addEventListener("webglcontextlost", this.onContextLost);
   }
 
+  /** 拍照请求：tick 内 draw 之后取帧回调。 */
+  private photoRequest: ((dataUrl: string) => void) | null = null;
+
   async load(src: string): Promise<void> {
     await loadCore();
     if (this.dead) return;
     const w = core();
     w.Live2D.init();
     w.Live2D.setGL(this.gl);
+    await this.loadModelAssets(src);
+    if (!this.dead && !this.raf) this.startLoop();
+  }
 
+  /** 热切换模型（换装/换人）：同一 canvas/GL，卸旧载新。 */
+  async switchModel(src: string): Promise<void> {
+    if (this.dead) return;
+    this.model = null; // tick 以 !model 跳过渲染
+    this.settings = null;
+    this.motionPending = false;
+    this.motionCache.clear();
+    this.physics = [];
+    for (const t of this.textures) this.gl.deleteTexture(t);
+    this.textures = [];
+    await this.loadModelAssets(src);
+  }
+
+  /** 截取当前帧（透明背景 PNG dataURL）。 */
+  takePhoto(): Promise<string> {
+    return new Promise((resolve) => {
+      this.photoRequest = resolve;
+    });
+  }
+
+  private async loadModelAssets(src: string): Promise<void> {
+    const w = core();
     this.base = src.slice(0, src.lastIndexOf("/") + 1);
     const settings = (await (await fetch(src)).json()) as ModelJson;
     if (this.dead) return;
@@ -134,6 +163,9 @@ export class Cubism2Mascot {
     const moc = await fetchBuf(this.base + settings.model);
     if (this.dead) return;
     this.model = w.Live2DModelWebGL.loadModel(moc);
+    // 关键：先快照 moc 默认参数作为基线。否则循环首帧 loadParam 会载入
+    // 未初始化(全零)参数，部件形变整体错乱（官方框架加载后同样先 saveParam）。
+    this.model.saveParam();
 
     // --- textures ---
     const gl = this.gl;
@@ -144,6 +176,7 @@ export class Cubism2Mascot {
       if (!tex) return;
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Cubism2 UV 以左下为原点，必须翻转
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -189,7 +222,6 @@ export class Cubism2Mascot {
     }
 
     this.motionMgr = new w.MotionQueueManager();
-    this.startLoop();
   }
 
   /** 播放某组里的随机动作（不存在则忽略）。 */
@@ -305,6 +337,15 @@ export class Cubism2Mascot {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       m.draw();
+      if (this.photoRequest) {
+        const cb = this.photoRequest;
+        this.photoRequest = null;
+        try {
+          cb(this.canvas.toDataURL("image/png")); // draw 同帧内取，无需 preserveDrawingBuffer
+        } catch {
+          cb("");
+        }
+      }
     };
     this.raf = requestAnimationFrame(tick);
   }
