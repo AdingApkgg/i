@@ -82,16 +82,61 @@ export function seasonGreeting(tips: WaifuTips, now = new Date()): string | null
   return null;
 }
 
-/** 一言。 */
-export async function fetchHitokoto(): Promise<string | null> {
+/** 一言（正文 + 出处/投稿人补充，参考实现分两条展示）。 */
+export async function fetchHitokoto(): Promise<{ text: string; followup: string | null } | null> {
   try {
     const r = await fetch("https://v1.hitokoto.cn/");
-    const d = (await r.json()) as { hitokoto?: string; from?: string };
+    const d = (await r.json()) as { hitokoto?: string; from?: string; creator?: string };
     if (!d.hitokoto) return null;
-    return d.from ? `${d.hitokoto}——「${d.from}」` : d.hitokoto;
+    const followup =
+      d.from && d.creator
+        ? `这句一言来自「${d.from}」，是 ${d.creator} 在 hitokoto.cn 投稿的。`
+        : d.from
+          ? `这句一言来自「${d.from}」。`
+          : null;
+    return { text: d.hitokoto, followup };
   } catch {
     return null;
   }
+}
+
+/**
+ * 进站欢迎语（参考实现语义）：
+ * 首页 → 时段问候；其它页 →「欢迎阅读『标题』」；带外站 referrer → 来源问候。
+ */
+export function welcomeMessage(tips: WaifuTips): string {
+  if (location.pathname === "/") {
+    return timeGreeting(tips) ?? pick(tips.message.default);
+  }
+  const title = document.title.split(" · ")[0]?.trim() || document.title;
+  const base = `欢迎阅读「${title}」`;
+  if (document.referrer) {
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.hostname !== location.hostname) {
+        const engines: Record<string, string> = {
+          baidu: "百度",
+          so: "360 搜索",
+          google: "谷歌搜索",
+          bing: "必应",
+        };
+        const key = ref.hostname.split(".")[1] ?? "";
+        const from = engines[key] ?? ref.hostname;
+        return `Hello！来自 ${from} 的朋友，${base}`;
+      }
+    } catch {
+      /* 无效 referrer 忽略 */
+    }
+  }
+  return base;
+}
+
+/** 空闲随机消息池：default 池 + 当季节日文案（参考实现将节日混入池中）。 */
+export function idlePool(tips: WaifuTips, now = new Date()): string[] {
+  const pool = [...tips.message.default];
+  const season = seasonGreeting(tips, now);
+  if (season) pool.push(season);
+  return pool;
 }
 
 /** 展开 model_list：组 → 该组的服装数组。 */

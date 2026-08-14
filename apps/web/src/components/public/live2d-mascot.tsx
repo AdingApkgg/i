@@ -9,13 +9,13 @@ import {
   fetchModelList,
   fetchTips,
   groupCostumes,
+  idlePool,
   type ModelList,
   modelSrc,
   pick,
-  seasonGreeting,
-  timeGreeting,
   WAIFU_LS,
   type WaifuTips,
+  welcomeMessage,
 } from "@/lib/live2d/waifu";
 
 export interface Live2DMascotProps {
@@ -77,7 +77,8 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
     void fetchTips()
       .then((t) => {
         tipsRef.current = t;
-        showTip(seasonGreeting(t) ?? timeGreeting(t) ?? pick(t.message.default), 7000, 2);
+        // 参考实现语义：首页时段问候；其它页欢迎阅读标题；外站 referrer 来源问候
+        showTip(welcomeMessage(t), 7000, 2);
       })
       .catch(() => {});
   }, [showTip]);
@@ -176,18 +177,30 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
     showTip("准备好了吗？方向键移动，空格发射！", 5000, 2);
   }, [showTip]);
 
-  // ---- 一言（空闲低优先级）----
+  // ---- 一言（正文 + 出处补充两连）----
   const showHitokoto = useCallback(async () => {
-    const t = await fetchHitokoto();
-    if (t) showTip(t, 7000, 1);
+    const h = await fetchHitokoto();
+    if (!h) return;
+    showTip(h.text, 6000, 1);
+    if (h.followup) {
+      setTimeout(() => showTip(h.followup, 4000, 1), 6000);
+    }
   }, [showTip]);
+
+  // ---- 空闲吐槽：default 消息池(含节日) 与一言轮换 ----
   useEffect(() => {
     if (hidden !== false) return;
     const timer = setInterval(() => {
-      if (!document.hidden && !tipTimer.current) void showHitokoto();
-    }, 45_000);
+      if (document.hidden || tipTimer.current) return;
+      const tips = tipsRef.current;
+      if (tips && Math.random() < 0.7) {
+        showTip(pick(idlePool(tips)), 6000, 1);
+      } else {
+        void showHitokoto();
+      }
+    }, 40_000);
     return () => clearInterval(timer);
-  }, [hidden, showHitokoto]);
+  }, [hidden, showHitokoto, showTip]);
 
   // ---- 悬停吐槽 + 复制/切页/控制台彩蛋 ----
   useEffect(() => {
@@ -209,42 +222,52 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
       }
       lastSel = "";
     };
+    // 全局 click 吐槽（含点击看板娘/评论框；动作插播由 canvas onTap 负责）
+    const onClick = (e: MouseEvent) => {
+      const tips = tipsRef.current;
+      const target = e.target as Element | null;
+      if (!tips || !target?.closest) return;
+      for (const c of tips.click) {
+        if (!target.closest(c.selector)) continue;
+        showTip(pick(c.text).replace(/<[^>]+>/g, ""), 4000, 2);
+        return;
+      }
+    };
     const onCopy = () => showTip(tipsRef.current?.message.copy, 5000, 3);
     const onVis = () => {
       if (!document.hidden) showTip(tipsRef.current?.message.visibilitychange, 5000, 3);
     };
     document.addEventListener("mouseover", onOver, { passive: true });
+    document.addEventListener("click", onClick);
     document.addEventListener("copy", onCopy);
     document.addEventListener("visibilitychange", onVis);
-    // 控制台检测（窗口内外尺寸差）
+    // 控制台检测：console.log("%c", trap) + toString 陷阱 —— DevTools 渲染日志时才触发
     let warned = false;
-    const devtools = setInterval(() => {
-      if (warned) return;
-      if (
-        window.outerWidth - window.innerWidth > 200 ||
-        window.outerHeight - window.innerHeight > 200
-      ) {
-        warned = true;
-        showTip(tipsRef.current?.message.console, 6000, 3);
-      }
-    }, 2500);
+    const trap = {
+      toString: () => {
+        if (!warned) {
+          warned = true;
+          showTip(tipsRef.current?.message.console, 6000, 3);
+        }
+        return "";
+      },
+    };
+    console.log("%c", trap);
     return () => {
       document.removeEventListener("mouseover", onOver);
+      document.removeEventListener("click", onClick);
       document.removeEventListener("copy", onCopy);
       document.removeEventListener("visibilitychange", onVis);
-      clearInterval(devtools);
     };
   }, [hidden, showTip]);
 
-  // ---- 点击看板娘 ----
+  // ---- 点击看板娘（动作插播；文案由全局 click 监听统一处理）----
   function onTap(e: React.MouseEvent<HTMLCanvasElement>) {
     const engine = engineRef.current;
     const canvas = canvasRef.current;
     if (!engine || !canvas) return;
     const r = canvas.getBoundingClientRect();
     engine.tap(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
-    const click = tipsRef.current?.click[0];
-    if (click) showTip(pick(click.text), 4000, 2);
   }
 
   function quit() {

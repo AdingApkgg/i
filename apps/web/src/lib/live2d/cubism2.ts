@@ -49,6 +49,8 @@ interface ModelJson {
   physics?: string;
   motions?: Record<string, { file: string; fade_in?: number; fade_out?: number }[]>;
   hit_areas?: { name: string; id: string }[];
+  /** 自定义命中矩形（bilibili-22/33、少前等模型），逻辑视图坐标(≈clip, y 朝上)。 */
+  hit_areas_custom?: Record<string, [number, number]>;
   layout?: Record<string, number>;
 }
 
@@ -266,6 +268,25 @@ export class Cubism2Mascot {
 
   private hitTest(px: number, py: number, cssW: number, cssH: number): string | null {
     const m = this.model;
+    // hit_areas_custom：clip 坐标(y 朝上)矩形，键形如 head_x/head_y/body_x/body_y
+    const custom = this.settings?.hit_areas_custom;
+    if (custom) {
+      const cx = (px / cssW) * 2 - 1;
+      const cy = 1 - (py / cssH) * 2;
+      for (const name of ["head", "body"]) {
+        const rx = custom[`${name}_x`];
+        const ry = custom[`${name}_y`];
+        if (!rx || !ry) continue;
+        if (
+          cx >= Math.min(rx[0], rx[1]) &&
+          cx <= Math.max(rx[0], rx[1]) &&
+          cy >= Math.min(ry[0], ry[1]) &&
+          cy <= Math.max(ry[0], ry[1])
+        )
+          return name;
+      }
+      return null;
+    }
     const areas = this.settings?.hit_areas;
     if (!m || !areas?.length) return null;
     // CSS px → clip → 模型画布坐标（矩阵逆变换，x/y 缩放各自独立）
