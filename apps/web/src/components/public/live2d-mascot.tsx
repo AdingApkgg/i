@@ -1,26 +1,16 @@
 "use client";
 
-import { Cubism2Adapter } from "@live2d-loader/adapter-cubism2";
-import type { Live2DModelElement } from "@live2d-loader/element";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { Cubism2Mascot } from "@/lib/live2d/cubism2";
 
 const DEFAULT_SRC = "/live2d/asuna/asuna_01/index.json";
 
-const HIT_TIPS = [
-  "呀！戳我干嘛~ (。>﹏<。)",
-  "有、有什么事吗？",
-  "再戳就生气了哦！",
-  "✿ 欢迎来到后花园~",
-  "嗯？找我玩吗？",
-];
-
-/** Minimal surface of the Cubism 2 core model we poke at. */
-interface Cubism2Core {
-  setParamFloat(id: string, value: number): void;
-  loadParam(): void;
-  __gazeHooked?: boolean;
-}
+const HIT_TIPS: Record<string, string[]> = {
+  head: ["呀！不要摸头啦 (。>﹏<。)", "头发要乱了啦~", "嘿嘿，舒服~"],
+  body: ["再戳就生气了哦！", "有、有什么事吗？", "嗯？找我玩吗？"],
+  default: ["✿ 欢迎来到后花园~", "今天也要加油哦！", "呀！戳我干嘛~"],
+};
 
 export interface Live2DMascotProps {
   src?: string;
@@ -30,12 +20,9 @@ export interface Live2DMascotProps {
 }
 
 /**
- * Live2D mascot via the user's own @live2d-loader (Cubism 2), upgraded with:
- * - 全页鼠标跟随: window mousemove drives gaze params (the published adapter
- *   records pointerX but doesn't consume it, so we inject via an updateModel
- *   wrapper — set before the adapter's saveParam so its idle sway stacks on top)
- * - 点击反应: hit event → head-shake impulse + chat bubble
- * - 清晰度: canvas rendered at devicePixelRatio (≤2), CSS-scaled down
+ * Live2D 看板娘 — 自实现 Cubism 2 引擎（lib/live2d/cubism2.ts），零 loader 依赖：
+ * 全页鼠标跟随 + 命中区点击动作(.mtn 真动作) + 空闲随机 idle + 物理摆动 +
+ * ≥2x 超采样清晰度。气泡与入场动画走 framer-motion。
  */
 export default function Live2DMascot({
   src = DEFAULT_SRC,
@@ -43,93 +30,57 @@ export default function Live2DMascot({
   height = 320,
   className,
 }: Live2DMascotProps) {
-  const ref = useRef<Live2DModelElement>(null);
-  const gaze = useRef({ x: 0, y: 0, impulse: 0 });
-  const [dpr, setDpr] = useState(1);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<Cubism2Mascot | null>(null);
   const [tip, setTip] = useState<string | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Always supersample ≥2x — at 1x-DPR screens the raw canvas looks soft.
-    setDpr(Math.min(Math.max(window.devicePixelRatio || 1, 2), 3));
-    void import("@live2d-loader/element");
-  }, []);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    // 始终 ≥2x 超采样，1x 屏也保持锐利
+    const scale = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
 
-  // Configure with a gaze-injecting adapter wrapper once the element upgrades.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let cancelled = false;
-    const configure = () => {
-      const el = ref.current;
-      if (cancelled || !el) return;
-      const adapter = new Cubism2Adapter();
-      const orig = adapter.updateModel.bind(adapter);
-      adapter.updateModel = (model, dt) => {
-        const cm = (model as { coreModel?: unknown }).coreModel as Cubism2Core | undefined;
-        // The adapter's update starts with cm.loadParam(), which restores the
-        // saved snapshot and wipes anything set before the call. Hook loadParam
-        // once so gaze params land right after the restore — inside the
-        // pipeline, before saveParam — letting the adapter's idle sway
-        // (addToParamFloat) stack on top.
-        if (cm?.setParamFloat && !cm.__gazeHooked) {
-          cm.__gazeHooked = true;
-          const origLoad = cm.loadParam.bind(cm);
-          cm.loadParam = () => {
-            origLoad();
-            const g = gaze.current;
-            g.impulse *= 0.93; // decay the tap head-shake
-            cm.setParamFloat("PARAM_ANGLE_X", g.x * 30);
-            cm.setParamFloat("PARAM_ANGLE_Y", g.y * 30);
-            cm.setParamFloat("PARAM_ANGLE_Z", g.impulse * 18 * Math.sin(Date.now() / 60));
-            cm.setParamFloat("PARAM_BODY_ANGLE_X", g.x * 10);
-            cm.setParamFloat("PARAM_EYE_BALL_X", g.x);
-            cm.setParamFloat("PARAM_EYE_BALL_Y", g.y);
-          };
-        }
-        orig(model, dt);
-      };
-      el.configure({ adapters: [adapter] });
-    };
-    if (window.customElements?.get("live2d-model")) configure();
-    else
-      window.customElements
-        ?.whenDefined("live2d-model")
-        .then(configure)
-        .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // 全页鼠标跟随 + 点击反应.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    let engine: Cubism2Mascot | null = null;
+    try {
+      engine = new Cubism2Mascot(canvas);
+    } catch {
+      return; // WebGL 不可用
+    }
+    engineRef.current = engine;
+    void engine.load(src).catch(() => {});
 
     const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect();
+      const r = canvas.getBoundingClientRect();
       const cx = r.left + r.width / 2;
-      const cy = r.top + r.height * 0.35; // aim from head height
-      gaze.current.x = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth * 0.5)));
-      gaze.current.y = Math.max(-1, Math.min(1, -(e.clientY - cy) / (window.innerHeight * 0.5)));
+      const cy = r.top + r.height * 0.3; // 以头部高度为原点
+      engineRef.current?.setGaze(
+        (e.clientX - cx) / (window.innerWidth * 0.5),
+        -(e.clientY - cy) / (window.innerHeight * 0.5),
+      );
     };
     window.addEventListener("mousemove", onMove, { passive: true });
 
-    const onHit = () => {
-      gaze.current.impulse = 1;
-      const t = HIT_TIPS[Math.floor(Math.random() * HIT_TIPS.length)]!;
-      setTip(t);
-      if (tipTimer.current) clearTimeout(tipTimer.current);
-      tipTimer.current = setTimeout(() => setTip(null), 3500);
-    };
-    el.addEventListener("hit", onHit);
-
     return () => {
       window.removeEventListener("mousemove", onMove);
-      el.removeEventListener("hit", onHit);
-      if (tipTimer.current) clearTimeout(tipTimer.current);
+      engine?.destroy();
+      engineRef.current = null;
     };
-  }, []);
+  }, [src, width, height]);
+
+  function onTap(e: React.MouseEvent<HTMLCanvasElement>) {
+    const engine = engineRef.current;
+    const canvas = canvasRef.current;
+    if (!engine || !canvas) return;
+    const r = canvas.getBoundingClientRect();
+    const { hitArea } = engine.tap(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
+    const pool = HIT_TIPS[hitArea ?? "default"] ?? HIT_TIPS.default!;
+    setTip(pool[Math.floor(Math.random() * pool.length)]!);
+    if (tipTimer.current) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTip(null), 3500);
+  }
 
   return (
     <motion.div
@@ -154,12 +105,10 @@ export default function Live2DMascot({
           </motion.div>
         )}
       </AnimatePresence>
-      <live2d-model
-        ref={ref}
-        src={src}
-        width={Math.round(width * dpr)}
-        height={Math.round(height * dpr)}
-        style={{ width: "100%", height: "100%", background: "transparent" }}
+      <canvas
+        ref={canvasRef}
+        onClick={onTap}
+        style={{ width: "100%", height: "100%", background: "transparent", cursor: "pointer" }}
       />
     </motion.div>
   );
