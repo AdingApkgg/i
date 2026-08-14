@@ -32,7 +32,11 @@ export function loadCore(src = "/live2d/core/live2d.min.js"): Promise<void> {
       const s = document.createElement("script");
       s.src = src;
       s.onload = () => resolve();
-      s.onerror = () => reject(new Error("live2d core load failed"));
+      s.onerror = () => {
+        s.remove();
+        corePromise = null; // 允许下次挂载重试（否则整个会话永久失败）
+        reject(new Error("live2d core load failed"));
+      };
       document.head.appendChild(s);
     });
   }
@@ -82,15 +86,25 @@ export class Cubism2Mascot {
   private settings: ModelJson | null = null;
   private base = "";
   private motionMgr: any = null;
-  private motionCache = new Map<string, any>();
+  /** file → Promise<motion>：并发未命中也只 fetch 一次。 */
+  private motionCache = new Map<string, Promise<any>>();
   private physics: any[] = [];
   private textures: WebGLTexture[] = [];
   private matrix = new Float32Array(16);
   private raf = 0;
   private dead = false;
+  /** 防止 isFinished 期间每帧重复触发动作加载。 */
+  private motionPending = false;
   /** 注视目标与当前值（-1..1），loop 内做平滑插值。 */
   private gazeTarget = { x: 0, y: 0 };
   private gazeNow = { x: 0, y: 0 };
+
+  private onContextLost = (e: Event) => {
+    // 上下文丢失后 gl 全变 no-op，停掉循环省电；恢复需重挂组件。
+    e.preventDefault();
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+  };
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -101,20 +115,24 @@ export class Cubism2Mascot {
     });
     if (!gl) throw new Error("webgl unavailable");
     this.gl = gl;
+    canvas.addEventListener("webglcontextlost", this.onContextLost);
   }
 
   async load(src: string): Promise<void> {
     await loadCore();
+    if (this.dead) return;
     const w = core();
     w.Live2D.init();
     w.Live2D.setGL(this.gl);
 
     this.base = src.slice(0, src.lastIndexOf("/") + 1);
     const settings = (await (await fetch(src)).json()) as ModelJson;
+    if (this.dead) return;
     this.settings = settings;
 
     // --- model ---
     const moc = await fetchBuf(this.base + settings.model);
+    if (this.dead) return;
     this.model = w.Live2DModelWebGL.loadModel(moc);
 
     // --- textures ---
@@ -153,6 +171,7 @@ export class Cubism2Mascot {
     if (settings.physics) {
       try {
         const pj = (await (await fetch(this.base + settings.physics)).json()) as PhysicsJson;
+        if (this.dead) return;
         const PH = w.PhysicsHair;
         const srcType = (t: string) =>
           t === "x" ? PH.Src.SRC_TO_X : t === "y" ? PH.Src.SRC_TO_Y : PH.Src.SRC_TO_G_ANGLE;
@@ -176,20 +195,27 @@ export class Cubism2Mascot {
   /** 播放某组里的随机动作（不存在则忽略）。 */
   async startRandomMotion(group: string): Promise<void> {
     const entries = this.settings?.motions?.[group];
-    if (!entries?.length || this.dead) return;
+    if (!entries?.length || this.dead || this.motionPending) return;
+    this.motionPending = true;
     const e = entries[Math.floor(Math.random() * entries.length)]!;
     try {
-      let motion = this.motionCache.get(e.file);
-      if (!motion) {
-        const buf = await fetchBuf(this.base + e.file);
-        motion = core().Live2DMotion.loadMotion(buf);
-        motion.setFadeIn(e.fade_in ?? 500);
-        motion.setFadeOut(e.fade_out ?? 500);
-        this.motionCache.set(e.file, motion);
+      let motionP = this.motionCache.get(e.file);
+      if (!motionP) {
+        motionP = fetchBuf(this.base + e.file).then((buf) => {
+          const m = core().Live2DMotion.loadMotion(buf);
+          m.setFadeIn(e.fade_in ?? 500);
+          m.setFadeOut(e.fade_out ?? 500);
+          return m;
+        });
+        this.motionCache.set(e.file, motionP);
+        motionP.catch(() => this.motionCache.delete(e.file)); // 失败可重试
       }
+      const motion = await motionP;
       if (!this.dead) this.motionMgr.startMotion(motion, false);
     } catch {
       /* 单个动作失败不致命 */
+    } finally {
+      this.motionPending = false;
     }
   }
 
@@ -285,6 +311,7 @@ export class Cubism2Mascot {
 
   destroy(): void {
     this.dead = true;
+    this.canvas.removeEventListener("webglcontextlost", this.onContextLost);
     if (this.raf) cancelAnimationFrame(this.raf);
     for (const t of this.textures) this.gl.deleteTexture(t);
     this.textures = [];
