@@ -54,12 +54,11 @@ services:
   web:
     image: oven/bun:1
     working_dir: /app
-    # First boot installs deps into the shared volume, generates the Prisma
-    # client, pushes the schema to Postgres, then runs the Next dev server.
+    # First boot installs deps into the shared volume, pushes the Drizzle
+    # schema to Postgres, seeds sample data, then runs the Next dev server.
     command: >
       bash -lc '
       bun install &&
-      bun run --filter @i/db db:generate &&
       bun run --filter @i/db db:push &&
       (bun run --filter @i/db db:seed || true) &&
       bun run --filter @i/web dev'

@@ -1,7 +1,9 @@
-import { KEYS, redis } from "@i/db";
+import { friend, KEYS, redis } from "@i/db";
 import { ORPCError } from "@orpc/server";
+import { asc, desc, eq, inArray, max } from "drizzle-orm";
 import { z } from "zod";
 import { notifyApplicantReviewResult, notifyOwnerFriendApply } from "@/lib/mailer";
+import { notFound } from "../crud";
 import { checkFriend, runFriendChecks } from "../friend-check";
 import { adminProcedure, publicProcedure } from "../orpc";
 
@@ -17,18 +19,19 @@ import { adminProcedure, publicProcedure } from "../orpc";
 
 const APPLY_LIMIT_PER_HOUR = 3;
 
-const publicSelect = {
-  id: true,
-  name: true,
-  url: true,
-  avatarUrl: true,
-  description: true,
-  group: true,
-  status: true,
-  sortOrder: true,
-} as const;
+const publicColumns = {
+  id: friend.id,
+  name: friend.name,
+  url: friend.url,
+  avatarUrl: friend.avatarUrl,
+  description: friend.description,
+  group: friend.group,
+  status: friend.status,
+  sortOrder: friend.sortOrder,
+};
 
-const orderBy = [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }];
+const byOrder = [asc(friend.sortOrder), desc(friend.createdAt)];
+const listed = inArray(friend.status, ["active", "outdate"]);
 
 /** host+path, lowercased, no trailing slash — good enough to dedupe applications. */
 function normalizeUrl(raw: string): string | null {
@@ -99,11 +102,11 @@ const updateSchema = writeSchema
 
 export const friendsRouter = {
   list: publicProcedure.handler(({ context }) =>
-    context.db.friend.findMany({
-      where: { status: { in: ["active", "outdate"] } },
-      select: publicSelect,
-      orderBy,
-    }),
+    context.db
+      .select(publicColumns)
+      .from(friend)
+      .where(listed)
+      .orderBy(...byOrder),
   ),
 
   submit: publicProcedure
@@ -129,9 +132,9 @@ export const friendsRouter = {
 
       // URL 去重放在限流之前：撞了重复链接不该消耗每小时的提交额度。
       // 已在列表或队列中的拒绝；此前被拒绝的允许重新提交（复用原行）。
-      const existing = await context.db.friend.findMany({
-        select: { id: true, url: true, status: true },
-      });
+      const existing = await context.db
+        .select({ id: friend.id, url: friend.url, status: friend.status })
+        .from(friend);
       const dup = existing.find((f) => normalizeUrl(f.url) === normalized);
       if (dup && dup.status !== "rejected") {
         throw new ORPCError("CONFLICT", {
@@ -172,18 +175,18 @@ export const friendsRouter = {
         failCount: 0,
         checkedAt: null, // 复用被拒绝的旧行时，清掉过期的检测时间
       };
-      const friend = dup
-        ? await context.db.friend.update({ where: { id: dup.id }, data })
-        : await context.db.friend.create({ data });
+      const [row] = dup
+        ? await context.db.update(friend).set(data).where(eq(friend.id, dup.id)).returning()
+        : await context.db.insert(friend).values(data).returning();
 
-      void notifyOwnerFriendApply(friend).catch(() => {});
+      void notifyOwnerFriendApply(row!).catch(() => {});
       // 提前跑一次检测，审核时就能看到存活/反链参考。
-      void checkFriend(friend).catch(() => {});
-      return { id: friend.id };
+      void checkFriend(row!).catch(() => {});
+      return { id: row!.id };
     }),
 
   adminList: adminProcedure.handler(({ context }) =>
-    context.db.friend.findMany({ orderBy: [{ createdAt: "desc" as const }] }),
+    context.db.select().from(friend).orderBy(desc(friend.createdAt)),
   ),
 
   review: adminProcedure
@@ -195,23 +198,25 @@ export const friendsRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
-      const f = await context.db.friend.findUnique({ where: { id: input.id } });
+      const f = await context.db.query.friend.findFirst({ where: eq(friend.id, input.id) });
       if (!f) throw new ORPCError("NOT_FOUND");
       const approved = input.action === "approve";
       // 新通过的友链排到末尾，避免 sortOrder=0 把整组顺序打乱。
       let sortOrder = f.sortOrder;
       if (approved && f.status === "pending") {
-        const max = await context.db.friend.aggregate({ _max: { sortOrder: true } });
-        sortOrder = (max._max.sortOrder ?? 0) + 1;
+        const [agg] = await context.db.select({ top: max(friend.sortOrder) }).from(friend);
+        sortOrder = (agg?.top ?? 0) + 1;
       }
-      const updated = await context.db.friend.update({
-        where: { id: f.id },
-        data: {
+      const [updated] = await context.db
+        .update(friend)
+        .set({
           status: approved ? "active" : "rejected",
           group: input.group?.trim() || f.group || (approved ? "朋友" : null),
           sortOrder,
-        },
-      });
+        })
+        .where(eq(friend.id, f.id))
+        .returning();
+      if (!updated) notFound();
       void notifyApplicantReviewResult(updated, approved).catch(() => {});
       if (approved) void checkFriend(updated).catch(() => {});
       return updated;
@@ -221,29 +226,32 @@ export const friendsRouter = {
     .input(z.object({ id: z.string().min(1).optional() }).optional())
     .handler(async ({ context, input }) => {
       if (input?.id) {
-        const f = await context.db.friend.findUnique({ where: { id: input.id } });
+        const f = await context.db.query.friend.findFirst({ where: eq(friend.id, input.id) });
         if (!f) throw new ORPCError("NOT_FOUND");
         const updated = await checkFriend(f);
         return { queued: 1, friend: updated };
       }
       // 全量检测串行跑可能要几分钟，扔到后台，前端稍后刷新看结果。
-      const queued = await context.db.friend.count({
-        where: { status: { in: ["active", "outdate"] } },
-      });
+      const queued = await context.db.$count(friend, listed);
       void runFriendChecks().catch(() => {});
       return { queued, friend: null };
     }),
 
-  create: adminProcedure
-    .input(writeSchema)
-    .handler(({ context, input }) => context.db.friend.create({ data: input })),
+  create: adminProcedure.input(writeSchema).handler(async ({ context, input }) => {
+    const [row] = await context.db.insert(friend).values(input).returning();
+    return row!;
+  }),
 
-  update: adminProcedure.input(updateSchema).handler(({ context, input }) => {
+  update: adminProcedure.input(updateSchema).handler(async ({ context, input }) => {
     const { id, ...data } = input;
-    return context.db.friend.update({ where: { id }, data });
+    const [row] = await context.db.update(friend).set(data).where(eq(friend.id, id)).returning();
+    return row ?? notFound();
   }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .handler(({ context, input }) => context.db.friend.delete({ where: { id: input.id } })),
+    .handler(async ({ context, input }) => {
+      const [row] = await context.db.delete(friend).where(eq(friend.id, input.id)).returning();
+      return row ?? notFound();
+    }),
 };

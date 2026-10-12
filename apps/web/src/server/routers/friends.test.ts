@@ -1,13 +1,13 @@
+import { friend } from "@i/db/schema";
 import { call } from "@orpc/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Context } from "../orpc";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { createTestDb, makeContext } from "../../../test/db";
 import { friendsRouter } from "./friends";
 
 const redis = vi.hoisted(() => ({ incr: vi.fn(), expire: vi.fn() }));
-vi.mock("@i/db", () => ({
-  db: {},
+vi.mock("@i/db", async () => ({
+  ...(await (await import("../../../test/mock-db")).dbModule()),
   redis,
-  KEYS: { friendApply: (ip: string) => `friend:apply:${ip}` },
 }));
 vi.mock("@/lib/auth", () => ({ auth: {} }));
 // 邮件与存活检测都是发往外部的副作用
@@ -20,63 +20,58 @@ vi.mock("../friend-check", () => ({
   runFriendChecks: vi.fn(async () => {}),
 }));
 
-const friend = {
-  findMany: vi.fn(),
-  create: vi.fn(),
-  update: vi.fn(),
-};
-
-function ctx(opts: { role?: string; headers?: Record<string, string> } = {}): Context {
-  const user = opts.role ? { id: "u1", role: opts.role, email: "me@x.cc", image: null } : null;
-  return {
-    db: { friend } as unknown as Context["db"],
-    session: user ? ({ user } as unknown as Context["session"]) : null,
-    user: user as unknown as Context["user"],
-    headers: new Headers(opts.headers),
-  };
-}
-
-const apply = { name: "小站", url: "https://Blog.Example.com/", email: "a@b.cc" };
-
-beforeEach(() => {
+let t: Awaited<ReturnType<typeof createTestDb>>;
+beforeAll(async () => {
+  t = await createTestDb();
+});
+afterAll(() => t.close());
+beforeEach(async () => {
+  await t.reset();
   vi.clearAllMocks();
-  friend.findMany.mockResolvedValue([]);
-  friend.create.mockImplementation(async ({ data }) => ({ id: "new", ...data }));
-  friend.update.mockImplementation(async ({ where, data }) => ({ id: where.id, ...data }));
   redis.incr.mockResolvedValue(1);
   redis.expire.mockResolvedValue(1);
 });
 
+const ctx = (opts: Parameters<typeof makeContext>[1] = {}) => ({
+  context: makeContext(t.db, opts),
+});
+const admin = () => ctx({ role: "admin" });
+const friends = () => t.db.select().from(friend);
+const seed = (row: Partial<typeof friend.$inferInsert>) =>
+  t.db
+    .insert(friend)
+    .values({ name: "x", url: "https://x", ...row })
+    .returning()
+    .then((r) => r[0]!);
+
+const apply = { name: "小站", url: "https://Blog.Example.com/", email: "a@b.cc" };
+
 describe("friends.submit", () => {
-  it("新申请落库为 pending", async () => {
-    await expect(call(friendsRouter.submit, apply, { context: ctx() })).resolves.toEqual({
-      id: "new",
-    });
-    expect(friend.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ status: "pending", email: "a@b.cc", name: "小站" }),
-    });
+  it("新申请落库为 pending，不出现在公开列表", async () => {
+    const { id } = await call(friendsRouter.submit, apply, ctx());
+    const [row] = await friends();
+    expect(row).toMatchObject({ id, status: "pending", email: "a@b.cc", name: "小站" });
+    await expect(call(friendsRouter.list, undefined, ctx())).resolves.toEqual([]);
   });
 
   it("非 http(s) 链接 → BAD_REQUEST", async () => {
     await expect(
-      call(friendsRouter.submit, { ...apply, url: "ftp://example.com" }, { context: ctx() }),
+      call(friendsRouter.submit, { ...apply, url: "ftp://example.com" }, ctx()),
     ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "链接必须是 http(s) 地址" });
   });
 
   it("匿名且没留邮箱 → BAD_REQUEST；登录用户沿用账号邮箱", async () => {
     const { email: _, ...noEmail } = apply;
-    await expect(call(friendsRouter.submit, noEmail, { context: ctx() })).rejects.toMatchObject({
+    await expect(call(friendsRouter.submit, noEmail, ctx())).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
-    await call(friendsRouter.submit, noEmail, { context: ctx({ role: "user" }) });
-    expect(friend.create.mock.calls[0]![0].data.email).toBe("me@x.cc");
+    await call(friendsRouter.submit, noEmail, ctx({ role: "user", email: "me@x.cc" }));
+    expect((await friends())[0]!.email).toBe("me@x.cc");
   });
 
   it("URL 归一化去重：大小写 / 尾斜杠不同也算同一个站", async () => {
-    friend.findMany.mockResolvedValue([
-      { id: "f1", url: "https://blog.example.com", status: "pending" },
-    ]);
-    await expect(call(friendsRouter.submit, apply, { context: ctx() })).rejects.toMatchObject({
+    await seed({ url: "https://blog.example.com", status: "pending" });
+    await expect(call(friendsRouter.submit, apply, ctx())).rejects.toMatchObject({
       code: "CONFLICT",
       message: "这个链接已经在审核队列里啦",
     });
@@ -85,35 +80,35 @@ describe("friends.submit", () => {
   });
 
   it("此前被拒绝的链接可以重新申请，复用原行并清空检测状态", async () => {
-    friend.findMany.mockResolvedValue([
-      { id: "f1", url: "https://blog.example.com", status: "rejected" },
-    ]);
-    await call(friendsRouter.submit, apply, { context: ctx() });
-    expect(friend.create).not.toHaveBeenCalled();
-    expect(friend.update).toHaveBeenCalledWith({
-      where: { id: "f1" },
-      data: expect.objectContaining({ status: "pending", checkedAt: null, failCount: 0 }),
+    const old = await seed({
+      url: "https://blog.example.com",
+      status: "rejected",
+      failCount: 5,
+      checkedAt: new Date(),
     });
+    await call(friendsRouter.submit, apply, ctx());
+    const all = await friends();
+    expect(all).toHaveLength(1);
+    expect(all[0]).toMatchObject({ id: old.id, status: "pending", failCount: 0, checkedAt: null });
   });
 
   it("同 IP 每小时超过 3 次 → TOO_MANY_REQUESTS", async () => {
     redis.incr.mockResolvedValue(4);
-    await expect(call(friendsRouter.submit, apply, { context: ctx() })).rejects.toMatchObject({
+    await expect(call(friendsRouter.submit, apply, ctx())).rejects.toMatchObject({
       code: "TOO_MANY_REQUESTS",
     });
-    expect(friend.create).not.toHaveBeenCalled();
+    expect(await friends()).toHaveLength(0);
   });
 
   it("redis 挂了放行，不挡正常申请", async () => {
     redis.incr.mockRejectedValue(new Error("ECONNREFUSED"));
-    await expect(call(friendsRouter.submit, apply, { context: ctx() })).resolves.toEqual({
-      id: "new",
-    });
+    await call(friendsRouter.submit, apply, ctx());
+    expect(await friends()).toHaveLength(1);
   });
 
   it("管理员不受限流", async () => {
     redis.incr.mockResolvedValue(99);
-    await call(friendsRouter.submit, apply, { context: ctx({ role: "admin" }) });
+    await call(friendsRouter.submit, apply, admin());
     expect(redis.incr).not.toHaveBeenCalled();
   });
 
@@ -124,21 +119,34 @@ describe("friends.submit", () => {
     [{ "x-forwarded-for": "9.9.9.9, 3.3.3.3" }, "3.3.3.3"],
     [{}, "unknown"],
   ])("限流按可信 IP 计数 %o → %s", async (headers, ip) => {
-    await call(friendsRouter.submit, apply, { context: ctx({ headers }) });
+    await call(friendsRouter.submit, apply, ctx({ headers }));
     expect(redis.incr).toHaveBeenCalledWith(`friend:apply:${ip}`);
   });
 });
 
-describe("friends.update", () => {
-  it("只改名字时不会把 status / sortOrder 重置成默认值", async () => {
-    await call(
-      friendsRouter.update,
-      { id: "f1", name: "新名字" },
-      { context: ctx({ role: "admin" }) },
-    );
-    const { data } = friend.update.mock.calls[0]![0];
-    expect(data).not.toHaveProperty("status");
-    expect(data).not.toHaveProperty("sortOrder");
-    expect(data.name).toBe("新名字");
+describe("friends 后台", () => {
+  it("review 通过：进公开列表、排到末尾、默认分组「朋友」", async () => {
+    await seed({ name: "老朋友", status: "active", sortOrder: 7, group: "朋友" });
+    const p = await seed({ name: "新朋友", status: "pending" });
+    await call(friendsRouter.review, { id: p.id, action: "approve" }, admin());
+    const list = await call(friendsRouter.list, undefined, ctx());
+    expect(list.map((f) => [f.name, f.sortOrder, f.group])).toEqual([
+      ["老朋友", 7, "朋友"],
+      ["新朋友", 8, "朋友"],
+    ]);
+    // 公开列表不泄露邮箱 / 留言
+    expect(list[0]).not.toHaveProperty("email");
+  });
+
+  it("update 只改名字时不会把 status / sortOrder 重置成默认值", async () => {
+    const f = await seed({ status: "pending", sortOrder: 3 });
+    await call(friendsRouter.update, { id: f.id, name: "新名字" }, admin());
+    expect((await friends())[0]).toMatchObject({ name: "新名字", status: "pending", sortOrder: 3 });
+  });
+
+  it("delete 不存在的 id → NOT_FOUND", async () => {
+    await expect(call(friendsRouter.delete, { id: "nope" }, admin())).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
   });
 });

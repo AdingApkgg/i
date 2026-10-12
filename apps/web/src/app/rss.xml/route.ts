@@ -1,5 +1,6 @@
 import { siteConfig } from "@i/config";
-import { db } from "@i/db";
+import { db, post } from "@i/db";
+import { desc, eq } from "drizzle-orm";
 import { absUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
@@ -16,20 +17,19 @@ const esc = (s: string) =>
 
 /** 博客 RSS 2.0 —— 旧 Hexo 站的订阅地址，迁过来保持不变。 */
 export async function GET() {
-  const posts = await db.post
-    .findMany({
-      where: { status: "published" },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      take: FEED_SIZE,
-      select: {
-        slug: true,
-        title: true,
-        excerpt: true,
-        tags: true,
-        publishedAt: true,
-        createdAt: true,
-      },
+  const posts = await db
+    .select({
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      tags: post.tags,
+      publishedAt: post.publishedAt,
+      createdAt: post.createdAt,
     })
+    .from(post)
+    .where(eq(post.status, "published"))
+    .orderBy(desc(post.publishedAt), desc(post.createdAt))
+    .limit(FEED_SIZE)
     .catch(() => []);
 
   const self = absUrl("/rss.xml");
@@ -44,7 +44,7 @@ export async function GET() {
         `      <guid isPermaLink="true">${esc(link)}</guid>`,
         `      <pubDate>${(p.publishedAt ?? p.createdAt).toUTCString()}</pubDate>`,
         p.excerpt ? `      <description>${esc(p.excerpt)}</description>` : "",
-        ...p.tags.map((t) => `      <category>${esc(t)}</category>`),
+        ...(p.tags ?? []).map((t) => `      <category>${esc(t)}</category>`),
         "    </item>",
       ]
         .filter(Boolean)

@@ -43,10 +43,10 @@ jobs:
       - name: Lint (Biome)
         run: bun run lint
 
-      # turbo 会先跑 db:generate（Prisma 生成客户端，不需要数据库）
       - name: Typecheck
         run: bun run typecheck
 
+      # 数据层测试跑在进程内的 PGlite（WASM Postgres）上，不需要数据库服务
       - name: Test (Vitest)
         run: bun run test
 

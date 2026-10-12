@@ -1,5 +1,6 @@
 import { siteConfig } from "@i/config";
-import { db } from "@i/db";
+import { db, post } from "@i/db";
+import { eq } from "drizzle-orm";
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgImage } from "@/lib/og";
 
 export const dynamic = "force-dynamic";
@@ -11,16 +12,20 @@ const fmt = (d: Date) => new Intl.DateTimeFormat("zh-CN", { dateStyle: "long" })
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = await db.post
-    .findUnique({
-      where: { slug },
-      select: { title: true, tags: true, publishedAt: true, createdAt: true },
+  const [row] = await db
+    .select({
+      title: post.title,
+      tags: post.tags,
+      publishedAt: post.publishedAt,
+      createdAt: post.createdAt,
     })
-    .catch(() => null);
-  if (!post) return renderOgImage({ eyebrow: "博客", title: siteConfig.tagline });
+    .from(post)
+    .where(eq(post.slug, slug))
+    .catch(() => []);
+  if (!row) return renderOgImage({ eyebrow: "博客", title: siteConfig.tagline });
   const meta = [
-    fmt(post.publishedAt ?? post.createdAt),
-    ...post.tags.slice(0, 3).map((t) => `#${t}`),
+    fmt(row.publishedAt ?? row.createdAt),
+    ...(row.tags ?? []).slice(0, 3).map((t) => `#${t}`),
   ].join("  ·  ");
-  return renderOgImage({ eyebrow: "博客", title: post.title, meta });
+  return renderOgImage({ eyebrow: "博客", title: row.title, meta });
 }

@@ -28,7 +28,7 @@ export default async function BlogPage() {
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.excerpt}</p>
                     )}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {p.tags.map((t) => (
+                      {(p.tags ?? []).map((t) => (
                         <Badge key={t}>{t}</Badge>
                       ))}
                       <span className="ml-auto text-xs text-muted-foreground">

@@ -8,8 +8,8 @@ const config: NextConfig = {
   // Transpile the workspace TS packages (they ship raw src, not built dist).
   transpilePackages: ["@i/ui", "@i/db", "@i/config"],
   // @i/db's node deps must resolve at runtime, not be bundled by the server
-  // compiler (Prisma's generated client + pg/ioredis native bits).
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "ioredis"],
+  // compiler (pg/ioredis native bits).
+  serverExternalPackages: ["pg", "ioredis"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },

@@ -1,5 +1,8 @@
+import { album, device, moment, movie, touhou, track, vn } from "@i/db";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { crudRouter } from "../crud";
+import type { OrderSpec } from "../pagination";
 
 /** shared optional bits */
 const rating = z.number().int().min(0).max(10).nullish();
@@ -12,12 +15,15 @@ const sortOrder = z
   .nullish()
   .transform((v) => v ?? 0);
 
-const bySort = [{ sortOrder: "asc" as const }, { createdAt: "desc" as const }];
+const bySort = (t: { sortOrder: PgColumn; createdAt: PgColumn }): OrderSpec => [
+  [t.sortOrder, "asc"],
+  [t.createdAt, "desc"],
+];
 
 // ---- 音乐 ----
 export const musicRouter = crudRouter({
-  model: (db) => db.track,
-  orderBy: bySort,
+  table: track,
+  order: bySort(track),
   createSchema: z.object({
     title: z.string().min(1),
     artist: str,
@@ -33,8 +39,8 @@ export const musicRouter = crudRouter({
 
 // ---- 影视 ----
 export const movieRouter = crudRouter({
-  model: (db) => db.movie,
-  orderBy: bySort,
+  table: movie,
+  order: bySort(movie),
   createSchema: z.object({
     title: z.string().min(1),
     category: str,
@@ -50,8 +56,8 @@ export const movieRouter = crudRouter({
 
 // ---- 视觉小说 / Galgame ----
 export const vnRouter = crudRouter({
-  model: (db) => db.vn,
-  orderBy: bySort,
+  table: vn,
+  order: bySort(vn),
   createSchema: z.object({
     title: z.string().min(1),
     brand: str,
@@ -67,8 +73,8 @@ export const vnRouter = crudRouter({
 
 // ---- 东方 ----
 export const touhouRouter = crudRouter({
-  model: (db) => db.touhou,
-  orderBy: bySort,
+  table: touhou,
+  order: bySort(touhou),
   createSchema: z.object({
     title: z.string().min(1),
     category: z.enum(["game", "music", "print", "doujin"]).optional(),
@@ -83,8 +89,8 @@ export const touhouRouter = crudRouter({
 
 // ---- 设备 ----
 export const deviceRouter = crudRouter({
-  model: (db) => db.device,
-  orderBy: bySort,
+  table: device,
+  order: bySort(device),
   createSchema: z.object({
     name: z.string().min(1),
     category: str,
@@ -99,8 +105,8 @@ export const deviceRouter = crudRouter({
 
 // ---- 相册·图集 ----（照片在 ./gallery，专用路由：分页/批量移动/预览聚合）
 export const albumsRouter = crudRouter({
-  model: (db) => db.album,
-  orderBy: bySort,
+  table: album,
+  order: bySort(album),
   createSchema: z.object({
     // 「未分类」是前台伪图集（albumId 为空的照片）的保留名，真实图集不得占用
     name: z
@@ -115,8 +121,7 @@ export const albumsRouter = crudRouter({
 
 // ---- 说说 ----
 export const momentsRouter = crudRouter({
-  model: (db) => db.moment,
-  orderBy: [{ createdAt: "desc" as const }],
+  table: moment,
   createSchema: z.object({
     content: z.string().min(1),
     mood: str,

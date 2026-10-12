@@ -1,17 +1,15 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "./generated/prisma/client";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import * as schema from "./schema";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+const globalForDb = globalThis as unknown as { pgPool: Pool | undefined };
 
-function makeClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-  return new PrismaClient({ adapter });
-}
-
-export const db = globalForPrisma.prisma ?? makeClient();
+// 连接池懒连接：构建期 / 无 DATABASE_URL 时不会真正建连，查询才会报错
+const pool = globalForDb.pgPool ?? new Pool({ connectionString: process.env.DATABASE_URL });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+  globalForDb.pgPool = pool;
 }
+
+export const db = drizzle(pool, { schema });
+export type Db = typeof db;

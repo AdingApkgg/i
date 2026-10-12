@@ -14,9 +14,6 @@ next-env.d.ts
 # turbo
 .turbo/
 
-# prisma generated client
-**/src/generated/
-
 # env & secrets
 .env
 .env.*.local

@@ -1,4 +1,7 @@
+import { monitor, monitorCheck } from "@i/db";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { notFound } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
@@ -11,35 +14,43 @@ const upsert = z.object({
 
 export const monitorRouter = {
   list: publicProcedure.handler(({ context }) =>
-    context.db.monitor.findMany({ orderBy: { createdAt: "desc" } }),
+    context.db.select().from(monitor).orderBy(desc(monitor.createdAt)),
   ),
 
-  create: adminProcedure
-    .input(upsert)
-    .handler(({ context, input }) => context.db.monitor.create({ data: input })),
+  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+    const [row] = await context.db.insert(monitor).values(input).returning();
+    return row!;
+  }),
 
   update: adminProcedure
     .input(upsert.partial().extend({ id: z.string().min(1) }))
-    .handler(({ context, input }) => {
+    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return context.db.monitor.update({ where: { id }, data });
+      const [row] = await context.db
+        .update(monitor)
+        .set(data)
+        .where(eq(monitor.id, id))
+        .returning();
+      return row ?? notFound();
     }),
 
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .handler(({ context, input }) => context.db.monitor.delete({ where: { id: input.id } })),
+  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+    const [row] = await context.db.delete(monitor).where(eq(monitor.id, input.id)).returning();
+    return row ?? notFound();
+  }),
 
   /** Latest check per enabled target (populated by the background scheduler). */
   status: publicProcedure.handler(async ({ context }) => {
-    const monitors = await context.db.monitor.findMany({
-      where: { enabled: true },
-      orderBy: { createdAt: "desc" },
-    });
-    const rows = await Promise.all(
+    const monitors = await context.db
+      .select()
+      .from(monitor)
+      .where(eq(monitor.enabled, true))
+      .orderBy(desc(monitor.createdAt));
+    return Promise.all(
       monitors.map(async (m) => {
-        const last = await context.db.monitorCheck.findFirst({
-          where: { monitorId: m.id },
-          orderBy: { checkedAt: "desc" },
+        const last = await context.db.query.monitorCheck.findFirst({
+          where: eq(monitorCheck.monitorId, m.id),
+          orderBy: desc(monitorCheck.checkedAt),
         });
         return {
           id: m.id,
@@ -53,6 +64,5 @@ export const monitorRouter = {
         };
       }),
     );
-    return rows;
   }),
 };

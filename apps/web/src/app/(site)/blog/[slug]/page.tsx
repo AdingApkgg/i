@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       url: `/blog/${post.slug}`,
       publishedTime: (post.publishedAt ?? post.createdAt).toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
-      tags: post.tags,
+      tags: post.tags ?? [],
     },
   };
 }
@@ -53,7 +53,7 @@ export default async function PostPage({ params }: { params: Params }) {
       <h1 className="text-3xl font-bold tracking-wide">{post.title}</h1>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>{fmt(post.publishedAt ?? post.createdAt)}</span>
-        {post.tags.map((t) => (
+        {(post.tags ?? []).map((t) => (
           <Badge key={t}>{t}</Badge>
         ))}
       </div>

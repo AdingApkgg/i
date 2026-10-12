@@ -1,5 +1,6 @@
 import { DOMAINS } from "@i/config";
-import { db } from "@i/db";
+import { album, db, post } from "@i/db";
+import { desc, eq } from "drizzle-orm";
 import type { MetadataRoute } from "next";
 import { absUrl } from "@/lib/site-url";
 
@@ -8,14 +9,16 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [posts, albums] = await Promise.all([
-    db.post
-      .findMany({
-        where: { status: "published" },
-        select: { slug: true, updatedAt: true },
-        orderBy: { publishedAt: "desc" },
-      })
+    db
+      .select({ slug: post.slug, updatedAt: post.updatedAt })
+      .from(post)
+      .where(eq(post.status, "published"))
+      .orderBy(desc(post.publishedAt))
       .catch(() => []),
-    db.album.findMany({ select: { name: true, updatedAt: true } }).catch(() => []),
+    db
+      .select({ name: album.name, updatedAt: album.updatedAt })
+      .from(album)
+      .catch(() => []),
   ]);
 
   return [

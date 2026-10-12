@@ -2,7 +2,6 @@
 **/.next
 **/.turbo
 **/dist
-**/src/generated
 **/*.tsbuildinfo
 .git
 .github

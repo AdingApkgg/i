@@ -6,9 +6,11 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { inArray } from "drizzle-orm";
 import matter from "gray-matter";
 import { parse as parseYaml } from "yaml";
 import { db } from "../src/client";
+import { friend, moment, movie, page, photo, post, track } from "../src/schema";
 
 const SRC = process.env.HEXO_SRC ?? "/app/.import/hexo/source";
 
@@ -44,28 +46,19 @@ async function importPosts() {
       .slice(0, 8);
     const excerpt = (data.description ? String(data.description) : stripMd(content)).slice(0, 160);
     const cover = data.cover ?? data.top_img ?? null;
-    await db.post.upsert({
-      where: { slug },
-      update: {
-        title,
-        excerpt,
-        contentMd: content,
-        tags,
-        status: "published",
-        publishedAt: date,
-        coverUrl: cover ? String(cover) : null,
-      },
-      create: {
-        slug,
-        title,
-        excerpt,
-        contentMd: content,
-        tags,
-        status: "published",
-        publishedAt: date,
-        coverUrl: cover ? String(cover) : null,
-      },
-    });
+    const fields = {
+      title,
+      excerpt,
+      contentMd: content,
+      tags,
+      status: "published",
+      publishedAt: date,
+      coverUrl: cover ? String(cover) : null,
+    };
+    await db
+      .insert(post)
+      .values({ slug, ...fields })
+      .onConflictDoUpdate({ target: post.slug, set: fields });
     n++;
   }
   return n;
@@ -81,22 +74,20 @@ async function importFriends() {
   }[];
   // Skip the "技术支持" credits group; keep real friend groups (incl. class_name).
   // Only wipe imported/published rows — live pending/rejected applications survive.
-  await db.friend.deleteMany({ where: { status: { in: ["active", "outdate"] } } });
+  await db.delete(friend).where(inArray(friend.status, ["active", "outdate"]));
   let n = 0;
   for (const g of groups ?? []) {
     if (!g.class_name || g.class_name.includes("技术支持")) continue;
     for (const l of g.link_list ?? []) {
       if (!l.name || !l.link) continue;
-      await db.friend.create({
-        data: {
-          name: String(l.name),
-          url: String(l.link),
-          avatarUrl: l.avatar ? String(l.avatar) : null,
-          description: l.descr ? String(l.descr) : null,
-          group: String(g.class_name).trim(),
-          status: "active",
-          sortOrder: n,
-        },
+      await db.insert(friend).values({
+        name: String(l.name),
+        url: String(l.link),
+        avatarUrl: l.avatar ? String(l.avatar) : null,
+        description: l.descr ? String(l.descr) : null,
+        group: String(g.class_name).trim(),
+        status: "active",
+        sortOrder: n,
       });
       n++;
     }
@@ -113,16 +104,14 @@ async function importMoments() {
     content?: string;
     tag?: string;
   }[];
-  await db.moment.deleteMany({});
+  await db.delete(moment);
   let n = 0;
   for (const s of list ?? []) {
     if (!s.content) continue;
-    await db.moment.create({
-      data: {
-        content: String(s.content).trim(),
-        mood: s.tag ? String(s.tag) : null,
-        createdAt: s.date ? new Date(s.date) : new Date(),
-      },
+    await db.insert(moment).values({
+      content: String(s.content).trim(),
+      mood: s.tag ? String(s.tag) : null,
+      createdAt: s.date ? new Date(s.date) : new Date(),
     });
     n++;
   }
@@ -141,7 +130,7 @@ async function importMovies() {
   const file = join(SRC, "movie", "index.md");
   if (!existsSync(file)) return 0;
   const lines = matter(readFileSync(file, "utf8")).content.split("\n");
-  await db.movie.deleteMany({});
+  await db.delete(movie);
   let n = 0;
   for (let i = 0; i < lines.length; i++) {
     const h = lines[i]!.match(/^##\s+(.+)/);
@@ -155,9 +144,9 @@ async function importMovies() {
         break;
       }
     }
-    await db.movie.create({
-      data: { title, status: "看过", coverUrl: pic ? resolveImg(pic) : null, sortOrder: n },
-    });
+    await db
+      .insert(movie)
+      .values({ title, status: "看过", coverUrl: pic ? resolveImg(pic) : null, sortOrder: n });
     n++;
   }
   return n;
@@ -172,7 +161,7 @@ async function importGallery() {
       /galleryGroup\s+'([^']+)'\s+'[^']*'\s+'\/gallery\/([^/']+)\//g,
     ),
   ];
-  await db.photo.deleteMany({});
+  await db.delete(photo);
   let n = 0;
   for (const g of groups) {
     const name = g[1]!;
@@ -184,7 +173,7 @@ async function importGallery() {
       .filter((u) => /\.(webp|png|jpe?g|gif)$/i.test(u))
       .slice(0, 30);
     for (const p of imgs) {
-      await db.photo.create({ data: { title: name, imageUrl: resolveImg(p), sortOrder: n } });
+      await db.insert(photo).values({ title: name, imageUrl: resolveImg(p), sortOrder: n });
       n++;
     }
   }
@@ -197,14 +186,12 @@ async function importMusic() {
   if (!existsSync(file)) return 0;
   const content = matter(readFileSync(file, "utf8")).content;
   const heads = [...content.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1]!.trim());
-  await db.track.deleteMany({});
+  await db.delete(track);
   let n = 0;
   for (const h of heads) {
     // "ソードアート・オンライン（刀剑神域…）" → keep the 日文 head, note the 中文
     const jp = h.replace(/（.*?）|\(.*?\)/g, "").trim();
-    await db.track.create({
-      data: { title: jp || h, note: h, status: "在听", sortOrder: n },
-    });
+    await db.insert(track).values({ title: jp || h, note: h, status: "在听", sortOrder: n });
     n++;
   }
   return n;
@@ -220,11 +207,10 @@ async function importPages() {
     const file = join(SRC, rel);
     if (!existsSync(file)) continue;
     const { content } = matter(readFileSync(file, "utf8"));
-    await db.page.upsert({
-      where: { id: key },
-      update: { title, contentMd: content },
-      create: { id: key, title, contentMd: content },
-    });
+    await db
+      .insert(page)
+      .values({ id: key, title, contentMd: content })
+      .onConflictDoUpdate({ target: page.id, set: { title, contentMd: content } });
     n++;
   }
   return n;

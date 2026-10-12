@@ -1,12 +1,19 @@
+import { maimaiConfig, maimaiProfile, maimaiRecord } from "@i/db";
 import { ORPCError } from "@orpc/server";
+import { asc, desc, eq, ilike, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { syncMaimai } from "@/lib/maimai";
 import { adminProcedure, publicProcedure } from "../orpc";
 
+/** LIKE 通配符转义（Prisma 的 contains 会自动转义，这里手动保持同样语义）。 */
+const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
 export const maimaiRouter = {
   // ---- admin: config + sync ----
   config: adminProcedure.handler(async ({ context }) => {
-    const c = await context.db.maimaiConfig.findUnique({ where: { id: "current" } });
+    const c = await context.db.query.maimaiConfig.findFirst({
+      where: eq(maimaiConfig.id, "current"),
+    });
     return (
       c ?? {
         id: "current",
@@ -27,13 +34,14 @@ export const maimaiRouter = {
         lxnsPersonalToken: z.string().optional(),
       }),
     )
-    .handler(({ context, input }) =>
-      context.db.maimaiConfig.upsert({
-        where: { id: "current" },
-        update: input,
-        create: { id: "current", ...input },
-      }),
-    ),
+    .handler(async ({ context, input }) => {
+      const [row] = await context.db
+        .insert(maimaiConfig)
+        .values({ id: "current", ...input })
+        .onConflictDoUpdate({ target: maimaiConfig.id, set: input })
+        .returning();
+      return row!;
+    }),
 
   sync: adminProcedure.handler(async () => {
     try {
@@ -44,15 +52,19 @@ export const maimaiRouter = {
   }),
 
   // ---- public: profile + b50 + all records ----
-  profile: publicProcedure.handler(({ context }) =>
-    context.db.maimaiProfile.findUnique({ where: { id: "current" } }),
+  profile: publicProcedure.handler(
+    async ({ context }) =>
+      (await context.db.query.maimaiProfile.findFirst({
+        where: eq(maimaiProfile.id, "current"),
+      })) ?? null,
   ),
 
   b50: publicProcedure.handler(async ({ context }) => {
-    const rows = await context.db.maimaiRecord.findMany({
-      where: { pool: { not: null } },
-      orderBy: [{ pool: "asc" }, { boardOrder: "asc" }],
-    });
+    const rows = await context.db
+      .select()
+      .from(maimaiRecord)
+      .where(isNotNull(maimaiRecord.pool))
+      .orderBy(asc(maimaiRecord.pool), asc(maimaiRecord.boardOrder));
     return {
       b35: rows.filter((r) => r.pool === "b35"),
       b15: rows.filter((r) => r.pool === "b15"),
@@ -66,10 +78,11 @@ export const maimaiRouter = {
         .optional(),
     )
     .handler(({ context, input }) =>
-      context.db.maimaiRecord.findMany({
-        where: input?.q ? { title: { contains: input.q, mode: "insensitive" } } : undefined,
-        orderBy: [{ achievements: "desc" }],
-        take: input?.limit ?? 200,
-      }),
+      context.db
+        .select()
+        .from(maimaiRecord)
+        .where(input?.q ? ilike(maimaiRecord.title, `%${escapeLike(input.q)}%`) : undefined)
+        .orderBy(desc(maimaiRecord.achievements))
+        .limit(input?.limit ?? 200),
     ),
 };

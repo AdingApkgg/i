@@ -24,7 +24,9 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { eq } from "drizzle-orm";
 import { db } from "../src/client";
+import { friend, movie, photo, post } from "../src/schema";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT ?? "http://minio:9000";
 const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY ?? "minio";
@@ -178,10 +180,12 @@ async function pool<T>(items: T[], limit: number, worker: (x: T) => Promise<void
 async function main(): Promise<void> {
   await ensureBucket();
 
-  const posts = await db.post.findMany({ select: { id: true, contentMd: true, coverUrl: true } });
-  const photos = await db.photo.findMany({ select: { id: true, imageUrl: true } });
-  const movies = await db.movie.findMany({ select: { id: true, coverUrl: true } });
-  const friends = await db.friend.findMany({ select: { id: true, avatarUrl: true } });
+  const posts = await db
+    .select({ id: post.id, contentMd: post.contentMd, coverUrl: post.coverUrl })
+    .from(post);
+  const photos = await db.select({ id: photo.id, imageUrl: photo.imageUrl }).from(photo);
+  const movies = await db.select({ id: movie.id, coverUrl: movie.coverUrl }).from(movie);
+  const friends = await db.select({ id: friend.id, avatarUrl: friend.avatarUrl }).from(friend);
 
   // 1) collect unique resolved image urls
   const found = new Set<string>();
@@ -224,10 +228,10 @@ async function main(): Promise<void> {
       }
       const newCover = mapRef(p.coverUrl) ?? p.coverUrl;
       if (content !== p.contentMd || newCover !== p.coverUrl) {
-        await db.post.update({
-          where: { id: p.id },
-          data: { contentMd: content, coverUrl: newCover },
-        });
+        await db
+          .update(post)
+          .set({ contentMd: content, coverUrl: newCover })
+          .where(eq(post.id, p.id));
         postsUpdated++;
       }
     } catch (e) {
@@ -239,7 +243,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(ph.imageUrl);
       if (np && np !== ph.imageUrl) {
-        await db.photo.update({ where: { id: ph.id }, data: { imageUrl: np } });
+        await db.update(photo).set({ imageUrl: np }).where(eq(photo.id, ph.id));
         photosUpdated++;
       }
     } catch (e) {
@@ -251,7 +255,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(mv.coverUrl);
       if (np && np !== mv.coverUrl) {
-        await db.movie.update({ where: { id: mv.id }, data: { coverUrl: np } });
+        await db.update(movie).set({ coverUrl: np }).where(eq(movie.id, mv.id));
         moviesUpdated++;
       }
     } catch (e) {
@@ -263,7 +267,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(fr.avatarUrl);
       if (np && np !== fr.avatarUrl) {
-        await db.friend.update({ where: { id: fr.id }, data: { avatarUrl: np } });
+        await db.update(friend).set({ avatarUrl: np }).where(eq(friend.id, fr.id));
         friendsUpdated++;
       }
     } catch (e) {

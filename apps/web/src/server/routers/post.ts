@@ -1,5 +1,8 @@
+import { post } from "@i/db";
 import { ORPCError } from "@orpc/server";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { notFound, withDbErrors } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
@@ -19,43 +22,47 @@ export const postRouter = {
   list: publicProcedure
     .input(z.object({ includeDrafts: z.boolean().default(false) }).optional())
     .handler(({ context, input }) =>
-      context.db.post.findMany({
-        where: input?.includeDrafts ? {} : { status: "published" },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      }),
+      context.db
+        .select()
+        .from(post)
+        .where(input?.includeDrafts ? undefined : eq(post.status, "published"))
+        .orderBy(desc(post.publishedAt), desc(post.createdAt)),
     ),
 
   bySlug: publicProcedure
     .input(z.object({ slug: z.string() }))
     .handler(async ({ context, input }) => {
-      const post = await context.db.post.findUnique({ where: { slug: input.slug } });
-      if (!post) throw new ORPCError("NOT_FOUND");
-      return post;
+      const row = await context.db.query.post.findFirst({ where: eq(post.slug, input.slug) });
+      if (!row) throw new ORPCError("NOT_FOUND");
+      return row;
     }),
 
-  create: adminProcedure.input(upsert).handler(({ context, input }) =>
-    context.db.post.create({
-      data: {
-        ...input,
-        publishedAt: input.status === "published" ? new Date() : null,
-      },
-    }),
-  ),
+  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+    const [row] = await withDbErrors(() =>
+      context.db
+        .insert(post)
+        .values({ ...input, publishedAt: input.status === "published" ? new Date() : null })
+        .returning(),
+    );
+    return row!;
+  }),
 
   update: adminProcedure
     .input(upsert.partial().extend({ id: z.string() }))
-    .handler(({ context, input }) => {
+    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return context.db.post.update({
-        where: { id },
-        data: {
-          ...data,
-          ...(data.status === "published" ? { publishedAt: new Date() } : {}),
-        },
-      });
+      const [row] = await withDbErrors(() =>
+        context.db
+          .update(post)
+          .set({ ...data, ...(data.status === "published" ? { publishedAt: new Date() } : {}) })
+          .where(eq(post.id, id))
+          .returning(),
+      );
+      return row ?? notFound();
     }),
 
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .handler(({ context, input }) => context.db.post.delete({ where: { id: input.id } })),
+  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+    const [row] = await context.db.delete(post).where(eq(post.id, input.id)).returning();
+    return row ?? notFound();
+  }),
 };

@@ -46,14 +46,13 @@ services:
     restart: unless-stopped
 
   # One-shot schema push. Uses a plain bun image (no Next build) — installs deps,
-  # generates the Prisma client, pushes the schema, then exits.
+  # pushes the Drizzle schema (drizzle-kit push; no-op when already in sync), then exits.
   migrate:
     image: oven/bun:1
     working_dir: /app
     command: >
       bash -lc '
       bun install --frozen-lockfile &&
-      bun run --filter @i/db db:generate &&
       bun run --filter @i/db db:push'
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}

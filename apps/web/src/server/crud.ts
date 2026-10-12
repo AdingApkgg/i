@@ -1,39 +1,31 @@
+import { PG, pgErrorCode } from "@i/db";
 import { ORPCError } from "@orpc/server";
+import { eq, getTableColumns } from "drizzle-orm";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import type { Context } from "./orpc";
 import { adminProcedure, publicProcedure } from "./orpc";
+import { after, cursorValues, type OrderSpec, orderBy } from "./pagination";
 
 /**
- * 把 Prisma 约束错误翻译成语义化的 ORPCError（否则一律 500，dash 只见「保存失败」）。
- * P2002 唯一约束冲突 / P2003 外键目标不存在 / P2025 记录不存在。
+ * 把 Postgres 约束错误翻译成语义化的 ORPCError（否则一律 500，dash 只见「保存失败」）。
+ * 23505 唯一约束冲突 / 23503 外键目标不存在。
  */
 export async function withDbErrors<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (e) {
-    const code = (e as { code?: string }).code;
-    if (code === "P2002") throw new ORPCError("CONFLICT", { message: "已存在同名记录" });
-    if (code === "P2003")
+    const code = pgErrorCode(e);
+    if (code === PG.uniqueViolation) throw new ORPCError("CONFLICT", { message: "已存在同名记录" });
+    if (code === PG.foreignKeyViolation)
       throw new ORPCError("BAD_REQUEST", { message: "关联的记录不存在（可能已被删除）" });
-    if (code === "P2025") throw new ORPCError("NOT_FOUND", { message: "记录不存在" });
     throw e;
   }
 }
 
-/**
- * A Prisma model delegate (db.track, db.movie, …), narrowed to the CRUD verbs
- * the factory needs. `TRow` is inferred from the delegate so `list`/`byId`
- * return properly-typed rows to the callers.
- */
-// biome-ignore-start lint/suspicious/noExplicitAny: Prisma delegate args are structurally complex
-interface Delegate<TRow> {
-  findMany: (args?: any) => Promise<TRow[]>;
-  findUnique: (args: any) => Promise<TRow | null>;
-  create: (args: any) => Promise<TRow>;
-  update: (args: any) => Promise<TRow>;
-  delete: (args: any) => Promise<TRow>;
+/** update / delete 命中 0 行（id 不存在）时抛出。 */
+export function notFound(): never {
+  throw new ORPCError("NOT_FOUND", { message: "记录不存在" });
 }
-// biome-ignore-end lint/suspicious/noExplicitAny: see above
 
 const idSchema = z.object({ id: z.string().min(1) });
 
@@ -65,63 +57,89 @@ function stripDefaults<TShape extends z.ZodRawShape>(schema: z.ZodObject<TShape>
   return z.object(shape) as z.ZodObject<StrippedShape<TShape>>;
 }
 
+/** 走通用 CRUD 的表：必须有字符串主键 id。 */
+type CrudTable = PgTable & { id: PgColumn };
+
 /**
  * Standard CRUD router for a per-domain table:
- *   list/byId            → public reads
+ *   list/byId/page       → public reads
  *   create/update/delete → admin only (role admin|owner)
  */
-export function crudRouter<TShape extends z.ZodRawShape, TRow>(opts: {
-  model: (db: Context["db"]) => Delegate<TRow>;
+export function crudRouter<TTable extends CrudTable, TShape extends z.ZodRawShape>(opts: {
+  table: TTable;
   createSchema: z.ZodObject<TShape>;
-  orderBy?: unknown;
+  /** 排序（不含 id）；缺省 createdAt desc */
+  order?: OrderSpec;
 }) {
-  const { model, createSchema } = opts;
-  const orderBy = opts.orderBy ?? { createdAt: "desc" };
+  const { table, createSchema } = opts;
+  type Row = TTable["$inferSelect"];
+  const columns = getTableColumns(table) as Record<string, PgColumn>;
+  const order: OrderSpec = opts.order ?? [[columns.createdAt!, "desc"]];
+  // 游标分页要求排序完全确定，追加 id 兜底打破 sortOrder/createdAt 的并列
+  const pageOrder: OrderSpec = [...order, [table.id, "asc"]];
   const updateSchema = stripDefaults(createSchema)
     .partial()
     .extend({ id: z.string().min(1) });
-  // 游标分页要求排序完全确定，追加 id 兜底打破 sortOrder/createdAt 的并列
-  const pageOrderBy = [...(Array.isArray(orderBy) ? orderBy : [orderBy]), { id: "asc" }];
+
+  // 泛型表在 drizzle 的 builder 上推不出具体类型，统一在这里收窄
+  // biome-ignore lint/suspicious/noExplicitAny: see above
+  const t = table as any;
 
   return {
-    list: publicProcedure.handler(({ context }) => model(context.db).findMany({ orderBy })),
+    list: publicProcedure.handler(
+      ({ context }) =>
+        context.db
+          .select()
+          .from(t)
+          .orderBy(...orderBy(order)) as Promise<Row[]>,
+    ),
 
     /**
-     * 游标分页版 list：cursor 传上一页最后一条的 id，多取一条探测有无下一页。
-     * 已知限制：游标行若在翻页间隙被删除，Prisma 会返回空页、分页提前终止
-     * （刷新即恢复）；个人站删除频率低，不为此上 WHERE 键集分页的复杂度。
+     * 游标分页版 list：cursor 传上一页最后一条的 id，按游标行的排序键做键集分页，
+     * 多取一条探测有无下一页。游标行若在翻页间隙被删除则返回空页（刷新即恢复）。
      */
     page: publicProcedure.input(pageSchema).handler(async ({ context, input }) => {
-      const rows = await model(context.db).findMany({
-        orderBy: pageOrderBy,
-        take: input.limit + 1,
-        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-      });
+      let where: ReturnType<typeof after> | undefined;
+      if (input.cursor) {
+        const [cur] = await context.db.select().from(t).where(eq(table.id, input.cursor)).limit(1);
+        if (!cur) return { items: [] as Row[], nextCursor: null };
+        where = after(pageOrder, cursorValues(columns, pageOrder, cur));
+      }
+      const rows = (await context.db
+        .select()
+        .from(t)
+        .where(where)
+        .orderBy(...orderBy(pageOrder))
+        .limit(input.limit + 1)) as Row[];
       const hasMore = rows.length > input.limit;
       const items = hasMore ? rows.slice(0, input.limit) : rows;
       const last = items[items.length - 1] as { id: string } | undefined;
       return { items, nextCursor: hasMore && last ? last.id : null };
     }),
 
-    byId: publicProcedure
-      .input(idSchema)
-      .handler(({ context, input }) => model(context.db).findUnique({ where: { id: input.id } })),
-
-    create: adminProcedure
-      .input(createSchema)
-      .handler(({ context, input }) =>
-        withDbErrors(() => model(context.db).create({ data: input })),
-      ),
-
-    update: adminProcedure.input(updateSchema).handler(({ context, input }) => {
-      const { id, ...data } = input as { id: string } & Record<string, unknown>;
-      return withDbErrors(() => model(context.db).update({ where: { id }, data }));
+    byId: publicProcedure.input(idSchema).handler(async ({ context, input }) => {
+      const [row] = await context.db.select().from(t).where(eq(table.id, input.id)).limit(1);
+      return (row ?? null) as Row | null;
     }),
 
-    delete: adminProcedure
-      .input(idSchema)
-      .handler(({ context, input }) =>
-        withDbErrors(() => model(context.db).delete({ where: { id: input.id } })),
-      ),
+    create: adminProcedure.input(createSchema).handler(async ({ context, input }) => {
+      const [row] = (await withDbErrors(() =>
+        context.db.insert(t).values(input).returning(),
+      )) as Row[];
+      return row!;
+    }),
+
+    update: adminProcedure.input(updateSchema).handler(async ({ context, input }) => {
+      const { id, ...data } = input as { id: string } & Record<string, unknown>;
+      const [row] = (await withDbErrors(() =>
+        context.db.update(t).set(data).where(eq(table.id, id)).returning(),
+      )) as Row[];
+      return row ?? notFound();
+    }),
+
+    delete: adminProcedure.input(idSchema).handler(async ({ context, input }) => {
+      const [row] = (await context.db.delete(t).where(eq(table.id, input.id)).returning()) as Row[];
+      return row ?? notFound();
+    }),
   };
 }

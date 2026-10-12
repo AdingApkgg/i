@@ -1,15 +1,21 @@
+import { comment } from "@i/db";
 import { ORPCError } from "@orpc/server";
+import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
+import type { Context } from "../orpc";
 import { protectedProcedure, publicProcedure } from "../orpc";
 
-const withUser = { user: { select: { id: true, name: true, image: true } } };
+const withUser = { user: { columns: { id: true, name: true, image: true } } } as const;
+
+const byId = (db: Context["db"], id: string) =>
+  db.query.comment.findFirst({ where: eq(comment.id, id), with: withUser });
 
 export const commentRouter = {
   list: publicProcedure.input(z.object({ path: z.string() })).handler(({ context, input }) =>
-    context.db.comment.findMany({
-      where: { path: input.path, status: "visible" },
-      orderBy: { createdAt: "asc" },
-      include: withUser,
+    context.db.query.comment.findMany({
+      where: and(eq(comment.path, input.path), eq(comment.status, "visible")),
+      orderBy: asc(comment.createdAt),
+      with: withUser,
     }),
   ),
 
@@ -21,27 +27,30 @@ export const commentRouter = {
         postId: z.string().optional(),
       }),
     )
-    .handler(({ context, input }) =>
-      context.db.comment.create({
-        data: {
+    .handler(async ({ context, input }) => {
+      const [row] = await context.db
+        .insert(comment)
+        .values({
           path: input.path,
           contentMd: input.contentMd,
           postId: input.postId ?? null,
           userId: context.user.id,
-        },
-        include: withUser,
-      }),
-    ),
+        })
+        .returning({ id: comment.id });
+      // 带上作者信息，和 list 的形状一致（前端乐观更新直接用）
+      return (await byId(context.db, row!.id))!;
+    }),
 
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .handler(async ({ context, input }) => {
-      const c = await context.db.comment.findUnique({ where: { id: input.id } });
+      const c = await context.db.query.comment.findFirst({ where: eq(comment.id, input.id) });
       if (!c) throw new ORPCError("NOT_FOUND");
       const role = (context.user as { role?: string }).role;
       if (c.userId !== context.user.id && role !== "admin" && role !== "owner") {
         throw new ORPCError("FORBIDDEN");
       }
-      return context.db.comment.delete({ where: { id: input.id } });
+      const [row] = await context.db.delete(comment).where(eq(comment.id, input.id)).returning();
+      return row!;
     }),
 };

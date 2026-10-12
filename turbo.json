@@ -15,23 +15,15 @@
     "S3_BUCKET"
   ],
   "tasks": {
-    "db:generate": {
-      "cache": false
-    },
     "build": {
-      "dependsOn": ["^db:generate", "^build"],
-      "outputs": [".next/**", "!.next/cache/**", "src/generated/**", "dist/**"]
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
-    "typecheck": {
-      "dependsOn": ["db:generate", "^db:generate"]
-    },
-    "test": {
-      "dependsOn": ["^db:generate"]
-    },
+    "typecheck": {},
+    "test": {},
     "dev": {
       "cache": false,
-      "persistent": true,
-      "dependsOn": ["^db:generate"]
+      "persistent": true
     },
     "start": {
       "cache": false,
