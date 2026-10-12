@@ -149,8 +149,12 @@ async function fetchLxns(token: string) {
     put(mapLxns(r, null, 0));
   }
   if (bests) {
-    (bests.standard ?? []).forEach((r: unknown, i: number) => put(mapLxns(r, "b35", i)));
-    (bests.dx ?? []).forEach((r: unknown, i: number) => put(mapLxns(r, "b15", i)));
+    (bests.standard ?? []).forEach((r: unknown, i: number) => {
+      put(mapLxns(r, "b35", i));
+    });
+    (bests.dx ?? []).forEach((r: unknown, i: number) => {
+      put(mapLxns(r, "b15", i));
+    });
   }
   return {
     nickname: String(player?.name ?? "maimai"),

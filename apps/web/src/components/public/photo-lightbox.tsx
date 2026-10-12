@@ -130,6 +130,7 @@ export function PhotoLightbox({
 
   // 换图 / 重开：重置变换与加载态（打开路径不经过 goto，必须在这里兜底）
   const photoId = photo?.id;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: photoId 是触发器，换图即重置
   useEffect(() => {
     setView(RESET_VIEW);
     setLoaded(false);
@@ -314,8 +315,7 @@ export function PhotoLightbox({
               className={gesturing ? "" : "transition-transform duration-150"}
               style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
             >
-              {/* biome-ignore lint/a11y/noStaticElementInteractions: 点图缩放，键盘走全局监听 */}
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: 同上 */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: 点图缩放，键盘走全局监听 */}
               {/* biome-ignore lint/performance/noImgElement: MinIO 原图，灯箱直连 */}
               <img
                 key={photo.id}

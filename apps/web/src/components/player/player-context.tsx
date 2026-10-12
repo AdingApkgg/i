@@ -103,9 +103,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     queryFn: () => fetchMeting("netease", "playlist", DEFAULT_PLAYLIST),
     staleTime: Number.POSITIVE_INFINITY,
   });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 仅首次填充，不随 queue 变化重跑
   useEffect(() => {
     if (playlist?.length && queue.length === 0) setQueue(shuffle(playlist));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅首次填充
   }, [playlist]);
 
   useEffect(() => {
@@ -169,7 +169,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
     const audio = audioRef.current;
     const src = audio?.currentSrc;
-    if (!audio || audio.crossOrigin !== "anonymous" || !src) return;
+    if (audio?.crossOrigin !== "anonymous" || !src) return;
     let ctx: AudioContext | null = null;
     try {
       ctx = new AudioContext();
@@ -420,6 +420,8 @@ function MiniDisc(p: DockProps) {
         glowOpacity={p.glowOpacity}
         glowScale={p.glowScale}
       />
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: 嵌在外层按钮内（button 不能套 button），键盘走展开面板的播放键 */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: 同上 */}
       <span
         className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm"
         onClick={(e) => {
@@ -549,6 +551,7 @@ function ExpandedPanel(p: DockProps) {
             <div className="mt-2 max-h-52 space-y-0.5 overflow-y-auto border-t border-border pt-2">
               {p.queue.map((s, i) => (
                 <button
+                  // biome-ignore lint/suspicious/noArrayIndexKey: 队列允许同一首歌重复出现
                   key={`${s.url}-${i}`}
                   type="button"
                   onClick={() => p.onSwitch(i)}

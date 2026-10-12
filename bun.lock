@@ -5,7 +5,7 @@
     "": {
       "name": "i",
       "devDependencies": {
-        "@biomejs/biome": "^2.3.0",
+        "@biomejs/biome": "^2.5.8",
         "turbo": "^2.5.9",
         "typescript": "^6.0.2",
       },

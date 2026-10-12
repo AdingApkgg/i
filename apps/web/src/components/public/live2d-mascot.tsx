@@ -84,6 +84,8 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   }, [showTip]);
 
   // ---- 引擎生命周期 ----
+  // 初次挂载后模型切换走 switchModel，不重建引擎，故不依赖 group/costume
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 见上
   useEffect(() => {
     if (hidden !== false || !list) return;
     const canvas = canvasRef.current;
@@ -117,8 +119,6 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
       engine?.destroy();
       engineRef.current = null;
     };
-    // 初次挂载后模型切换走 switchModel，不重建引擎
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hidden, list, width, height]);
 
   // ---- 换装/换人 ----
@@ -297,11 +297,36 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   }
 
   const tools: { id: string; icon: React.ReactNode; label: string; onClick: () => void }[] = [
-    { id: "hitokoto", icon: <Quote className="size-3.5" />, label: "一言", onClick: () => void showHitokoto() },
-    { id: "asteroids", icon: <Rocket className="size-3.5" />, label: "打飞机", onClick: startAsteroids },
-    { id: "switch-model", icon: <Users className="size-3.5" />, label: "换人", onClick: switchGroup },
-    { id: "switch-texture", icon: <Shirt className="size-3.5" />, label: "换装", onClick: switchCostume },
-    { id: "photo", icon: <Camera className="size-3.5" />, label: "拍照", onClick: () => void takePhoto() },
+    {
+      id: "hitokoto",
+      icon: <Quote className="size-3.5" />,
+      label: "一言",
+      onClick: () => void showHitokoto(),
+    },
+    {
+      id: "asteroids",
+      icon: <Rocket className="size-3.5" />,
+      label: "打飞机",
+      onClick: startAsteroids,
+    },
+    {
+      id: "switch-model",
+      icon: <Users className="size-3.5" />,
+      label: "换人",
+      onClick: switchGroup,
+    },
+    {
+      id: "switch-texture",
+      icon: <Shirt className="size-3.5" />,
+      label: "换装",
+      onClick: switchCostume,
+    },
+    {
+      id: "photo",
+      icon: <Camera className="size-3.5" />,
+      label: "拍照",
+      onClick: () => void takePhoto(),
+    },
     {
       id: "info",
       icon: <Info className="size-3.5" />,
