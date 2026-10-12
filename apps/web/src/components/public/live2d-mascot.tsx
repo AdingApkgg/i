@@ -14,6 +14,7 @@ import {
   modelSrc,
   pick,
   WAIFU_LS,
+  WAIFU_SAY_EVENT,
   type WaifuTips,
   welcomeMessage,
 } from "@/lib/live2d/waifu";
@@ -234,6 +235,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
       }
     };
     const onCopy = () => showTip(tipsRef.current?.message.copy, 5000, 3);
+    const onSay = (e: Event) => showTip((e as CustomEvent<string>).detail, 7000, 3);
     const onVis = () => {
       if (!document.hidden) showTip(tipsRef.current?.message.visibilitychange, 5000, 3);
     };
@@ -241,6 +243,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
     document.addEventListener("click", onClick);
     document.addEventListener("copy", onCopy);
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener(WAIFU_SAY_EVENT, onSay);
     // 控制台检测：console.log("%c", trap) + toString 陷阱 —— DevTools 渲染日志时才触发
     let warned = false;
     const trap = {
@@ -258,6 +261,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
       document.removeEventListener("click", onClick);
       document.removeEventListener("copy", onCopy);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener(WAIFU_SAY_EVENT, onSay);
     };
   }, [hidden, showTip]);
 

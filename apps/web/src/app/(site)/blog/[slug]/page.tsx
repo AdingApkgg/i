@@ -1,17 +1,54 @@
+import { siteConfig } from "@i/config";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { HexoContent } from "@/components/hexo/content";
 import { Badge } from "@/components/public/collection";
 import { Comments } from "@/components/public/comments";
+import { RSS_ALTERNATE_TYPES } from "@/lib/site-url";
 import { trpcServer } from "@/lib/trpc/server";
+
+type Params = Promise<{ slug: string }>;
+
+// generateMetadata 与页面共用一次查询
+const getPost = cache(async (slug: string) => {
+  const api = await trpcServer();
+  return api.blog.bySlug({ slug }).catch(() => null);
+});
 
 function fmt(d: Date | string) {
   return new Intl.DateTimeFormat("zh-CN", { dateStyle: "long" }).format(new Date(d));
 }
 
-export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const api = await trpcServer();
-  const post = await api.blog.bySlug({ slug }).catch(() => null);
+  const post = await getPost(slug);
+  if (!post) return {};
+  const description = post.excerpt ?? undefined;
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical: `/blog/${post.slug}`, types: RSS_ALTERNATE_TYPES },
+    // 草稿可凭 slug 预览，但不让搜索引擎收录
+    robots: post.status === "published" ? undefined : { index: false },
+    // openGraph 会整体覆盖父级，siteName/locale 要带上
+    openGraph: {
+      siteName: siteConfig.title,
+      locale: "zh_CN",
+      type: "article",
+      title: post.title,
+      description,
+      url: `/blog/${post.slug}`,
+      publishedTime: (post.publishedAt ?? post.createdAt).toISOString(),
+      modifiedTime: post.updatedAt.toISOString(),
+      tags: post.tags,
+    },
+  };
+}
+
+export default async function PostPage({ params }: { params: Params }) {
+  const { slug } = await params;
+  const post = await getPost(slug);
   if (!post) notFound();
 
   return (
