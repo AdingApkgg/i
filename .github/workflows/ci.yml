@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# 同一分支 / PR 的新推送取消旧的运行
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  check:
+    name: lint · typecheck · test · build
+    # 本仓库分支的 PR 已经由 push 触发过一次，只给 fork 来的 PR 再跑
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json # 读 packageManager 字段，和本地一致
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint (Biome)
+        run: bun run lint
+
+      # turbo 会先跑 db:generate（Prisma 生成客户端，不需要数据库）
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test (Vitest)
+        run: bun run test
+
+      # 页面都是按请求渲染，构建期不连 DB / Redis
+      - name: Build
+        run: bun run build

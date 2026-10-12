@@ -1,5 +1,7 @@
 # i · 个人空间 (v2)
 
+[![CI](https://github.com/AdingApkgg/i/actions/workflows/ci.yml/badge.svg)](https://github.com/AdingApkgg/i/actions/workflows/ci.yml)
+
 独属于某个变态的后花园。Next.js 全栈重写版。
 
 ## 技术栈
@@ -44,6 +46,8 @@ cd apps/web && bun run test:watch     # 监听模式
 
 单测与源码同目录（`*.test.ts`），不连数据库：Prisma / Redis / better-auth 用 `vi.mock` 替身，
 oRPC 路由用 `call(procedure, input, { context })` 直接调用。
+
+CI（`.github/workflows/ci.yml`）每次推送依次跑 lint → typecheck → test → build。
 
 ## 部署
 
