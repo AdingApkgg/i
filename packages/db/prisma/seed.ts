@@ -10,9 +10,9 @@ async function main() {
       slug: "hello-world",
       title: "你好，世界 ✿",
       excerpt:
-        "i 个人空间 v2 的第一篇文章。Next 全栈 · Prisma 7 · tRPC · better-auth · 粉粉的萌系设计。",
+        "i 个人空间 v2 的第一篇文章。Next 全栈 · Prisma 7 · oRPC · better-auth · 粉粉的萌系设计。",
       contentMd:
-        "# 你好，世界\n\n这是 **i** 个人空间的 v2 重写：\n\n- Next.js 全栈 + tRPC\n- Prisma 7 + Postgres + Redis\n- better-auth（管理员 + 访客）\n- Tailwind v4 萌系粉调 + Live2D\n\n> 慢慢长大中 ✿",
+        "# 你好，世界\n\n这是 **i** 个人空间的 v2 重写：\n\n- Next.js 全栈 + oRPC\n- Prisma 7 + Postgres + Redis\n- better-auth（管理员 + 访客）\n- Tailwind v4 萌系粉调 + Live2D\n\n> 慢慢长大中 ✿",
       tags: ["随笔"],
       status: "published",
       publishedAt: new Date(),
@@ -153,7 +153,7 @@ async function main() {
     await db.moment.createMany({
       data: [
         { content: "把个人空间用 Next 全栈重写了一遍，粉粉的好可爱 (｡･ω･｡)", mood: "开心" },
-        { content: "tRPC + Prisma 真香，端到端类型安全。", mood: "满足" },
+        { content: "oRPC + Prisma 真香，端到端类型安全。", mood: "满足" },
       ],
     });
 

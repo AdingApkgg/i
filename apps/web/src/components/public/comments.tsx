@@ -7,7 +7,7 @@ import { LogOut, Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { authClient, useSession } from "@/lib/auth-client";
-import { useTRPC } from "@/lib/trpc/client";
+import { orpc } from "@/lib/orpc/client";
 import { VisitorAuth } from "./visitor-auth";
 
 function fmt(d: string | Date) {
@@ -18,14 +18,13 @@ function fmt(d: string | Date) {
 
 export function Comments({ path, postId }: { path: string; postId?: string }) {
   const { data: session } = useSession();
-  const trpc = useTRPC();
   const qc = useQueryClient();
-  const listOpts = trpc.comment.list.queryOptions({ path });
+  const listOpts = orpc.comment.list.queryOptions({ input: { path } });
   const { data: comments = [], isLoading } = useQuery(listOpts);
   const [text, setText] = useState("");
 
   const create = useMutation({
-    ...trpc.comment.create.mutationOptions(),
+    ...orpc.comment.create.mutationOptions(),
     onSuccess: () => {
       setText("");
       void qc.invalidateQueries({ queryKey: listOpts.queryKey });
@@ -37,7 +36,7 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
   // 不 spread mutationOptions()：它会把 context 类型钉死为 undefined，
   // 只取 mutationFn，让 context 从 onMutate 的返回值推断。
   const remove = useMutation({
-    mutationFn: trpc.comment.remove.mutationOptions().mutationFn,
+    mutationFn: orpc.comment.remove.mutationOptions().mutationFn,
     onMutate: async ({ id }: { id: string }) => {
       await qc.cancelQueries({ queryKey: listOpts.queryKey });
       const prev = qc.getQueryData(listOpts.queryKey);

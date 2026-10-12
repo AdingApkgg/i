@@ -7,7 +7,8 @@ import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FIELDS, type FieldSpec } from "@/lib/admin-fields";
-import { useTRPCClient } from "@/lib/trpc/client";
+import { client } from "@/lib/orpc/client";
+import { orpcErrText } from "@/lib/orpc/errors";
 
 type Row = Record<string, unknown> & { id: string };
 type FormState = Record<string, unknown>;
@@ -50,17 +51,18 @@ export const inputCls =
 export function DomainAdmin({ domainKey }: { domainKey: string }) {
   // The [domain] page already 404s unknown keys, so these are present.
   const spec = ADMIN_FIELDS[domainKey]!;
-  // tRPC vanilla client — dynamic router key access (typed router is per-literal).
-  const client = useTRPCClient() as unknown as Record<
-    string,
-    {
-      list: { query: () => Promise<Row[]> };
-      create: { mutate: (b: unknown) => Promise<unknown> };
-      update: { mutate: (b: unknown) => Promise<unknown> };
-      delete: { mutate: (b: { id: string }) => Promise<unknown> };
-    }
-  >;
-  const api = client[domainKey]!;
+  // 按 domainKey 动态取路由（类型化的 client 只认字面量 key），这里收窄成通用 CRUD 形状
+  const api = (
+    client as unknown as Record<
+      string,
+      {
+        list: () => Promise<Row[]>;
+        create: (b: unknown) => Promise<unknown>;
+        update: (b: unknown) => Promise<unknown>;
+        delete: (b: { id: string }) => Promise<unknown>;
+      }
+    >
+  )[domainKey]!;
 
   const qc = useQueryClient();
   const listKey = ["admin-list", domainKey];
@@ -68,7 +70,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     data: rows = [],
     isLoading,
     isError,
-  } = useQuery({ queryKey: listKey, queryFn: () => api.list.query() });
+  } = useQuery({ queryKey: listKey, queryFn: () => api.list() });
   const [editing, setEditing] = useState<Row | "new" | null>(null);
   const [form, setForm] = useState<FormState>({});
   const [saving, setSaving] = useState(false);
@@ -90,13 +92,14 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     setSaving(true);
     try {
       const body = toBody(spec.fields, form);
-      if (editing === "new") await api.create.mutate(body);
-      else if (editing) await api.update.mutate({ ...body, id: editing.id });
+      if (editing === "new") await api.create(body);
+      else if (editing) await api.update({ ...body, id: editing.id });
       toast.success("已保存 ✿");
       setEditing(null);
       await qc.invalidateQueries({ queryKey: listKey });
-    } catch {
-      toast.error("保存失败");
+    } catch (e) {
+      // withDbErrors 的语义化错误（如「已存在同名记录」）直接给出
+      toast.error(orpcErrText(e, "保存失败"));
     } finally {
       setSaving(false);
     }
@@ -108,7 +111,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     const prev = qc.getQueryData<Row[]>(listKey);
     qc.setQueryData<Row[]>(listKey, (cur) => (cur ?? []).filter((r) => r.id !== row.id));
     try {
-      await api.delete.mutate({ id: row.id });
+      await api.delete({ id: row.id });
       void qc.invalidateQueries({ queryKey: listKey });
     } catch {
       qc.setQueryData(listKey, prev);

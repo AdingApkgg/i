@@ -1,11 +1,10 @@
 import { Collection } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "东方" };
 
 export default async function TouhouPage() {
-  const api = await trpcServer();
   const items = await api.touhou.list().catch(() => []);
   return (
     <>

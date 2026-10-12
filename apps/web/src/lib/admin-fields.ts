@@ -1,6 +1,6 @@
 /**
- * UI field registry for the config-driven /dash admin. Each domain maps to a
- * tRPC router key (same as server/root.ts) + a field list the generic editor
+ * UI field registry for the config-driven /dash admin. Each domain maps to
+ * an oRPC router key (same as server/router.ts) + a field list the generic editor
  * renders, and the columns the list table shows. Field types drive the control.
  */
 export type FieldType = "text" | "textarea" | "number" | "boolean" | "select" | "image";
@@ -15,7 +15,7 @@ export interface FieldSpec {
 }
 
 export interface AdminDomain {
-  /** tRPC router key + url segment. */
+  /** oRPC router key + url segment. */
   key: string;
   label: string;
   fields: FieldSpec[];

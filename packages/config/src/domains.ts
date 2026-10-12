@@ -4,7 +4,7 @@
  * from the v1 personal space.
  */
 export interface DomainSpec {
-  /** Stable key, also the tRPC router key + url segment. */
+  /** Stable key, also the oRPC router key + url segment. */
   key: string;
   /** 中文 label. */
   label: string;

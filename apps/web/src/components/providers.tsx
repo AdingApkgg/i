@@ -3,12 +3,12 @@
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { Toaster } from "sonner";
-import { TRPCReactProvider } from "@/lib/trpc/client";
+import { QueryProvider } from "@/lib/orpc/client";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <TRPCReactProvider>{children}</TRPCReactProvider>
+      <QueryProvider>{children}</QueryProvider>
       <Toaster richColors position="top-center" />
     </ThemeProvider>
   );

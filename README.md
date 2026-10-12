@@ -6,7 +6,7 @@
 
 - **运行时/工具链**: bun + turborepo(单应用 + 共享包)
 - **框架**: Next.js 16(app router)+ React 19 + TypeScript
-- **后端**: 全进 Next · tRPC + @tanstack/react-query
+- **后端**: 全进 Next · oRPC + @tanstack/react-query
 - **数据**: Prisma 7(pg driver adapter)+ Postgres + Redis
 - **认证**: better-auth(管理员 + 访客账号)
 - **样式**: Tailwind v4 + shadcn/Radix · 萌系粉调 + Live2D 看板娘
@@ -17,9 +17,9 @@
 
 ```
 apps/web            单 Next 全栈应用（公开前台 + /dash 后台路由组）
-  src/app           路由（页面 + api/trpc + api/auth）
-  src/server        tRPC init + routers（public/protected/admin procedure）
-  src/lib           auth / trpc client+server
+  src/app           路由（页面 + api/rpc + api/auth）
+  src/server        oRPC procedure + routers（public/protected/admin procedure）
+  src/lib           auth / orpc client+server
 packages/db         Prisma schema + client + redis（@i/db）
 packages/ui         shadcn 组件 + 萌系主题（@i/ui）
 packages/config     站点配置 + 内容域注册表（@i/config）

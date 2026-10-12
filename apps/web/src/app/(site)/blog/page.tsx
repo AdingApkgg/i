@@ -3,14 +3,13 @@ import Link from "next/link";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "博客" };
 
 const fmtDate = (d: Date | string) => new Intl.DateTimeFormat("zh-CN").format(new Date(d));
 
 export default async function BlogPage() {
-  const api = await trpcServer();
   const items = await api.blog.list().catch(() => []);
   return (
     <>

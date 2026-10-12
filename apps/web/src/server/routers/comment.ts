@@ -1,12 +1,12 @@
-import { TRPCError } from "@trpc/server";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure } from "../orpc";
 
 const withUser = { user: { select: { id: true, name: true, image: true } } };
 
-export const commentRouter = router({
-  list: publicProcedure.input(z.object({ path: z.string() })).query(({ ctx, input }) =>
-    ctx.db.comment.findMany({
+export const commentRouter = {
+  list: publicProcedure.input(z.object({ path: z.string() })).handler(({ context, input }) =>
+    context.db.comment.findMany({
       where: { path: input.path, status: "visible" },
       orderBy: { createdAt: "asc" },
       include: withUser,
@@ -21,13 +21,13 @@ export const commentRouter = router({
         postId: z.string().optional(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.db.comment.create({
+    .handler(({ context, input }) =>
+      context.db.comment.create({
         data: {
           path: input.path,
           contentMd: input.contentMd,
           postId: input.postId ?? null,
-          userId: ctx.user.id,
+          userId: context.user.id,
         },
         include: withUser,
       }),
@@ -35,13 +35,13 @@ export const commentRouter = router({
 
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const c = await ctx.db.comment.findUnique({ where: { id: input.id } });
-      if (!c) throw new TRPCError({ code: "NOT_FOUND" });
-      const role = (ctx.user as { role?: string }).role;
-      if (c.userId !== ctx.user.id && role !== "admin" && role !== "owner") {
-        throw new TRPCError({ code: "FORBIDDEN" });
+    .handler(async ({ context, input }) => {
+      const c = await context.db.comment.findUnique({ where: { id: input.id } });
+      if (!c) throw new ORPCError("NOT_FOUND");
+      const role = (context.user as { role?: string }).role;
+      if (c.userId !== context.user.id && role !== "admin" && role !== "owner") {
+        throw new ORPCError("FORBIDDEN");
       }
-      return ctx.db.comment.delete({ where: { id: input.id } });
+      return context.db.comment.delete({ where: { id: input.id } });
     }),
-});
+};

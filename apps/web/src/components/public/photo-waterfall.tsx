@@ -9,14 +9,13 @@
  * - 服务端预取失败时 initial 传 null，由客户端查询接管（可重试，而非误报空相册）
  */
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyCard } from "@/components/public/collection";
 import { PhotoLightbox } from "@/components/public/photo-lightbox";
-import { useTRPC } from "@/lib/trpc/client";
-import type { AppRouter } from "@/server/root";
+import { orpc } from "@/lib/orpc/client";
+import type { RouterOutputs } from "@/server/router";
 
-export type GalleryPage = inferRouterOutputs<AppRouter>["gallery"]["page"];
+export type GalleryPage = RouterOutputs["gallery"]["page"];
 type Photo = GalleryPage["items"][number];
 
 /** 列间距（px），与 fallback 的 gap-3 一致 */
@@ -47,19 +46,16 @@ export function PhotoWaterfall({
   albumId?: string | null;
   emptyText?: string;
 }) {
-  const trpc = useTRPC();
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isPending, isError } =
     useInfiniteQuery(
-      trpc.gallery.page.infiniteQueryOptions(
-        { limit: pageSize, albumId },
-        {
-          getNextPageParam: (last) => last.nextCursor,
-          initialCursor: null,
-          // 照片不常变，5 分钟内窗口聚焦不重刷所有已加载页（避免滚动中布局跳动）
-          staleTime: 300_000,
-          ...(initial ? { initialData: { pages: [initial], pageParams: [null] } } : {}),
-        },
-      ),
+      orpc.gallery.page.infiniteOptions({
+        input: (cursor: string | null) => ({ cursor, limit: pageSize, albumId }),
+        initialPageParam: null,
+        getNextPageParam: (last) => last.nextCursor,
+        // 照片不常变，5 分钟内窗口聚焦不重刷所有已加载页（避免滚动中布局跳动）
+        staleTime: 300_000,
+        ...(initial ? { initialData: { pages: [initial], pageParams: [null] } } : {}),
+      }),
     );
 
   // 追加分页时按 id 去重，防御新增/删除导致的页间重叠

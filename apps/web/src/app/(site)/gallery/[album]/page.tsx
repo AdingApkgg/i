@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PhotoWaterfall } from "@/components/public/photo-waterfall";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 const PAGE_SIZE = 24;
 
@@ -16,7 +16,6 @@ export async function generateMetadata({ params }: { params: Params }) {
 export default async function AlbumPage({ params }: { params: Params }) {
   const { album: raw } = await params;
   const name = decodeURIComponent(raw);
-  const api = await trpcServer();
   const album = await api.gallery.albumByName({ name }).catch(() => null);
 
   // 「未分类」伪图集：没有同名真实图集时，展示 albumId 为空的照片

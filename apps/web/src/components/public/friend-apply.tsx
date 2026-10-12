@@ -6,8 +6,8 @@ import { Send } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-client";
-import { useTRPCClient } from "@/lib/trpc/client";
-import { trpcErrText } from "@/lib/trpc/errors";
+import { client } from "@/lib/orpc/client";
+import { orpcErrText } from "@/lib/orpc/errors";
 
 const FIELD_HINTS = {
   url: "链接格式不对，要以 http(s):// 开头～",
@@ -29,7 +29,6 @@ export function FriendApply({
 }: {
   site: { name: string; url: string; description: string };
 }) {
-  const client = useTRPCClient();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -66,7 +65,7 @@ export function FriendApply({
     if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
     setBusy(true);
     try {
-      await client.friends.submit.mutate({
+      await client.friends.submit({
         name: form.name.trim(),
         url,
         avatarUrl: form.avatarUrl.trim() || undefined,
@@ -78,7 +77,7 @@ export function FriendApply({
       setForm(EMPTY);
       setOpen(false);
     } catch (err) {
-      toast.error(trpcErrText(err, "提交失败，稍后再试", FIELD_HINTS));
+      toast.error(orpcErrText(err, "提交失败，稍后再试", FIELD_HINTS));
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
   name: z.string().min(1),
@@ -9,35 +9,35 @@ const upsert = z.object({
   enabled: z.boolean().default(true),
 });
 
-export const monitorRouter = router({
-  list: publicProcedure.query(({ ctx }) =>
-    ctx.db.monitor.findMany({ orderBy: { createdAt: "desc" } }),
+export const monitorRouter = {
+  list: publicProcedure.handler(({ context }) =>
+    context.db.monitor.findMany({ orderBy: { createdAt: "desc" } }),
   ),
 
   create: adminProcedure
     .input(upsert)
-    .mutation(({ ctx, input }) => ctx.db.monitor.create({ data: input })),
+    .handler(({ context, input }) => context.db.monitor.create({ data: input })),
 
   update: adminProcedure
     .input(upsert.partial().extend({ id: z.string().min(1) }))
-    .mutation(({ ctx, input }) => {
+    .handler(({ context, input }) => {
       const { id, ...data } = input;
-      return ctx.db.monitor.update({ where: { id }, data });
+      return context.db.monitor.update({ where: { id }, data });
     }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => ctx.db.monitor.delete({ where: { id: input.id } })),
+    .handler(({ context, input }) => context.db.monitor.delete({ where: { id: input.id } })),
 
   /** Latest check per enabled target (populated by the background scheduler). */
-  status: publicProcedure.query(async ({ ctx }) => {
-    const monitors = await ctx.db.monitor.findMany({
+  status: publicProcedure.handler(async ({ context }) => {
+    const monitors = await context.db.monitor.findMany({
       where: { enabled: true },
       orderBy: { createdAt: "desc" },
     });
     const rows = await Promise.all(
       monitors.map(async (m) => {
-        const last = await ctx.db.monitorCheck.findFirst({
+        const last = await context.db.monitorCheck.findFirst({
           where: { monitorId: m.id },
           orderBy: { checkedAt: "desc" },
         });
@@ -55,4 +55,4 @@ export const monitorRouter = router({
     );
     return rows;
   }),
-});
+};

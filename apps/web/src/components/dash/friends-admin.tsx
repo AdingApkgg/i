@@ -2,16 +2,15 @@
 
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Mail, Pencil, Plus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useTRPC, useTRPCClient } from "@/lib/trpc/client";
-import { trpcErrText } from "@/lib/trpc/errors";
-import type { AppRouter } from "@/server/root";
+import { client, orpc } from "@/lib/orpc/client";
+import { orpcErrText } from "@/lib/orpc/errors";
+import type { RouterOutputs } from "@/server/router";
 
-type FriendRow = inferRouterOutputs<AppRouter>["friends"]["adminList"][number];
+type FriendRow = RouterOutputs["friends"]["adminList"][number];
 
 const inputCls =
   "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
@@ -115,10 +114,8 @@ const EMPTY_FORM: FormState = {
 };
 
 export function FriendsAdmin() {
-  const client = useTRPCClient();
-  const trpc = useTRPC();
   const qc = useQueryClient();
-  const listOpts = trpc.friends.adminList.queryOptions();
+  const listOpts = orpc.friends.adminList.queryOptions();
   const { data: rows = [], isLoading: loading, isError } = useQuery(listOpts);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<FriendRow | "new" | null>(null);
@@ -139,7 +136,7 @@ export function FriendsAdmin() {
       await qc.invalidateQueries({ queryKey: listOpts.queryKey });
     } catch (e) {
       toast.error(
-        trpcErrText(e, "操作失败", {
+        orpcErrText(e, "操作失败", {
           url: "链接格式不对，要以 http(s):// 开头",
           email: "邮箱格式不对",
           avatarUrl: "头像链接格式不对",
@@ -154,7 +151,7 @@ export function FriendsAdmin() {
   function review(f: FriendRow, action: "approve" | "reject") {
     void run(
       () =>
-        client.friends.review.mutate({
+        client.friends.review({
           id: f.id,
           action,
           group: groupDraft[f.id]?.trim() || undefined,
@@ -165,7 +162,7 @@ export function FriendsAdmin() {
 
   function checkOne(f: FriendRow) {
     void run(async () => {
-      const r = await client.friends.check.mutate({ id: f.id });
+      const r = await client.friends.check({ id: f.id });
       const c = r.friend;
       if (c) {
         if (c.reachable) {
@@ -179,14 +176,14 @@ export function FriendsAdmin() {
 
   function checkAll() {
     void run(async () => {
-      const r = await client.friends.check.mutate({});
+      const r = await client.friends.check({});
       toast.success(`已开始检测 ${r.queued} 条友链，稍后刷新查看结果`);
     });
   }
 
   function remove(f: FriendRow) {
     if (!window.confirm(`确定删除「${f.name}」？`)) return;
-    void run(() => client.friends.delete.mutate({ id: f.id }), "已删除");
+    void run(() => client.friends.delete({ id: f.id }), "已删除");
   }
 
   function startEdit(f: FriendRow | "new") {
@@ -223,8 +220,8 @@ export function FriendsAdmin() {
       sortOrder: Number(form.sortOrder) || 0,
     };
     void run(async () => {
-      if (editing === "new") await client.friends.create.mutate(body);
-      else if (editing) await client.friends.update.mutate({ ...body, id: editing.id });
+      if (editing === "new") await client.friends.create(body);
+      else if (editing) await client.friends.update({ ...body, id: editing.id });
       setEditing(null);
     }, "已保存 ✿");
   }

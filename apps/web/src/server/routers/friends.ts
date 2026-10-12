@@ -1,9 +1,9 @@
 import { KEYS, redis } from "@i/db";
-import { TRPCError } from "@trpc/server";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { notifyApplicantReviewResult, notifyOwnerFriendApply } from "@/lib/mailer";
 import { checkFriend, runFriendChecks } from "../friend-check";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 /**
  * MX Space 式友链：
@@ -97,9 +97,9 @@ const updateSchema = writeSchema
     sortOrder: z.number().int().optional(),
   });
 
-export const friendsRouter = router({
-  list: publicProcedure.query(({ ctx }) =>
-    ctx.db.friend.findMany({
+export const friendsRouter = {
+  list: publicProcedure.handler(({ context }) =>
+    context.db.friend.findMany({
       where: { status: { in: ["active", "outdate"] } },
       select: publicSelect,
       orderBy,
@@ -117,25 +117,24 @@ export const friendsRouter = router({
         message: z.string().trim().max(500).optional(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .handler(async ({ context, input }) => {
       const normalized = normalizeUrl(input.url);
       if (!normalized) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "链接必须是 http(s) 地址" });
+        throw new ORPCError("BAD_REQUEST", { message: "链接必须是 http(s) 地址" });
       }
-      const email = input.email || ctx.user?.email || null;
+      const email = input.email || context.user?.email || null;
       if (!email) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "请留一个邮箱，方便通知审核结果" });
+        throw new ORPCError("BAD_REQUEST", { message: "请留一个邮箱，方便通知审核结果" });
       }
 
       // URL 去重放在限流之前：撞了重复链接不该消耗每小时的提交额度。
       // 已在列表或队列中的拒绝；此前被拒绝的允许重新提交（复用原行）。
-      const existing = await ctx.db.friend.findMany({
+      const existing = await context.db.friend.findMany({
         select: { id: true, url: true, status: true },
       });
       const dup = existing.find((f) => normalizeUrl(f.url) === normalized);
       if (dup && dup.status !== "rejected") {
-        throw new TRPCError({
-          code: "CONFLICT",
+        throw new ORPCError("CONFLICT", {
           message:
             dup.status === "pending" ? "这个链接已经在审核队列里啦" : "这个链接已经在友链里啦",
         });
@@ -143,31 +142,30 @@ export const friendsRouter = router({
 
       // 频率限制：同 IP 每小时最多 3 次（redis 不可用时放行）。
       // expire 带 NX：INCR 后即使中途出错也不会留下永不过期的封禁 key。
-      const role = (ctx.user as { role?: string } | null)?.role;
+      const role = (context.user as { role?: string } | null)?.role;
       if (role !== "admin" && role !== "owner") {
         try {
-          const key = KEYS.friendApply(clientIp(ctx.headers));
+          const key = KEYS.friendApply(clientIp(context.headers));
           const count = await redis.incr(key);
           await redis.expire(key, 3600, "NX");
           if (count > APPLY_LIMIT_PER_HOUR) {
-            throw new TRPCError({
-              code: "TOO_MANY_REQUESTS",
+            throw new ORPCError("TOO_MANY_REQUESTS", {
               message: "提交太频繁啦，过会儿再试 ✿",
             });
           }
         } catch (e) {
-          if (e instanceof TRPCError) throw e;
+          if (e instanceof ORPCError) throw e;
         }
       }
 
       const data = {
         name: input.name,
         url: input.url.trim(),
-        avatarUrl: input.avatarUrl ?? ctx.user?.image ?? null,
+        avatarUrl: input.avatarUrl ?? context.user?.image ?? null,
         description: input.description?.trim() || null,
         email,
         message: input.message?.trim() || null,
-        applicantId: ctx.user?.id ?? null,
+        applicantId: context.user?.id ?? null,
         status: "pending",
         reachable: null,
         backlinked: null,
@@ -175,8 +173,8 @@ export const friendsRouter = router({
         checkedAt: null, // 复用被拒绝的旧行时，清掉过期的检测时间
       };
       const friend = dup
-        ? await ctx.db.friend.update({ where: { id: dup.id }, data })
-        : await ctx.db.friend.create({ data });
+        ? await context.db.friend.update({ where: { id: dup.id }, data })
+        : await context.db.friend.create({ data });
 
       void notifyOwnerFriendApply(friend).catch(() => {});
       // 提前跑一次检测，审核时就能看到存活/反链参考。
@@ -184,8 +182,8 @@ export const friendsRouter = router({
       return { id: friend.id };
     }),
 
-  adminList: adminProcedure.query(({ ctx }) =>
-    ctx.db.friend.findMany({ orderBy: [{ createdAt: "desc" as const }] }),
+  adminList: adminProcedure.handler(({ context }) =>
+    context.db.friend.findMany({ orderBy: [{ createdAt: "desc" as const }] }),
   ),
 
   review: adminProcedure
@@ -196,17 +194,17 @@ export const friendsRouter = router({
         group: z.string().trim().max(30).optional(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const f = await ctx.db.friend.findUnique({ where: { id: input.id } });
-      if (!f) throw new TRPCError({ code: "NOT_FOUND" });
+    .handler(async ({ context, input }) => {
+      const f = await context.db.friend.findUnique({ where: { id: input.id } });
+      if (!f) throw new ORPCError("NOT_FOUND");
       const approved = input.action === "approve";
       // 新通过的友链排到末尾，避免 sortOrder=0 把整组顺序打乱。
       let sortOrder = f.sortOrder;
       if (approved && f.status === "pending") {
-        const max = await ctx.db.friend.aggregate({ _max: { sortOrder: true } });
+        const max = await context.db.friend.aggregate({ _max: { sortOrder: true } });
         sortOrder = (max._max.sortOrder ?? 0) + 1;
       }
-      const updated = await ctx.db.friend.update({
+      const updated = await context.db.friend.update({
         where: { id: f.id },
         data: {
           status: approved ? "active" : "rejected",
@@ -221,15 +219,15 @@ export const friendsRouter = router({
 
   check: adminProcedure
     .input(z.object({ id: z.string().min(1).optional() }).optional())
-    .mutation(async ({ ctx, input }) => {
+    .handler(async ({ context, input }) => {
       if (input?.id) {
-        const f = await ctx.db.friend.findUnique({ where: { id: input.id } });
-        if (!f) throw new TRPCError({ code: "NOT_FOUND" });
+        const f = await context.db.friend.findUnique({ where: { id: input.id } });
+        if (!f) throw new ORPCError("NOT_FOUND");
         const updated = await checkFriend(f);
         return { queued: 1, friend: updated };
       }
       // 全量检测串行跑可能要几分钟，扔到后台，前端稍后刷新看结果。
-      const queued = await ctx.db.friend.count({
+      const queued = await context.db.friend.count({
         where: { status: { in: ["active", "outdate"] } },
       });
       void runFriendChecks().catch(() => {});
@@ -238,14 +236,14 @@ export const friendsRouter = router({
 
   create: adminProcedure
     .input(writeSchema)
-    .mutation(({ ctx, input }) => ctx.db.friend.create({ data: input })),
+    .handler(({ context, input }) => context.db.friend.create({ data: input })),
 
-  update: adminProcedure.input(updateSchema).mutation(({ ctx, input }) => {
+  update: adminProcedure.input(updateSchema).handler(({ context, input }) => {
     const { id, ...data } = input;
-    return ctx.db.friend.update({ where: { id }, data });
+    return context.db.friend.update({ where: { id }, data });
   }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(({ ctx, input }) => ctx.db.friend.delete({ where: { id: input.id } })),
-});
+    .handler(({ context, input }) => context.db.friend.delete({ where: { id: input.id } })),
+};

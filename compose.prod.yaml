@@ -4,7 +4,7 @@
 #   docker compose -f compose.prod.yaml up -d --build
 #
 # A bundled nginx is the single entry; it routes same-origin:
-#   /  -> web (Next handles /api/trpc, /api/auth, /dash internally)
+#   /  -> web (Next handles /api/rpc, /api/auth, /dash internally)
 # Only the proxy publishes a host port (127.0.0.1); front it with a cf tunnel.
 
 name: iv2-prod

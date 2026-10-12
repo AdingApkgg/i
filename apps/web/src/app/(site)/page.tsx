@@ -6,14 +6,13 @@ import type { ReactNode } from "react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Badge } from "@/components/public/collection";
 import { adxChartUrl } from "@/lib/adx";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 function fmtDate(d: Date | string) {
   return new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric" }).format(new Date(d));
 }
 
 export default async function Home() {
-  const api = await trpcServer();
   const [posts, music, movie, vn, moments, photos, mmProfile, mmB50] = await Promise.all([
     api.blog.list().catch(() => []),
     api.music.list().catch(() => []),

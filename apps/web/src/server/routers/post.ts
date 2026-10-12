@@ -1,6 +1,6 @@
-import { TRPCError } from "@trpc/server";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
   slug: z
@@ -15,24 +15,26 @@ const upsert = z.object({
   status: z.enum(["draft", "published"]).default("draft"),
 });
 
-export const postRouter = router({
+export const postRouter = {
   list: publicProcedure
     .input(z.object({ includeDrafts: z.boolean().default(false) }).optional())
-    .query(({ ctx, input }) =>
-      ctx.db.post.findMany({
+    .handler(({ context, input }) =>
+      context.db.post.findMany({
         where: input?.includeDrafts ? {} : { status: "published" },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       }),
     ),
 
-  bySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ ctx, input }) => {
-    const post = await ctx.db.post.findUnique({ where: { slug: input.slug } });
-    if (!post) throw new TRPCError({ code: "NOT_FOUND" });
-    return post;
-  }),
+  bySlug: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .handler(async ({ context, input }) => {
+      const post = await context.db.post.findUnique({ where: { slug: input.slug } });
+      if (!post) throw new ORPCError("NOT_FOUND");
+      return post;
+    }),
 
-  create: adminProcedure.input(upsert).mutation(({ ctx, input }) =>
-    ctx.db.post.create({
+  create: adminProcedure.input(upsert).handler(({ context, input }) =>
+    context.db.post.create({
       data: {
         ...input,
         publishedAt: input.status === "published" ? new Date() : null,
@@ -42,9 +44,9 @@ export const postRouter = router({
 
   update: adminProcedure
     .input(upsert.partial().extend({ id: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .handler(({ context, input }) => {
       const { id, ...data } = input;
-      return ctx.db.post.update({
+      return context.db.post.update({
         where: { id },
         data: {
           ...data,
@@ -55,5 +57,5 @@ export const postRouter = router({
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => ctx.db.post.delete({ where: { id: input.id } })),
-});
+    .handler(({ context, input }) => context.db.post.delete({ where: { id: input.id } })),
+};

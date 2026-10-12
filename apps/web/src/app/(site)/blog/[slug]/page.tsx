@@ -5,16 +5,13 @@ import { cache } from "react";
 import { HexoContent } from "@/components/hexo/content";
 import { Badge } from "@/components/public/collection";
 import { Comments } from "@/components/public/comments";
+import { api } from "@/lib/orpc/server";
 import { RSS_ALTERNATE_TYPES } from "@/lib/site-url";
-import { trpcServer } from "@/lib/trpc/server";
 
 type Params = Promise<{ slug: string }>;
 
 // generateMetadata 与页面共用一次查询
-const getPost = cache(async (slug: string) => {
-  const api = await trpcServer();
-  return api.blog.bySlug({ slug }).catch(() => null);
-});
+const getPost = cache((slug: string) => api.blog.bySlug({ slug }).catch(() => null));
 
 function fmt(d: Date | string) {
   return new Intl.DateTimeFormat("zh-CN", { dateStyle: "long" }).format(new Date(d));

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
+import { publicProcedure } from "../orpc";
 
-export const pageRouter = router({
+export const pageRouter = {
   get: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(({ ctx, input }) => ctx.db.page.findUnique({ where: { id: input.id } })),
-});
+    .handler(({ context, input }) => context.db.page.findUnique({ where: { id: input.id } })),
+};

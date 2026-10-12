@@ -6,14 +6,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useTRPC } from "@/lib/trpc/client";
+import { orpc } from "@/lib/orpc/client";
 
 const input =
   "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30";
 
 export default function MaimaiAdmin() {
-  const trpc = useTRPC();
-  const { data: cfg } = useQuery(trpc.maimai.config.queryOptions());
+  const { data: cfg } = useQuery(orpc.maimai.config.queryOptions());
   const [source, setSource] = useState<"diving-fish" | "lxns">("diving-fish");
   const [df, setDf] = useState("");
   const [dfToken, setDfToken] = useState("");
@@ -28,13 +27,13 @@ export default function MaimaiAdmin() {
   }, [cfg]);
 
   const save = useMutation({
-    ...trpc.maimai.saveConfig.mutationOptions(),
+    ...orpc.maimai.saveConfig.mutationOptions(),
     onSuccess: () => toast.success("已保存 ✿"),
     onError: () => toast.error("保存失败"),
   });
 
   const sync = useMutation({
-    ...trpc.maimai.sync.mutationOptions(),
+    ...orpc.maimai.sync.mutationOptions(),
     onSuccess: (r) =>
       toast.success(`同步成功：${r.nickname} · rating ${r.rating} · ${r.count} 谱面 ✿`),
     onError: (e) => toast.error(e.message),

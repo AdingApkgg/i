@@ -4,7 +4,7 @@ import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { adxChartUrl } from "@/lib/adx";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "舞萌" };
 
@@ -26,7 +26,6 @@ type Rec = {
 };
 
 export default async function MaimaiPage() {
-  const api = await trpcServer();
   const [profile, b50, records] = await Promise.all([
     api.maimai.profile().catch(() => null),
     api.maimai.b50().catch(() => ({ b35: [], b15: [] })),

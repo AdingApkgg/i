@@ -5,7 +5,7 @@ import { Stagger, StaggerItem } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { FriendApply } from "@/components/public/friend-apply";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "友链" };
 
@@ -56,7 +56,6 @@ function FriendCard({ f, dim }: { f: FriendItem; dim?: boolean }) {
 }
 
 export default async function FriendsPage() {
-  const api = await trpcServer();
   const items = (await api.friends.list().catch(() => [])) as FriendItem[];
   const active = items.filter((f) => f.status === "active");
   const outdate = items.filter((f) => f.status === "outdate");

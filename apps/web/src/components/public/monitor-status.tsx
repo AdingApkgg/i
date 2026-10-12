@@ -6,15 +6,14 @@
  */
 import { Card, CardBody } from "@i/ui";
 import { useQuery } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { motion } from "framer-motion";
 import { Activity, Timer } from "lucide-react";
 import { Stagger, StaggerItem } from "@/components/motion";
-import { useTRPC } from "@/lib/trpc/client";
-import type { AppRouter } from "@/server/root";
+import { orpc } from "@/lib/orpc/client";
+import type { RouterOutputs } from "@/server/router";
 import { Badge } from "./collection";
 
-export type MonitorRow = inferRouterOutputs<AppRouter>["monitor"]["status"][number];
+export type MonitorRow = RouterOutputs["monitor"]["status"][number];
 
 function ago(d: Date | string | null) {
   if (!d) return "尚未检查";
@@ -39,12 +38,11 @@ function Dot({ ok }: { ok: boolean | null }) {
 }
 
 export function MonitorStatus({ initial }: { initial: MonitorRow[] }) {
-  const trpc = useTRPC();
   const { data: items = initial } = useQuery({
-    ...trpc.monitor.status.queryOptions(),
+    ...orpc.monitor.status.queryOptions(),
     refetchInterval: 30_000,
     // 数据经过 RSC 边界，checkedAt 可能已序列化为 string，与路由推断类型不完全一致，此处收敛一次
-    initialData: initial as inferRouterOutputs<AppRouter>["monitor"]["status"],
+    initialData: initial as RouterOutputs["monitor"]["status"],
   });
 
   return (

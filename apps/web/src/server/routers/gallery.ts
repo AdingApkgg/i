@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withDbErrors } from "../crud";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 /**
  * 相册：图集 (Album) + 照片 (Photo)。
@@ -42,10 +42,10 @@ const photoUpdateSchema = z.object({
   albumId: z.string().min(1).nullish(),
 });
 
-export const galleryRouter = router({
+export const galleryRouter = {
   // ---- 照片 ----
-  list: publicProcedure.query(({ ctx }) =>
-    ctx.db.photo.findMany({
+  list: publicProcedure.handler(({ context }) =>
+    context.db.photo.findMany({
       orderBy: bySort,
       include: { album: { select: { id: true, name: true } } },
     }),
@@ -64,9 +64,9 @@ export const galleryRouter = router({
         albumId: z.string().nullish().optional(),
       }),
     )
-    .query(async ({ ctx, input }) => {
+    .handler(async ({ context, input }) => {
       const where = input.albumId === undefined ? {} : { albumId: input.albumId };
-      const rows = await ctx.db.photo.findMany({
+      const rows = await context.db.photo.findMany({
         where,
         orderBy: pageOrderBy,
         take: input.limit + 1,
@@ -80,17 +80,17 @@ export const galleryRouter = router({
 
   create: adminProcedure
     .input(photoCreateSchema)
-    .mutation(({ ctx, input }) => withDbErrors(() => ctx.db.photo.create({ data: input }))),
+    .handler(({ context, input }) => withDbErrors(() => context.db.photo.create({ data: input }))),
 
-  update: adminProcedure.input(photoUpdateSchema).mutation(({ ctx, input }) => {
+  update: adminProcedure.input(photoUpdateSchema).handler(({ context, input }) => {
     const { id, ...data } = input;
-    return withDbErrors(() => ctx.db.photo.update({ where: { id }, data }));
+    return withDbErrors(() => context.db.photo.update({ where: { id }, data }));
   }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(({ ctx, input }) =>
-      withDbErrors(() => ctx.db.photo.delete({ where: { id: input.id } })),
+    .handler(({ context, input }) =>
+      withDbErrors(() => context.db.photo.delete({ where: { id: input.id } })),
     ),
 
   /** 批量移动照片到某图集（albumId null = 移出到未分类） */
@@ -98,9 +98,9 @@ export const galleryRouter = router({
     .input(
       z.object({ ids: z.array(z.string().min(1)).min(1), albumId: z.string().min(1).nullable() }),
     )
-    .mutation(({ ctx, input }) =>
+    .handler(({ context, input }) =>
       withDbErrors(() =>
-        ctx.db.photo.updateMany({
+        context.db.photo.updateMany({
           where: { id: { in: input.ids } },
           data: { albumId: input.albumId },
         }),
@@ -110,24 +110,26 @@ export const galleryRouter = router({
   /** 批量删除照片 */
   deletePhotos: adminProcedure
     .input(z.object({ ids: z.array(z.string().min(1)).min(1) }))
-    .mutation(({ ctx, input }) => ctx.db.photo.deleteMany({ where: { id: { in: input.ids } } })),
+    .handler(({ context, input }) =>
+      context.db.photo.deleteMany({ where: { id: { in: input.ids } } }),
+    ),
 
   // ---- 图集（公开读） ----
   /** 首页分区：全部图集（带张数 + 前 N 张预览）+ 未分类照片段 */
   albums: publicProcedure
     .input(z.object({ preview: z.number().int().min(1).max(24).default(8) }).optional())
-    .query(async ({ ctx, input }) => {
+    .handler(async ({ context, input }) => {
       const preview = input?.preview ?? 8;
       const [albums, unassigned, unassignedCount] = await Promise.all([
-        ctx.db.album.findMany({
+        context.db.album.findMany({
           orderBy: bySort,
           include: {
             photos: { orderBy: bySort, take: preview },
             _count: { select: { photos: true } },
           },
         }),
-        ctx.db.photo.findMany({ where: { albumId: null }, orderBy: bySort, take: preview }),
-        ctx.db.photo.count({ where: { albumId: null } }),
+        context.db.photo.findMany({ where: { albumId: null }, orderBy: bySort, take: preview }),
+        context.db.photo.count({ where: { albumId: null } }),
       ]);
       return { albums, unassigned: { photos: unassigned, count: unassignedCount } };
     }),
@@ -135,10 +137,10 @@ export const galleryRouter = router({
   /** 图集详情页用：按名称取图集 + 张数 */
   albumByName: publicProcedure
     .input(z.object({ name: z.string().min(1) }))
-    .query(({ ctx, input }) =>
-      ctx.db.album.findUnique({
+    .handler(({ context, input }) =>
+      context.db.album.findUnique({
         where: { name: input.name },
         include: { _count: { select: { photos: true } } },
       }),
     ),
-});
+};

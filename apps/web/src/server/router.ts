@@ -1,3 +1,4 @@
+import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
 import { commentRouter } from "./routers/comment";
 import {
   albumsRouter,
@@ -15,9 +16,8 @@ import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
 import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
-import { createCallerFactory, router } from "./trpc";
 
-export const appRouter = router({
+export const router = {
   health: healthRouter,
   blog: postRouter,
   music: musicRouter,
@@ -33,8 +33,8 @@ export const appRouter = router({
   maimai: maimaiRouter,
   comment: commentRouter,
   page: pageRouter,
-});
+};
 
-export type AppRouter = typeof appRouter;
-export { createTRPCContext } from "./trpc";
-export { createCallerFactory };
+export type AppRouter = typeof router;
+export type RouterInputs = InferRouterInputs<AppRouter>;
+export type RouterOutputs = InferRouterOutputs<AppRouter>;

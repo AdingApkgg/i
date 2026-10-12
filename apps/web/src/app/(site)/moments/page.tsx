@@ -2,7 +2,7 @@ import { Card, CardBody } from "@i/ui";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "说说" };
 
@@ -15,7 +15,6 @@ const fmt = new Intl.DateTimeFormat("zh-CN", {
 });
 
 export default async function MomentsPage() {
-  const api = await trpcServer();
   const items = await api.moments.list().catch(() => []);
   return (
     <>

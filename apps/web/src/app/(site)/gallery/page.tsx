@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FadeIn } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
-import { trpcServer } from "@/lib/trpc/server";
+import { api } from "@/lib/orpc/server";
 
 export const metadata = { title: "相册" };
 
@@ -91,7 +91,6 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
 }
 
 export default async function GalleryPage() {
-  const api = await trpcServer();
   const data = await api.gallery.albums({ preview: PREVIEW }).catch(() => null);
 
   const sections: SectionData[] = [];

@@ -9,17 +9,16 @@
  */
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Pencil, Plus, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { emptyForm, Field, inputCls, rowToForm, toBody } from "@/components/dash/domain-admin";
 import { ADMIN_FIELDS } from "@/lib/admin-fields";
-import { useTRPC, useTRPCClient } from "@/lib/trpc/client";
-import type { AppRouter } from "@/server/root";
+import { client, orpc } from "@/lib/orpc/client";
+import type { RouterOutputs } from "@/server/router";
 
-type Photo = inferRouterOutputs<AppRouter>["gallery"]["list"][number];
+type Photo = RouterOutputs["gallery"]["list"][number];
 type FormState = Record<string, unknown>;
 
 /** 筛选值："all" | "none"(未分类) | albumId */
@@ -29,23 +28,21 @@ type Filter = "all" | "none" | (string & {});
 const PHOTO_FIELDS = ADMIN_FIELDS.gallery!.fields;
 
 export function PhotosAdmin() {
-  const trpc = useTRPC();
-  const client = useTRPCClient();
   const qc = useQueryClient();
 
-  const photosQ = useQuery(trpc.gallery.list.queryOptions());
+  const photosQ = useQuery(orpc.gallery.list.queryOptions());
   // /dash/albums 通用编辑器用自己的 ["admin-list"] 缓存键，不会失效这里的
   // 类型化键——进页强制刷新，避免刚建/删的图集在下拉里缺席
   const albumsQ = useQuery({
-    ...trpc.albums.list.queryOptions(),
+    ...orpc.albums.list.queryOptions(),
     staleTime: 0,
     refetchOnMount: "always",
   });
   const albums = albumsQ.data ?? [];
   const invalidate = () =>
     Promise.all([
-      qc.invalidateQueries({ queryKey: trpc.gallery.list.queryKey() }),
-      qc.invalidateQueries({ queryKey: trpc.albums.list.queryKey() }),
+      qc.invalidateQueries({ queryKey: orpc.gallery.list.queryKey() }),
+      qc.invalidateQueries({ queryKey: orpc.albums.list.queryKey() }),
     ]);
 
   const [filter, setFilter] = useState<Filter>("all");
@@ -93,8 +90,8 @@ export function PhotosAdmin() {
     setSaving(true);
     try {
       const payload = { ...body, albumId: formAlbumId || null };
-      if (editing === "new") await client.gallery.create.mutate(payload as never);
-      else await client.gallery.update.mutate({ ...payload, id: editing.id } as never);
+      if (editing === "new") await client.gallery.create(payload as never);
+      else await client.gallery.update({ ...payload, id: editing.id } as never);
       toast.success("已保存 ✿");
       setEditing(null);
       // 编辑可能把照片改到当前筛选之外：清掉选择，避免批量操作命中不可见照片
@@ -111,7 +108,7 @@ export function PhotosAdmin() {
     if (busy || selected.size === 0) return;
     setBusy(true);
     try {
-      await client.gallery.movePhotos.mutate({
+      await client.gallery.movePhotos({
         ids: [...selected],
         albumId: moveTarget || null,
       });
@@ -130,7 +127,7 @@ export function PhotosAdmin() {
     if (!window.confirm(`确定删除选中的 ${selected.size} 张照片？`)) return;
     setBusy(true);
     try {
-      await client.gallery.deletePhotos.mutate({ ids: [...selected] });
+      await client.gallery.deletePhotos({ ids: [...selected] });
       toast.success("已删除");
       setSelected(new Set());
       await invalidate();
@@ -159,7 +156,7 @@ export function PhotosAdmin() {
         if (!res.ok) throw new Error();
         const { imageUrl } = (await res.json()) as { imageUrl: string };
         try {
-          await client.gallery.create.mutate({ imageUrl, albumId });
+          await client.gallery.create({ imageUrl, albumId });
         } catch (e) {
           // 建档失败则删掉刚传的对象，避免存储孤儿
           const key = imageUrl.split("/").pop();
