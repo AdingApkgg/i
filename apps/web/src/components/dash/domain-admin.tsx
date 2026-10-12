@@ -1,7 +1,7 @@
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ADMIN_FIELDS, type FieldSpec } from "@/lib/admin-fields";

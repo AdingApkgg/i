@@ -4,8 +4,9 @@
  * play button — both hand the target to the global bottom-left player.
  * 歌曲元数据经 SWR 去重缓存，进入视口才请求。
  */
-import { AnimatePresence, motion } from "framer-motion";
+
 import { Music2, Play } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useMetingSong } from "@/lib/use-meting";
 import { usePlayer } from "../player/player-context";

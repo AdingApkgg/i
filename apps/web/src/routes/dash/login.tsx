@@ -1,6 +1,6 @@
 import { Button, Card, CardBody } from "@i/ui";
-import { motion } from "framer-motion";
 import { LoaderCircle, LogIn } from "lucide-react";
+import { motion } from "motion/react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";

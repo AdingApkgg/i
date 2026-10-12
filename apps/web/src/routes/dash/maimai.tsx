@@ -1,7 +1,7 @@
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, RefreshCw, Save } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { orpc } from "@/lib/orpc/client";

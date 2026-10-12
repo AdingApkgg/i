@@ -7,8 +7,8 @@
  */
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Pencil, Plus, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { emptyForm, Field, inputCls, rowToForm, toBody } from "@/components/dash/domain-admin";

@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Info, Quote, Rocket, Shirt, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Cubism2Mascot } from "@/lib/live2d/cubism2";
 import {

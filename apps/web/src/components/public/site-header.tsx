@@ -1,6 +1,6 @@
 import { NAV_DOMAINS, siteConfig } from "@i/config";
 import { cn } from "@i/ui";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Link, useLocation } from "react-router";
 
 /** Shared public top nav — 活动项带滑动下划线（layoutId 共享布局动画）。 */

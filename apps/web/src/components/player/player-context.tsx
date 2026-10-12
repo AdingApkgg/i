@@ -1,19 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-/**
- * 全站左下角音乐播放器 — 自写实现（不再用 APlayer），设计参考 adx-dl：
- * framer-motion 驱动、音频响应视觉（低频光晕 + EQ 条，CORS 不允许时静默降级）、
- * 迷你旋转唱片 ↔ 展开面板（进度/音量/队列）。选播行通过 usePlayer().play() 换队列。
- */
-import {
-  AnimatePresence,
-  animate,
-  type MotionValue,
-  motion,
-  motionValue,
-  useMotionValue,
-  useReducedMotion,
-  useTransform,
-} from "framer-motion";
 import {
   ListMusic,
   Music2,
@@ -25,6 +10,21 @@ import {
   VolumeX,
   X,
 } from "lucide-react";
+/**
+ * 全站左下角音乐播放器 — 自写实现（不再用 APlayer），设计参考 adx-dl：
+ * motion 驱动、音频响应视觉（低频光晕 + EQ 条，CORS 不允许时静默降级）、
+ * 迷你旋转唱片 ↔ 展开面板（进度/音量/队列）。选播行通过 usePlayer().play() 换队列。
+ */
+import {
+  AnimatePresence,
+  animate,
+  type MotionValue,
+  motion,
+  motionValue,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "motion/react";
 import {
   createContext,
   type ReactNode,

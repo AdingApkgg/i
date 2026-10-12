@@ -1,5 +1,4 @@
 import { cn } from "@i/ui";
-import { motion } from "framer-motion";
 import {
   Activity,
   Camera,
@@ -18,6 +17,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { motion } from "motion/react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ADMIN_FIELDS, ADMIN_ORDER } from "@/lib/admin-fields";
 import { authClient } from "@/lib/auth-client";

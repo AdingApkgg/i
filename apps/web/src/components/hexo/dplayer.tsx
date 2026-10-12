@@ -1,6 +1,6 @@
 import { cn } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
 import { ExternalLink, Play } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 /**

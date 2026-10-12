@@ -2,7 +2,7 @@
  * 非页面的 HTTP 端点（Hono）。由 src/hono.ts 挂在 React Router 之前：
  *   /api/rpc/*            oRPC
  *   /api/auth/*           better-auth
- *   /api/gallery/*        相册上传 / 读图（MinIO）
+ *   /api/gallery/*        相册上传 / 读图（SeaweedFS S3）
  *   /rss.xml /sitemap.xml /robots.txt
  *   /og.png /og/blog/:slug.png   分享卡片
  */
@@ -16,7 +16,7 @@ import { Hono } from "hono";
 import { auth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { renderOgImage } from "@/lib/og";
-import { deleteObject, getObject, putObject } from "@/lib/s3";
+import { StorageError, storage } from "@/lib/s3";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
 import { createContext } from "./orpc";
 import { router } from "./router";
@@ -72,12 +72,19 @@ http.post("/api/gallery/upload", async (c) => {
   if (!(file instanceof File)) return c.json({ error: "missing file" }, 400);
 
   const type = file.type || "application/octet-stream";
-  const ext = EXT[type] ?? file.name.split(".").pop()?.toLowerCase() ?? "bin";
+  const ext =
+    EXT[type] ??
+    (file.name
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]/g, "") ||
+      "bin");
   const key = `${randomUUID()}.${ext}`;
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   try {
-    await putObject(key, bytes, type);
+    await storage.put(key, bytes, type);
   } catch (e) {
     return c.json({ error: `upload failed: ${String(e)}` }, 500);
   }
@@ -91,27 +98,34 @@ http.delete("/api/gallery/upload", async (c) => {
   // key 是 upload 生成的 `${uuid}.${ext}`，拒绝路径分隔符防目录逃逸
   if (!key || key.includes("/") || key.includes("\\")) return c.json({ error: "bad key" }, 400);
   try {
-    await deleteObject(key);
+    await storage.delete(key);
   } catch (e) {
+    if (e instanceof StorageError && e.status === 400) return c.json({ error: "bad key" }, 400);
     return c.json({ error: `delete failed: ${String(e)}` }, 500);
   }
   return c.json({ ok: true });
 });
 
 http.get("/api/gallery/files/:key", async (c) => {
+  let obj: Response | null;
   try {
-    const out = await getObject(c.req.param("key"));
-    const bytes = await out.Body?.transformToByteArray();
-    if (!bytes) return c.text("not found", 404);
-    return new Response(bytes as BodyInit, {
-      headers: {
-        "content-type": out.ContentType ?? "application/octet-stream",
-        "cache-control": "public, max-age=31536000, immutable",
-      },
-    });
-  } catch {
-    return c.text("not found", 404);
+    obj = await storage.get(c.req.param("key"));
+  } catch (e) {
+    if (e instanceof StorageError && e.status === 400) return c.text("not found", 404);
+    console.error("[gallery] read failed:", e);
+    return c.text("storage error", 502);
   }
+  if (!obj) return c.text("not found", 404);
+  // 流式转发，不在内存里攒整张图；key 带 uuid，内容不变，可长期缓存
+  return new Response(obj.body, {
+    headers: {
+      "content-type": obj.headers.get("content-type") ?? "application/octet-stream",
+      ...(obj.headers.get("content-length")
+        ? { "content-length": obj.headers.get("content-length")! }
+        : {}),
+      "cache-control": "public, max-age=31536000, immutable",
+    },
+  });
 });
 
 // ---------------- 订阅 / 抓取 ----------------

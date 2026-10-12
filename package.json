@@ -16,6 +16,8 @@
     "check": "biome check --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "db:generate": "bun --filter @i/db db:generate",
+    "db:migrate": "bun --filter @i/db db:migrate",
     "db:push": "bun --filter @i/db db:push",
     "db:studio": "bun --filter @i/db db:studio",
     "db:seed": "bun --filter @i/db db:seed"

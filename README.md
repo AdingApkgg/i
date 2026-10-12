@@ -13,6 +13,7 @@
 - **认证**: better-auth(管理员 + 访客账号)
 - **样式**: Tailwind v4 + shadcn/Radix · 萌系粉调 + Live2D 看板娘
 - **代码风格**: Biome
+- **对象存储**: SeaweedFS(S3 网关,相册上传)· aws4fetch
 - **部署**: Docker compose + nginx + Cloudflare Tunnel(自托管 VPS)
 
 ## 结构
@@ -34,7 +35,7 @@ packages/config     站点配置 + 内容域注册表（@i/config）
 ```bash
 cp .env.example .env
 # 本机端口可能冲突，按需覆盖：
-WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 MINIO_PORT=19000 MINIO_CONSOLE_PORT=19001 \
+WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 S3_PORT=18333 \
   docker compose up
 # → http://localhost:13000
 ```
@@ -43,7 +44,7 @@ WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 MINIO_PORT=19000 MINIO_CONSOLE_POR
 
 ```bash
 bun install
-bun run db:push && bun run db:seed   # 需要 DATABASE_URL
+bun run db:migrate && bun run db:seed   # 需要 DATABASE_URL
 bun run dev                          # Node ≥ 24.19（见 .node-version）
 ```
 
@@ -62,22 +63,44 @@ CI（`.github/workflows/ci.yml`）每次推送依次跑 lint → typecheck → t
 
 ## 数据库
 
+表结构定义在 `packages/db/src/schema.ts`，变更走版本化迁移（`packages/db/drizzle/*.sql`，随代码提交）：
+
 ```bash
-bun run db:push     # 把 packages/db/src/schema.ts 同步到库（drizzle-kit push，已同步时无变更）
-bun run db:studio   # Drizzle Studio
-bun run db:seed     # 示例数据（幂等）
+# 1. 改 schema.ts
+bun run db:generate   # 2. 生成迁移 SQL（改名字段时会询问是重命名还是删了重建）
+                      # 3. 审一下生成的 SQL，连同 schema.ts 一起提交
+bun run db:migrate    # 应用未执行的迁移（部署时 compose 的 migrate 服务自动跑）
+bun run db:studio     # Drizzle Studio
+bun run db:seed       # 示例数据（幂等）
 ```
 
-表 / 列 / 约束名沿用旧 Prisma 建的库（PascalCase 表名、`Model_col_key` 等），改名即改库结构。
-部署时 compose 的 `migrate` 服务会先跑一次 `db:push`。
+CI 会检查 schema.ts 与迁移文件是否一致，忘了 `db:generate` 会直接失败。
+表 / 列 / 约束名沿用旧 Prisma 建的库（PascalCase 表名、`Model_col_key` 等）；
+已有的库第一次跑 `db:migrate` 时会自动把 `0000_init` 记为已执行（基线），不会重建表。
+`bun run db:push` 仍可用于本地快速试验，别对生产库用。
 
 ## 部署
 
 ```bash
-cp .env.example .env   # 设置真实 BETTER_AUTH_SECRET / 密码 / 公网域名
+cp .env.example .env   # 设置真实 BETTER_AUTH_SECRET / SEAWEEDFS_SECRET_KEY / 公网域名
 docker compose -f compose.prod.yaml up -d --build
 # 用 Cloudflare Tunnel 指向 127.0.0.1:8099
 ```
+
+### 存储迁移：MinIO → SeaweedFS（一次性）
+
+相册文件从 MinIO 搬到 SeaweedFS。数据库里存的是 `/api/gallery/files/<key>`，key 不变，库不用改。
+旧 `.env` 没有 `SEAWEEDFS_*` 时会沿用 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` 作为新存储的凭据。
+
+```bash
+docker compose -f compose.prod.yaml up -d --build                       # 新版本 + SeaweedFS
+docker compose -f compose.prod.yaml --profile legacy up -d minio        # 临时拉起旧 MinIO（数据还在 minio 卷里）
+docker compose -f compose.prod.yaml --profile legacy run --rm storage-migrate   # 复制全部对象（可重复运行）
+docker compose -f compose.prod.yaml --profile legacy stop minio
+```
+
+确认相册图片都正常后，可从 `compose.prod.yaml` 删掉 `minio` / `storage-migrate` 两个服务，
+再 `docker volume rm iv2-prod_minio` 释放空间。
 
 ## 内容域
 

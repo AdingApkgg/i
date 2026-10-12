@@ -1,6 +1,6 @@
 import { Button, Card, CardBody } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
 import { Send } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-client";

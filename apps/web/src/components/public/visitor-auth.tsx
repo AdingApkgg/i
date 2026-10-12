@@ -1,6 +1,6 @@
 import { Button } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
 import { LogIn, UserRoundPlus } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";

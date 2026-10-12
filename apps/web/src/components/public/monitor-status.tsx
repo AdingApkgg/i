@@ -4,8 +4,8 @@
  */
 import { Card, CardBody } from "@i/ui";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { Activity, Timer } from "lucide-react";
+import { motion } from "motion/react";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { orpc } from "@/lib/orpc/client";
 import type { RouterOutputs } from "@/server/router";

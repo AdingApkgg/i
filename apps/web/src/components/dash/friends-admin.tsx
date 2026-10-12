@@ -1,7 +1,7 @@
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Mail, Pencil, Plus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";

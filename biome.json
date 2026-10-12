@@ -8,6 +8,7 @@
       "!**/generated",
       "!**/.react-router",
       "!**/build",
+      "!packages/db/drizzle",
       "!**/dist",
       "!**/node_modules",
       "!apps/web/public/live2d/core",

@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import type * as React from "react";
 import { useState } from "react";
 
@@ -14,7 +14,7 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 /**
- * 折叠块（受控 + framer-motion 高度过渡）。
+ * 折叠块（受控 + motion 高度过渡）。
  * MDX 预处理器会输出 <HideToggle title color>...</HideToggle>。
  */
 export function HideToggle({

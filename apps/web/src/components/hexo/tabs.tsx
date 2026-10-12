@@ -1,5 +1,5 @@
 import { cn } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Children,
   isValidElement,

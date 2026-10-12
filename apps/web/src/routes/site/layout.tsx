@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { isRouteErrorResponse, Outlet, useLocation, useRevalidator } from "react-router";
 import { PlayerProvider } from "@/components/player/player-context";

@@ -10,8 +10,9 @@
  *   分离的 setState 嵌套会把锚点数学应用两次导致漂移）
  * - 变换作用在包装层，motion 组件会接管自身 transform
  */
-import { AnimatePresence, motion } from "framer-motion";
+
 import { ChevronLeft, ChevronRight, Download, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 

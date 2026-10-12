@@ -48,6 +48,16 @@ jobs:
       - name: Lint (Biome)
         run: bun run lint
 
+      # 改了 packages/db/src/schema.ts 却没生成迁移文件时失败（提示运行 bun run db:generate）
+      - name: DB migrations up to date
+        run: |
+          bun run db:generate
+          if [ -n "$(git status --porcelain packages/db/drizzle)" ]; then
+            git status --porcelain packages/db/drizzle
+            echo "::error::schema.ts 有改动但没有对应的迁移文件，请运行 bun run db:generate 并提交"
+            exit 1
+          fi
+
       - name: Typecheck
         run: bun run typecheck
 
