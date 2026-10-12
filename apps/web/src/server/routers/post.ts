@@ -2,7 +2,7 @@ import { post } from "@i/db";
 import { ORPCError } from "@orpc/server";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { notFound, withDbErrors } from "../crud";
+import { notFound, stripDefaults, withDbErrors } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
@@ -47,14 +47,23 @@ export const postRouter = {
     return row!;
   }),
 
+  // stripDefaults：后台编辑表单不带 tags，不能让 .default([]) 把标签清空；
+  // 没带 status 时也不能被打回 draft
   update: adminProcedure
-    .input(upsert.partial().extend({ id: z.string() }))
+    .input(stripDefaults(upsert).partial().extend({ id: z.string() }))
     .handler(async ({ context, input }) => {
       const { id, ...data } = input;
+      const cur = await context.db.query.post.findFirst({
+        where: eq(post.id, id),
+        columns: { publishedAt: true },
+      });
+      if (!cur) notFound();
+      // 只在首次发布时记发布时间；已发布的文章再保存保留原日期（含旧博客导入的日期）
+      const publishedAt = data.status === "published" && !cur.publishedAt ? new Date() : undefined;
       const [row] = await withDbErrors(() =>
         context.db
           .update(post)
-          .set({ ...data, ...(data.status === "published" ? { publishedAt: new Date() } : {}) })
+          .set({ ...data, publishedAt })
           .where(eq(post.id, id))
           .returning(),
       );

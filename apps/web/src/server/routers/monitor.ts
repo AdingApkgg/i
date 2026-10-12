@@ -1,7 +1,7 @@
 import { monitor, monitorCheck } from "@i/db";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { notFound } from "../crud";
+import { notFound, stripDefaults } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
@@ -23,7 +23,12 @@ export const monitorRouter = {
   }),
 
   update: adminProcedure
-    .input(upsert.partial().extend({ id: z.string().min(1) }))
+    // stripDefaults：部分更新不能把 enabled/kind/intervalSec 悄悄重置成默认值
+    .input(
+      stripDefaults(upsert)
+        .partial()
+        .extend({ id: z.string().min(1) }),
+    )
     .handler(async ({ context, input }) => {
       const { id, ...data } = input;
       const [row] = await context.db

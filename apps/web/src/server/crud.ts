@@ -48,7 +48,7 @@ type StrippedShape<TShape extends z.ZodRawShape> = {
  * 缺省的字段会被重新注入默认值（如 status/sortOrder），把没动过的列悄悄重置。
  * 先解开顶层的 Default/Prefault 包装再 .partial()，缺省字段才真正保持 undefined。
  */
-function stripDefaults<TShape extends z.ZodRawShape>(schema: z.ZodObject<TShape>) {
+export function stripDefaults<TShape extends z.ZodRawShape>(schema: z.ZodObject<TShape>) {
   const shape: Record<string, z.core.$ZodType> = {};
   for (const [key, field] of Object.entries(schema.shape)) {
     shape[key] =
