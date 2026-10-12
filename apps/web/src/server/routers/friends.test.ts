@@ -54,10 +54,22 @@ describe("friends.submit", () => {
     await expect(call(friendsRouter.list, undefined, ctx())).resolves.toEqual([]);
   });
 
-  it("非 http(s) 链接 → BAD_REQUEST", async () => {
-    await expect(
-      call(friendsRouter.submit, { ...apply, url: "ftp://example.com" }, ctx()),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "链接必须是 http(s) 地址" });
+  it("非 http(s) 链接 → BAD_REQUEST（输入校验，带中文字段提示）", async () => {
+    const err = await call(
+      friendsRouter.submit,
+      { ...apply, url: "ftp://example.com" },
+      ctx(),
+    ).catch((e) => e);
+    expect(err).toMatchObject({ code: "BAD_REQUEST" });
+    expect(err.data.issues[0]).toMatchObject({
+      path: ["url"],
+      message: "链接格式不对，要以 http(s):// 开头～",
+    });
+  });
+
+  it("没写协议头的链接自动补 https://", async () => {
+    await call(friendsRouter.submit, { ...apply, url: "example.org/blog" }, ctx());
+    expect((await friends())[0]!.url).toBe("https://example.org/blog");
   });
 
   it("匿名且没留邮箱 → BAD_REQUEST；登录用户沿用账号邮箱", async () => {

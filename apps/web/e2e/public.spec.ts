@@ -83,6 +83,19 @@ test("友链申请：前端校验提示 → 提交成功", async ({ page }) => {
   await expect(page.getByText(/^已提交/)).toBeVisible();
 });
 
+test("访客注册：密码太短就地提示 → 注册成功后出现评论框", async ({ page }) => {
+  await page.goto("/blog/hello-world");
+  await page.getByText("没有账号？去注册").click();
+  await page.getByPlaceholder("邮箱").fill(`visitor-${Date.now()}@example.org`);
+  await page.getByPlaceholder("密码").fill("123");
+  await page.getByRole("button", { name: "注册" }).click();
+  await expect(page.getByText("密码至少 6 位")).toBeVisible();
+
+  await page.getByPlaceholder("密码").fill("visitor-pass");
+  await page.getByRole("button", { name: "注册" }).click();
+  await expect(page.getByPlaceholder(/的身份评论/)).toBeVisible();
+});
+
 test.describe("深色模式跟随系统（纯 CSS，不需要 JS）", () => {
   test.use({ javaScriptEnabled: false });
 

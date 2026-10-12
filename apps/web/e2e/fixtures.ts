@@ -14,7 +14,12 @@ export const test = base.extend<{ consoleProblems: string[]; showMascot: boolean
   consoleProblems: [
     async ({ page, baseURL, showMascot }, use) => {
       if (!showMascot) {
-        await page.addInitScript(() => localStorage.setItem("waifu.hidden", "1"));
+        await page.addInitScript(() =>
+          localStorage.setItem(
+            "i.mascot",
+            JSON.stringify({ state: { hidden: true, group: null, costume: 0 }, version: 0 }),
+          ),
+        );
       }
       const origin = new URL(baseURL!).origin;
       await page.route(

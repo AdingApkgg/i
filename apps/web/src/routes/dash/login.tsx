@@ -1,34 +1,40 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { LoaderCircle, LogIn } from "lucide-react";
 import { motion } from "motion/react";
-import { type FormEvent, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
 import { authClient } from "@/lib/auth-client";
+import { reportAuthError } from "@/lib/form";
+import { signInSchema } from "@/lib/schemas";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/login";
 
+const input =
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/40 aria-invalid:border-destructive";
+
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const form = useForm<z.input<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: "", password: "" },
+  });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting: busy },
+  } = form;
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    setBusy(true);
+  const submit = handleSubmit(async ({ email, password }) => {
     const { error } = await authClient.signIn.email({ email, password });
-    setBusy(false);
     if (error) {
-      toast.error(`登录失败：${error.message ?? "请检查邮箱和密码"}`);
+      reportAuthError(error, form, "登录失败，稍后再试");
       return;
     }
     navigate("/dash");
-  }
-
-  const input =
-    "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/40";
+  });
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md items-center px-4">
@@ -42,28 +48,28 @@ export default function LoginPage() {
           <CardBody className="p-7">
             <h1 className="text-xl font-bold">登录后台 ✿</h1>
             <p className="mt-1 text-sm text-muted-foreground">管理你的个人空间内容</p>
-            <form onSubmit={submit} className="mt-5 space-y-3">
+            <form noValidate onSubmit={submit} className="mt-5 space-y-3">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-muted-foreground">邮箱</span>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
                   autoComplete="email"
+                  aria-invalid={errors.email ? true : undefined}
+                  {...register("email")}
                   className={input}
                 />
+                <FieldError message={errors.email?.message} />
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium text-muted-foreground">密码</span>
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
                   autoComplete="current-password"
+                  aria-invalid={errors.password ? true : undefined}
+                  {...register("password")}
                   className={input}
                 />
+                <FieldError message={errors.password?.message} />
               </label>
               <Button type="submit" disabled={busy} className="w-full" size="lg">
                 {busy ? (

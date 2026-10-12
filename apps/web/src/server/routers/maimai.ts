@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { asc, desc, eq, ilike, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { syncMaimai } from "@/lib/maimai";
+import { maimaiConfigSchema } from "@/lib/schemas";
 import { adminProcedure, publicProcedure } from "../orpc";
 
 /** LIKE 通配符转义（Prisma 的 contains 会自动转义，这里手动保持同样语义）。 */
@@ -25,23 +26,14 @@ export const maimaiRouter = {
     );
   }),
 
-  saveConfig: adminProcedure
-    .input(
-      z.object({
-        source: z.enum(["diving-fish", "lxns"]),
-        divingFishUsername: z.string().optional(),
-        divingFishImportToken: z.string().optional(),
-        lxnsPersonalToken: z.string().optional(),
-      }),
-    )
-    .handler(async ({ context, input }) => {
-      const [row] = await context.db
-        .insert(maimaiConfig)
-        .values({ id: "current", ...input })
-        .onConflictDoUpdate({ target: maimaiConfig.id, set: input })
-        .returning();
-      return row!;
-    }),
+  saveConfig: adminProcedure.input(maimaiConfigSchema).handler(async ({ context, input }) => {
+    const [row] = await context.db
+      .insert(maimaiConfig)
+      .values({ id: "current", ...input })
+      .onConflictDoUpdate({ target: maimaiConfig.id, set: input })
+      .returning();
+    return row!;
+  }),
 
   sync: adminProcedure.handler(async () => {
     try {

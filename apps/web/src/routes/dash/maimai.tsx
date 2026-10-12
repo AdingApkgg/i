@@ -1,34 +1,63 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Save } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
+import { reportSubmitError } from "@/lib/form";
 import { orpc } from "@/lib/orpc/client";
+import { MAIMAI_SOURCES, maimaiConfigSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+
+type Values = z.input<typeof maimaiConfigSchema>;
+type Source = (typeof MAIMAI_SOURCES)[number];
 
 export default function MaimaiAdmin() {
   const { data: cfg } = useQuery(orpc.maimai.config.queryOptions());
-  const [source, setSource] = useState<"diving-fish" | "lxns">("diving-fish");
-  const [df, setDf] = useState("");
-  const [dfToken, setDfToken] = useState("");
-  const [lx, setLx] = useState("");
+  const form = useForm<Values, unknown, z.output<typeof maimaiConfigSchema>>({
+    resolver: zodResolver(maimaiConfigSchema),
+    defaultValues: {
+      source: "diving-fish",
+      divingFishUsername: "",
+      divingFishImportToken: "",
+      lxnsPersonalToken: "",
+    },
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = form;
+  const source = watch("source");
 
+  // 配置加载完成后回填表单
   useEffect(() => {
     if (!cfg) return;
-    setSource((cfg.source as "diving-fish" | "lxns") ?? "diving-fish");
-    setDf(cfg.divingFishUsername ?? "");
-    setDfToken(cfg.divingFishImportToken ?? "");
-    setLx(cfg.lxnsPersonalToken ?? "");
-  }, [cfg]);
+    reset({
+      source: MAIMAI_SOURCES.includes(cfg.source as Source)
+        ? (cfg.source as Source)
+        : "diving-fish",
+      divingFishUsername: cfg.divingFishUsername ?? "",
+      divingFishImportToken: cfg.divingFishImportToken ?? "",
+      lxnsPersonalToken: cfg.lxnsPersonalToken ?? "",
+    });
+  }, [cfg, reset]);
 
   const save = useMutation({
     ...orpc.maimai.saveConfig.mutationOptions(),
     onSuccess: () => toast.success("已保存 ✿"),
-    onError: () => toast.error("保存失败"),
+    onError: (e) => reportSubmitError(e, form, "保存失败"),
   });
+  const submit = handleSubmit((values) => save.mutate(values));
 
   const sync = useMutation({
     ...orpc.maimai.sync.mutationOptions(),
@@ -53,7 +82,7 @@ export default function MaimaiAdmin() {
                 <button
                   key={s}
                   type="button"
-                  onClick={() => setSource(s)}
+                  onClick={() => setValue("source", s, { shouldDirty: true })}
                   className={`relative rounded-pill px-4 py-1.5 text-sm font-medium transition ${
                     source === s ? "text-primary-foreground" : "bg-soft text-muted-foreground"
                   }`}
@@ -86,20 +115,20 @@ export default function MaimaiAdmin() {
                     水鱼用户名 *
                   </span>
                   <input
-                    value={df}
-                    onChange={(e) => setDf(e.target.value)}
                     placeholder="diving-fish 用户名"
+                    aria-invalid={errors.divingFishUsername ? true : undefined}
+                    {...register("divingFishUsername")}
                     className={input}
                   />
+                  <FieldError message={errors.divingFishUsername?.message} />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-sm font-medium text-muted-foreground">
                     Import-Token（可选，拉全部成绩用）
                   </span>
                   <input
-                    value={dfToken}
-                    onChange={(e) => setDfToken(e.target.value)}
                     placeholder="不填则只同步 b50"
+                    {...register("divingFishImportToken")}
                     className={input}
                   />
                 </label>
@@ -121,11 +150,12 @@ export default function MaimaiAdmin() {
                     落雪个人 API 密钥 *
                   </span>
                   <input
-                    value={lx}
-                    onChange={(e) => setLx(e.target.value)}
                     placeholder="lxns 个人 API 密钥"
+                    aria-invalid={errors.lxnsPersonalToken ? true : undefined}
+                    {...register("lxnsPersonalToken")}
                     className={input}
                   />
+                  <FieldError message={errors.lxnsPersonalToken?.message} />
                 </label>
                 <p className="text-xs text-muted-foreground">
                   在落雪「账号详情 → 个人 API 密钥」获取，读你自己的成绩，无需好友码。
@@ -135,18 +165,7 @@ export default function MaimaiAdmin() {
           </AnimatePresence>
 
           <div className="flex gap-2">
-            <Button
-              onClick={() =>
-                save.mutate({
-                  source,
-                  divingFishUsername: df,
-                  divingFishImportToken: dfToken,
-                  lxnsPersonalToken: lx,
-                })
-              }
-              disabled={save.isPending}
-              variant="soft"
-            >
+            <Button onClick={() => void submit()} disabled={save.isPending} variant="soft">
               {save.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (

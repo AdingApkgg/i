@@ -56,18 +56,47 @@ test.describe("后台（已登录）", () => {
     expect((await origRes.body()).equals(png)).toBe(true);
 
     expect((await request.get(`${original.pathname}?w=123`)).status()).toBe(400);
+
+    // 后台删除这张照片：原图和缩略图都从存储里删掉
+    const key = original.pathname.split("/").pop()!;
+    await page.goto("/dash/gallery");
+    await page.locator(`button:has(img[src*="${key}"])`).click();
+    page.once("dialog", (d) => d.accept());
+    await page.getByRole("button", { name: "删除", exact: true }).click();
+    await expect(page.getByText("已删除")).toBeVisible();
+    expect((await request.get(original.pathname)).status()).toBe(404);
+    expect((await request.get(`${original.pathname}?w=320`)).status()).toBe(404);
   });
 
   test("后台新建条目 → 前台可见", async ({ page }) => {
     const title = `e2e 新歌 ${Date.now()}`;
     await page.goto("/dash/music");
     await page.getByRole("button", { name: /新建/ }).click();
+    // 必填为空：提示就地显示在字段下面，不发请求
+    await page.getByRole("button", { name: "创建" }).click();
+    await expect(page.getByText("「标题」不能为空")).toBeVisible();
     await page.locator("input").first().fill(title);
     await page.getByRole("button", { name: "创建" }).click();
     await expect(page.getByText(title).first()).toBeVisible();
 
     await page.goto("/music");
     await expect(page.getByText(title)).toBeVisible();
+  });
+
+  test("表单校验：改密码、舞萌配置（错误就地显示，不改动数据）", async ({ page }) => {
+    await page.goto("/dash/settings");
+    await page.getByPlaceholder("当前密码").fill("wrong-password");
+    await page.getByPlaceholder("新密码（≥6 位）").fill("wrong-password");
+    await page.getByRole("button", { name: "修改密码" }).click();
+    await expect(page.getByText("新密码和当前密码一样")).toBeVisible();
+    await page.getByPlaceholder("新密码（≥6 位）").fill("another-pass");
+    await page.getByRole("button", { name: "修改密码" }).click();
+    await expect(page.getByText("当前密码不对")).toBeVisible();
+
+    await page.goto("/dash/maimai");
+    await page.getByPlaceholder("diving-fish 用户名").fill("");
+    await page.getByRole("button", { name: "保存配置" }).click();
+    await expect(page.getByText("填一下水鱼用户名")).toBeVisible();
   });
 
   test("评论：发表 → 删除", async ({ page }) => {

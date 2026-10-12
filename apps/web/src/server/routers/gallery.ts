@@ -4,12 +4,14 @@ import { z } from "zod";
 import { notFound, withDbErrors } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 import { after, cursorValues, type OrderSpec, orderBy } from "../pagination";
+import { releaseStoredFiles } from "../stored-files";
 
 /**
  * 相册：图集 (Album) + 照片 (Photo)。
  * 照片 CRUD 保持 list/create/update/delete 命名（dash 通用约定），
  * page 为游标分页瀑布流查询（albumId 过滤，null = 未分类）。
  * 图集自身的 CRUD 在 root 的 `albums` 键（crudRouter 通用工厂）。
+ * 删除照片 / 换图后，不再被任何地方引用的站内图片（原图 + 缩略图）会从对象存储里一并删掉。
  */
 
 const photoOrder: OrderSpec = [
@@ -111,17 +113,26 @@ export const galleryRouter = {
 
   update: adminProcedure.input(photoUpdateSchema).handler(async ({ context, input }) => {
     const { id, ...data } = input;
+    const [before] = await context.db
+      .select({ imageUrl: photo.imageUrl, thumbUrl: photo.thumbUrl })
+      .from(photo)
+      .where(eq(photo.id, id));
     const [row] = await withDbErrors(() =>
       context.db.update(photo).set(data).where(eq(photo.id, id)).returning(),
     );
-    return row ?? notFound();
+    if (!row) return notFound();
+    // 换了图：旧文件没人用了就回收
+    if (before) await releaseStoredFiles(context.db, [before.imageUrl, before.thumbUrl]);
+    return row;
   }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
     .handler(async ({ context, input }) => {
       const [row] = await context.db.delete(photo).where(eq(photo.id, input.id)).returning();
-      return row ?? notFound();
+      if (!row) return notFound();
+      await releaseStoredFiles(context.db, [row.imageUrl, row.thumbUrl]);
+      return row;
     }),
 
   /** 批量移动照片到某图集（albumId null = 移出到未分类） */
@@ -147,7 +158,11 @@ export const galleryRouter = {
       const rows = await context.db
         .delete(photo)
         .where(inArray(photo.id, input.ids))
-        .returning({ id: photo.id });
+        .returning({ id: photo.id, imageUrl: photo.imageUrl, thumbUrl: photo.thumbUrl });
+      await releaseStoredFiles(
+        context.db,
+        rows.flatMap((r) => [r.imageUrl, r.thumbUrl]),
+      );
       return { count: rows.length };
     }),
 

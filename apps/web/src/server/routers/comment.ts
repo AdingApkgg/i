@@ -2,6 +2,7 @@ import { comment } from "@i/db";
 import { ORPCError } from "@orpc/server";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { commentBodySchema } from "@/lib/schemas";
 import type { Context } from "../orpc";
 import { protectedProcedure, publicProcedure } from "../orpc";
 
@@ -21,9 +22,8 @@ export const commentRouter = {
 
   create: protectedProcedure
     .input(
-      z.object({
+      commentBodySchema.extend({
         path: z.string().min(1),
-        contentMd: z.string().min(1).max(2000),
         postId: z.string().optional(),
       }),
     )

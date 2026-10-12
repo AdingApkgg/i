@@ -1,12 +1,17 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LogOut, Send, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
 import { authClient, useSession } from "@/lib/auth-client";
+import { reportSubmitError } from "@/lib/form";
 import { formatDate } from "@/lib/format";
 import { orpc } from "@/lib/orpc/client";
+import { commentBodySchema } from "@/lib/schemas";
 import { VisitorAuth } from "./visitor-auth";
 
 function fmt(d: string | Date) {
@@ -18,15 +23,25 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
   const qc = useQueryClient();
   const listOpts = orpc.comment.list.queryOptions({ input: { path } });
   const { data: comments = [], isLoading } = useQuery(listOpts);
-  const [text, setText] = useState("");
+  const form = useForm<z.input<typeof commentBodySchema>>({
+    resolver: zodResolver(commentBodySchema),
+    defaultValues: { contentMd: "" },
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = form;
 
   const create = useMutation({
     ...orpc.comment.create.mutationOptions(),
     onSuccess: () => {
-      setText("");
+      reset();
       void qc.invalidateQueries({ queryKey: listOpts.queryKey });
     },
-    onError: () => toast.error("发送失败"),
+    onError: (e) => reportSubmitError(e, form, "发送失败"),
   });
 
   // 乐观删除：先从列表移除，失败自动回滚。
@@ -47,11 +62,9 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
     onSettled: () => qc.invalidateQueries({ queryKey: listOpts.queryKey }),
   });
 
-  function send() {
-    const contentMd = text.trim();
-    if (!contentMd || create.isPending) return;
-    create.mutate({ path, contentMd, postId });
-  }
+  const send = handleSubmit(({ contentMd }) => {
+    if (!create.isPending) create.mutate({ path, contentMd, postId });
+  });
 
   const me = session?.user;
   const myRole = (me as { role?: string } | undefined)?.role;
@@ -61,16 +74,23 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
       <h2 className="mb-3 text-lg font-semibold">评论 · {comments.length}</h2>
 
       {me ? (
-        <div className="space-y-2">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={`以 ${me.name ?? me.email} 的身份评论…`}
-            rows={3}
-            className="w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
+        <form noValidate onSubmit={send} className="space-y-2">
+          <div>
+            <textarea
+              placeholder={`以 ${me.name ?? me.email} 的身份评论…`}
+              rows={3}
+              aria-invalid={errors.contentMd ? true : undefined}
+              {...register("contentMd")}
+              className="w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+            />
+            <FieldError message={errors.contentMd?.message} />
+          </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" disabled={create.isPending || !text.trim()} onClick={send}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={create.isPending || !watch("contentMd").trim()}
+            >
               <Send className="size-3.5" />
               {create.isPending ? "发送中…" : "发送"}
             </Button>
@@ -83,7 +103,7 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
               退出（{me.name ?? me.email}）
             </button>
           </div>
-        </div>
+        </form>
       ) : (
         <VisitorAuth />
       )}

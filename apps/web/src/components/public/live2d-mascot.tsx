@@ -11,11 +11,11 @@ import {
   type ModelList,
   modelSrc,
   pick,
-  WAIFU_LS,
   WAIFU_SAY_EVENT,
   type WaifuTips,
   welcomeMessage,
 } from "@/lib/live2d/waifu";
+import { useMascotStore } from "@/stores/mascot";
 
 export interface Live2DMascotProps {
   width?: number;
@@ -34,7 +34,8 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   const engineRef = useRef<Cubism2Mascot | null>(null);
   const [list, setList] = useState<ModelList | null>(null);
   const tipsRef = useRef<WaifuTips | null>(null);
-  const [hidden, setHidden] = useState<boolean | null>(null); // null = 未读取
+  // 偏好在 stores/mascot.ts（持久化）；null = 还没从 localStorage 读出来
+  const hidden = useMascotStore((s) => (s.ready ? s.hidden : null));
   const [group, setGroup] = useState(0);
   const [costume, setCostume] = useState(0);
   const switching = useRef(false);
@@ -55,18 +56,17 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
     }, ms);
   }, []);
 
-  // ---- 初始化：读 LS、拉 model_list + tips ----
+  // ---- 初始化：读偏好、拉 model_list + tips ----
   useEffect(() => {
-    setHidden(localStorage.getItem(WAIFU_LS.hidden) === "1");
+    // localStorage 是同步的：rehydrate 返回前偏好就已读好
+    void useMascotStore.persist.rehydrate();
     void fetchModelList()
       .then((l) => {
         setList(l);
-        const gRaw = localStorage.getItem(WAIFU_LS.group);
-        const cRaw = localStorage.getItem(WAIFU_LS.costume);
-        if (gRaw !== null && l.models[Number(gRaw)]) {
-          const g = Number(gRaw);
-          setGroup(g);
-          setCostume(Math.min(Number(cRaw) || 0, groupCostumes(l, g).length - 1));
+        const saved = useMascotStore.getState();
+        if (saved.group !== null && l.models[saved.group]) {
+          setGroup(saved.group);
+          setCostume(Math.min(saved.costume, groupCostumes(l, saved.group).length - 1));
         } else {
           // 随机开场：未手动选择过 → 明日奈组随机一套装
           setCostume(Math.floor(Math.random() * groupCostumes(l, 0).length));
@@ -131,8 +131,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
         await engineRef.current?.switchModel(modelSrc(path));
         setGroup(g);
         setCostume(c);
-        localStorage.setItem(WAIFU_LS.group, String(g));
-        localStorage.setItem(WAIFU_LS.costume, String(c));
+        useMascotStore.getState().choose(g, c);
         if (msg) showTip(msg, 5000, 2);
       } finally {
         switching.current = false;
@@ -273,13 +272,11 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   }
 
   function quit() {
-    localStorage.setItem(WAIFU_LS.hidden, "1");
-    setHidden(true);
+    useMascotStore.getState().hide();
     setTip(null);
   }
   function restore() {
-    localStorage.setItem(WAIFU_LS.hidden, "0");
-    setHidden(false);
+    useMascotStore.getState().show();
   }
 
   if (hidden === null) return null;

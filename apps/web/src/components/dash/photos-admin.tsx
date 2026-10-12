@@ -5,26 +5,39 @@
  * - 多文件批量上传到指定图集（走 /api/gallery/upload → gallery.create）
  * - 悬停铅笔进入单张编辑（复用通用 Field + 图集下拉）
  */
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Pencil, Plus, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useRef, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { emptyForm, Field, inputCls, rowToForm, toBody } from "@/components/dash/domain-admin";
+import { z } from "zod";
+import { Field, inputCls } from "@/components/dash/domain-admin";
 import { ADMIN_FIELDS } from "@/lib/admin-fields";
+import {
+  emptyForm,
+  type FormValues,
+  fieldLabels,
+  fieldsSchema,
+  rowToForm,
+  toBody,
+} from "@/lib/admin-form";
+import { reportSubmitError } from "@/lib/form";
 import { client, orpc } from "@/lib/orpc/client";
 import { thumb } from "@/lib/thumb";
 import type { RouterOutputs } from "@/server/router";
 
 type Photo = RouterOutputs["gallery"]["list"][number];
-type FormState = Record<string, unknown>;
 
 /** 筛选值："all" | "none"(未分类) | albumId */
 type Filter = "all" | "none" | (string & {});
 
 // 通用编辑器字段（图集下拉在下方单独渲染）
 const PHOTO_FIELDS = ADMIN_FIELDS.gallery!.fields;
+// 通用字段 + 图集（"" = 未分类）
+const photoSchema = fieldsSchema(PHOTO_FIELDS).extend({ albumId: z.string() });
 
 export function PhotosAdmin() {
   const qc = useQueryClient();
@@ -47,9 +60,11 @@ export function PhotosAdmin() {
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Photo | "new" | null>(null);
-  const [form, setForm] = useState<FormState>({});
-  const [formAlbumId, setFormAlbumId] = useState("");
-  const [saving, setSaving] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(photoSchema),
+    defaultValues: { ...emptyForm(PHOTO_FIELDS), albumId: "" },
+  });
+  const saving = form.formState.isSubmitting;
   const [moveTarget, setMoveTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
@@ -72,23 +87,22 @@ export function PhotosAdmin() {
   }
 
   function openEdit(p: Photo | "new") {
-    setForm(p === "new" ? emptyForm(PHOTO_FIELDS) : rowToForm(PHOTO_FIELDS, p));
-    setFormAlbumId(
-      p === "new" ? (filter !== "all" && filter !== "none" ? filter : "") : (p.albumId ?? ""),
+    form.reset(
+      p === "new"
+        ? {
+            ...emptyForm(PHOTO_FIELDS),
+            // 新建默认放进当前筛选的图集
+            albumId: filter !== "all" && filter !== "none" ? filter : "",
+          }
+        : { ...rowToForm(PHOTO_FIELDS, p), albumId: p.albumId ?? "" },
     );
     setEditing(p);
   }
 
-  async function save() {
-    if (saving || !editing) return;
-    const body = toBody(PHOTO_FIELDS, form);
-    if (typeof body.imageUrl !== "string" || !body.imageUrl.trim()) {
-      toast.error("「图片链接」不能为空");
-      return;
-    }
-    setSaving(true);
+  const save = form.handleSubmit(async (values) => {
+    if (!editing) return;
     try {
-      const payload = { ...body, albumId: formAlbumId || null };
+      const payload = { ...toBody(PHOTO_FIELDS, values), albumId: values.albumId || null };
       if (editing === "new") await client.gallery.create(payload as never);
       else await client.gallery.update({ ...payload, id: editing.id } as never);
       toast.success("已保存 ✿");
@@ -96,12 +110,10 @@ export function PhotosAdmin() {
       // 编辑可能把照片改到当前筛选之外：清掉选择，避免批量操作命中不可见照片
       setSelected(new Set());
       await invalidate();
-    } catch {
-      toast.error("保存失败");
-    } finally {
-      setSaving(false);
+    } catch (e) {
+      reportSubmitError(e, form, "保存失败", fieldLabels(PHOTO_FIELDS));
     }
-  }
+  });
 
   async function bulkMove() {
     if (busy || selected.size === 0) return;
@@ -247,44 +259,44 @@ export function PhotosAdmin() {
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             <Card className="mt-4">
-              <CardBody className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {PHOTO_FIELDS.map((f) => (
-                    <Field
-                      key={f.name}
-                      field={f}
-                      value={form[f.name]}
-                      onChange={(v) => setForm((p) => ({ ...p, [f.name]: v }))}
-                    />
-                  ))}
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-muted-foreground">
-                      图集
-                    </span>
-                    <select
-                      value={formAlbumId}
-                      onChange={(e) => setFormAlbumId(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="">未分类</option>
-                      {albums.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
+              <FormProvider {...form}>
+                <form noValidate onSubmit={save}>
+                  <CardBody className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {PHOTO_FIELDS.map((f) => (
+                        <Field key={f.name} field={f} />
                       ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => void save()} disabled={saving}>
-                    {saving && <Loader2 className="size-4 animate-spin" />}
-                    {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setEditing(null)} disabled={saving}>
-                    取消
-                  </Button>
-                </div>
-              </CardBody>
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-muted-foreground">
+                          图集
+                        </span>
+                        <select {...form.register("albumId")} className={inputCls}>
+                          <option value="">未分类</option>
+                          {albums.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={saving}>
+                        {saving && <Loader2 className="size-4 animate-spin" />}
+                        {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setEditing(null)}
+                        disabled={saving}
+                      >
+                        取消
+                      </Button>
+                    </div>
+                  </CardBody>
+                </form>
+              </FormProvider>
             </Card>
           </motion.div>
         ) : (

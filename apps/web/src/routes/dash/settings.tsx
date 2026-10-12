@@ -1,39 +1,44 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { KeyRound, LoaderCircle } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
 import { authClient } from "@/lib/auth-client";
+import { reportAuthError } from "@/lib/form";
+import { changePasswordSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+
+const EMPTY = { currentPassword: "", newPassword: "" };
 
 export default function SettingsPage() {
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [busy, setBusy] = useState(false);
+  const form = useForm<z.input<typeof changePasswordSchema>>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: EMPTY,
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: busy },
+  } = form;
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    if (next.length < 6) {
-      toast.error("新密码至少 6 位");
-      return;
-    }
-    setBusy(true);
+  const submit = handleSubmit(async ({ currentPassword, newPassword }) => {
     const { error } = await authClient.changePassword({
-      currentPassword: current,
-      newPassword: next,
+      currentPassword,
+      newPassword,
       revokeOtherSessions: true,
     });
-    setBusy(false);
     if (error) {
-      toast.error(error.message ?? "修改失败");
+      reportAuthError(error, form, "修改失败", { password: "newPassword" });
       return;
     }
-    setCurrent("");
-    setNext("");
+    reset(EMPTY);
     toast.success("密码已修改 ✿");
-  }
+  });
 
   return (
     <div className="max-w-md">
@@ -41,23 +46,29 @@ export default function SettingsPage() {
       <Card className="mt-4">
         <CardBody className="space-y-3">
           <div className="font-semibold">修改密码</div>
-          <form onSubmit={submit} className="space-y-3">
-            <input
-              type="password"
-              placeholder="当前密码"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-              required
-              className={input}
-            />
-            <input
-              type="password"
-              placeholder="新密码（≥6 位）"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              required
-              className={input}
-            />
+          <form noValidate onSubmit={submit} className="space-y-3">
+            <div>
+              <input
+                type="password"
+                placeholder="当前密码"
+                autoComplete="current-password"
+                aria-invalid={errors.currentPassword ? true : undefined}
+                {...register("currentPassword")}
+                className={input}
+              />
+              <FieldError message={errors.currentPassword?.message} />
+            </div>
+            <div>
+              <input
+                type="password"
+                placeholder="新密码（≥6 位）"
+                autoComplete="new-password"
+                aria-invalid={errors.newPassword ? true : undefined}
+                {...register("newPassword")}
+                className={input}
+              />
+              <FieldError message={errors.newPassword?.message} />
+            </div>
             <Button type="submit" disabled={busy}>
               {busy ? (
                 <LoaderCircle className="size-4 animate-spin" />

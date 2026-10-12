@@ -9,7 +9,7 @@ import { Music2, Play } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useMetingSong } from "@/lib/use-meting";
-import { usePlayer } from "../player/player-context";
+import { usePlayerStore } from "@/stores/player";
 
 const TYPE_LABEL: Record<string, string> = {
   playlist: "歌单",
@@ -26,7 +26,7 @@ export function Meting({
   type?: string;
   mid?: string;
 }) {
-  const { play } = usePlayer();
+  const play = usePlayerStore((s) => s.play);
   if (type !== "song") {
     const label = TYPE_LABEL[type] ?? type;
     return (

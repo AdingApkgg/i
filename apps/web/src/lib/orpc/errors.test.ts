@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/client";
 import { describe, expect, it } from "vitest";
-import { orpcErrText } from "./errors";
+import { orpcErrText, orpcFieldErrors } from "./errors";
 
 const validation = (path: unknown[]) =>
   new ORPCError("BAD_REQUEST", {
@@ -21,6 +21,33 @@ describe("orpcErrText", () => {
 
   it("校验失败：没有映射的字段给出通用提示", () => {
     expect(orpcErrText(validation(["name"]), "失败")).toBe("「name」格式不对，检查一下～");
+  });
+
+  it("校验失败：共用 schema 的中文文案直接用", () => {
+    const e = new ORPCError("BAD_REQUEST", {
+      message: "Input validation failed",
+      data: { issues: [{ message: "头像链接格式不对～", path: ["avatarUrl"] }] },
+    });
+    expect(orpcErrText(e, "失败")).toBe("头像链接格式不对～");
+    expect(orpcFieldErrors(e)).toEqual([{ field: "avatarUrl", message: "头像链接格式不对～" }]);
+  });
+
+  it("orpcFieldErrors：逐字段、同字段只取第一条，非校验错误为空", () => {
+    const e = new ORPCError("BAD_REQUEST", {
+      data: {
+        issues: [
+          { message: "名称不能为空", path: ["name"] },
+          { message: "Too long", path: ["name"] },
+          { message: "Invalid", path: ["url"] },
+        ],
+      },
+    });
+    expect(orpcFieldErrors(e, { url: "链接不对" })).toEqual([
+      { field: "name", message: "名称不能为空" },
+      { field: "url", message: "链接不对" },
+    ]);
+    expect(orpcFieldErrors(new ORPCError("CONFLICT"))).toEqual([]);
+    expect(orpcFieldErrors(new Error("x"))).toEqual([]);
   });
 
   it("业务错误的自定义 message 原样展示", () => {

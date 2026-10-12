@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { asc, desc, eq, inArray, max } from "drizzle-orm";
 import { z } from "zod";
 import { notifyApplicantReviewResult, notifyOwnerFriendApply } from "@/lib/mailer";
+import { FRIEND_STATUSES, friendApplySchema, friendWriteSchema } from "@/lib/schemas";
 import { notFound } from "../crud";
 import { checkFriend, runFriendChecks } from "../friend-check";
 import { adminProcedure, publicProcedure } from "../orpc";
@@ -59,44 +60,15 @@ function clientIp(headers: Headers): string {
   return "unknown";
 }
 
-const optionalUrl = z
-  .union([z.url().max(300), z.literal("")])
-  .optional()
-  .transform((v) => (v ? v : null));
-
-const writeSchema = z.object({
-  name: z.string().trim().min(1).max(50),
-  url: z.url().max(300),
-  avatarUrl: optionalUrl,
-  description: z
-    .string()
-    .trim()
-    .max(200)
-    .optional()
-    .transform((v) => (v ? v : null)),
-  group: z
-    .string()
-    .trim()
-    .max(30)
-    .optional()
-    .transform((v) => (v ? v : null)),
-  status: z.enum(["active", "pending", "rejected", "outdate"]).default("active"),
-  email: z
-    .union([z.email().max(100), z.literal("")])
-    .optional()
-    .transform((v) => (v ? v : null)),
-  sortOrder: z.number().int().default(0),
-});
-
-// update 专用：不能直接 writeSchema.partial() —— zod 的 .partial() 不会摘掉
+// update 专用：不能直接 friendWriteSchema.partial() —— zod 的 .partial() 不会摘掉
 // .default()，缺省字段会被重新注入 status:"active"/sortOrder:0，把待审核或
 // 已拒绝的行悄悄发布出去。这里把带默认值的字段换成真 optional。
-const updateSchema = writeSchema
+const updateSchema = friendWriteSchema
   .omit({ status: true, sortOrder: true })
   .partial()
   .extend({
     id: z.string().min(1),
-    status: z.enum(["active", "pending", "rejected", "outdate"]).optional(),
+    status: z.enum(FRIEND_STATUSES).optional(),
     sortOrder: z.number().int().optional(),
   });
 
@@ -109,81 +81,69 @@ export const friendsRouter = {
       .orderBy(...byOrder),
   ),
 
-  submit: publicProcedure
-    .input(
-      z.object({
-        name: z.string().trim().min(1).max(50),
-        url: z.url().max(300),
-        avatarUrl: optionalUrl,
-        description: z.string().trim().max(200).optional(),
-        email: z.union([z.email().max(100), z.literal("")]).optional(),
-        message: z.string().trim().max(500).optional(),
-      }),
-    )
-    .handler(async ({ context, input }) => {
-      const normalized = normalizeUrl(input.url);
-      if (!normalized) {
-        throw new ORPCError("BAD_REQUEST", { message: "链接必须是 http(s) 地址" });
-      }
-      const email = input.email || context.user?.email || null;
-      if (!email) {
-        throw new ORPCError("BAD_REQUEST", { message: "请留一个邮箱，方便通知审核结果" });
-      }
+  submit: publicProcedure.input(friendApplySchema).handler(async ({ context, input }) => {
+    const normalized = normalizeUrl(input.url);
+    if (!normalized) {
+      throw new ORPCError("BAD_REQUEST", { message: "链接必须是 http(s) 地址" });
+    }
+    const email = input.email || context.user?.email || null;
+    if (!email) {
+      throw new ORPCError("BAD_REQUEST", { message: "请留一个邮箱，方便通知审核结果" });
+    }
 
-      // URL 去重放在限流之前：撞了重复链接不该消耗每小时的提交额度。
-      // 已在列表或队列中的拒绝；此前被拒绝的允许重新提交（复用原行）。
-      const existing = await context.db
-        .select({ id: friend.id, url: friend.url, status: friend.status })
-        .from(friend);
-      const dup = existing.find((f) => normalizeUrl(f.url) === normalized);
-      if (dup && dup.status !== "rejected") {
-        throw new ORPCError("CONFLICT", {
-          message:
-            dup.status === "pending" ? "这个链接已经在审核队列里啦" : "这个链接已经在友链里啦",
-        });
-      }
+    // URL 去重放在限流之前：撞了重复链接不该消耗每小时的提交额度。
+    // 已在列表或队列中的拒绝；此前被拒绝的允许重新提交（复用原行）。
+    const existing = await context.db
+      .select({ id: friend.id, url: friend.url, status: friend.status })
+      .from(friend);
+    const dup = existing.find((f) => normalizeUrl(f.url) === normalized);
+    if (dup && dup.status !== "rejected") {
+      throw new ORPCError("CONFLICT", {
+        message: dup.status === "pending" ? "这个链接已经在审核队列里啦" : "这个链接已经在友链里啦",
+      });
+    }
 
-      // 频率限制：同 IP 每小时最多 3 次（redis 不可用时放行）。
-      // expire 带 NX：INCR 后即使中途出错也不会留下永不过期的封禁 key。
-      const role = (context.user as { role?: string } | null)?.role;
-      if (role !== "admin" && role !== "owner") {
-        try {
-          const key = KEYS.friendApply(clientIp(context.headers));
-          const count = await redis.incr(key);
-          await redis.expire(key, 3600, "NX");
-          if (count > APPLY_LIMIT_PER_HOUR) {
-            throw new ORPCError("TOO_MANY_REQUESTS", {
-              message: "提交太频繁啦，过会儿再试 ✿",
-            });
-          }
-        } catch (e) {
-          if (e instanceof ORPCError) throw e;
+    // 频率限制：同 IP 每小时最多 3 次（redis 不可用时放行）。
+    // expire 带 NX：INCR 后即使中途出错也不会留下永不过期的封禁 key。
+    const role = (context.user as { role?: string } | null)?.role;
+    if (role !== "admin" && role !== "owner") {
+      try {
+        const key = KEYS.friendApply(clientIp(context.headers));
+        const count = await redis.incr(key);
+        await redis.expire(key, 3600, "NX");
+        if (count > APPLY_LIMIT_PER_HOUR) {
+          throw new ORPCError("TOO_MANY_REQUESTS", {
+            message: "提交太频繁啦，过会儿再试 ✿",
+          });
         }
+      } catch (e) {
+        if (e instanceof ORPCError) throw e;
       }
+    }
 
-      const data = {
-        name: input.name,
-        url: input.url.trim(),
-        avatarUrl: input.avatarUrl ?? context.user?.image ?? null,
-        description: input.description?.trim() || null,
-        email,
-        message: input.message?.trim() || null,
-        applicantId: context.user?.id ?? null,
-        status: "pending",
-        reachable: null,
-        backlinked: null,
-        failCount: 0,
-        checkedAt: null, // 复用被拒绝的旧行时，清掉过期的检测时间
-      };
-      const [row] = dup
-        ? await context.db.update(friend).set(data).where(eq(friend.id, dup.id)).returning()
-        : await context.db.insert(friend).values(data).returning();
+    const data = {
+      name: input.name,
+      url: input.url.trim(),
+      avatarUrl: input.avatarUrl ?? context.user?.image ?? null,
+      description: input.description?.trim() || null,
+      email,
+      message: input.message?.trim() || null,
+      applicantId: context.user?.id ?? null,
+      status: "pending",
+      reachable: null,
+      backlinked: null,
+      failCount: 0,
+      checkedAt: null, // 复用被拒绝的旧行时，清掉过期的检测时间
+    };
+    const [row] = dup
+      ? await context.db.update(friend).set(data).where(eq(friend.id, dup.id)).returning()
+      : await context.db.insert(friend).values(data).returning();
 
-      void notifyOwnerFriendApply(row!).catch(() => {});
-      // 提前跑一次检测，审核时就能看到存活/反链参考。
-      void checkFriend(row!).catch(() => {});
-      return { id: row!.id };
-    }),
+    void notifyOwnerFriendApply(row!).catch(() => {});
+    // 提前跑一次检测，审核时就能看到存活/反链参考。
+    void checkFriend(row!).catch(() => {});
+    return { id: row!.id };
+  }),
 
   adminList: adminProcedure.handler(({ context }) =>
     context.db.select().from(friend).orderBy(desc(friend.createdAt)),
@@ -237,7 +197,7 @@ export const friendsRouter = {
       return { queued, friend: null };
     }),
 
-  create: adminProcedure.input(writeSchema).handler(async ({ context, input }) => {
+  create: adminProcedure.input(friendWriteSchema).handler(async ({ context, input }) => {
     const [row] = await context.db.insert(friend).values(input).returning();
     return row!;
   }),
