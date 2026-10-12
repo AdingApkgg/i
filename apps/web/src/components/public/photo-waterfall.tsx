@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyCard } from "@/components/public/collection";
 import { PhotoLightbox } from "@/components/public/photo-lightbox";
 import { orpc } from "@/lib/orpc/client";
+import { thumbProps } from "@/lib/thumb";
 import type { RouterOutputs } from "@/server/router";
 
 export type GalleryPage = RouterOutputs["gallery"]["page"];
@@ -26,6 +27,10 @@ function columnsFor(w: number) {
   if (w >= 440) return 3;
   return 2;
 }
+
+/** 列宽随视口：≥1024 时 5 列约 190px，其余按列数占视口比例（给 srcset 挑档用，略偏大即可） */
+const CELL_SIZES =
+  "(min-width: 1024px) 200px, (min-width: 700px) 25vw, (min-width: 440px) 34vw, 50vw";
 
 /** 比例缓存按展示用的 src 键控：换图（同 id 不同 URL）后旧比例自动失效 */
 function srcOf(it: Photo) {
@@ -180,7 +185,7 @@ export function PhotoWaterfall({
                 onClick={() => setLightbox(i)}
               >
                 <img
-                  src={srcOf(it)}
+                  {...thumbProps(srcOf(it), [320, 640, 960], CELL_SIZES)}
                   alt={it.title || "照片"}
                   title={it.title || undefined}
                   loading="lazy"

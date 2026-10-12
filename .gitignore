@@ -33,3 +33,8 @@ npm-debug.log*
 # docker volume data (if bind-mounted locally)
 data/
 .import/
+
+# e2e (Playwright)
+apps/web/e2e/.auth/
+apps/web/e2e/.results/
+apps/web/playwright-report/

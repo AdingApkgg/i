@@ -2,7 +2,7 @@
  * 非页面的 HTTP 端点（Hono）。由 src/hono.ts 挂在 React Router 之前：
  *   /api/rpc/*            oRPC
  *   /api/auth/*           better-auth
- *   /api/gallery/*        相册上传 / 读图（SeaweedFS S3）
+ *   /api/gallery/*        相册上传 / 读图 / 缩略图（SeaweedFS S3 + sharp）
  *   /rss.xml /sitemap.xml /robots.txt
  *   /og.png /og/blog/:slug.png   分享卡片
  */
@@ -17,9 +17,12 @@ import { auth } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { renderOgImage } from "@/lib/og";
 import { StorageError, storage } from "@/lib/s3";
+import { isThumbWidth } from "@/lib/thumb";
+import { CACHE } from "./cache";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
 import { createContext } from "./orpc";
 import { router } from "./router";
+import { deleteThumbs, getThumb } from "./thumbs";
 
 export const http = new Hono();
 
@@ -99,6 +102,7 @@ http.delete("/api/gallery/upload", async (c) => {
   if (!key || key.includes("/") || key.includes("\\")) return c.json({ error: "bad key" }, 400);
   try {
     await storage.delete(key);
+    await deleteThumbs(key);
   } catch (e) {
     if (e instanceof StorageError && e.status === 400) return c.json({ error: "bad key" }, 400);
     return c.json({ error: `delete failed: ${String(e)}` }, 500);
@@ -106,10 +110,18 @@ http.delete("/api/gallery/upload", async (c) => {
   return c.json({ ok: true });
 });
 
+/** ?w=640 等取缩略图（宽度见 lib/thumb.ts），不带参数取原图 */
 http.get("/api/gallery/files/:key", async (c) => {
+  const key = c.req.param("key");
+  const w = c.req.query("w");
+  if (w !== undefined && !isThumbWidth(Number(w))) {
+    return c.text("unsupported width", 400);
+  }
   let obj: Response | null;
   try {
-    obj = await storage.get(c.req.param("key"));
+    const t = w === undefined ? null : await getThumb(key, Number(w));
+    if (t) return t;
+    obj = await storage.get(key);
   } catch (e) {
     if (e instanceof StorageError && e.status === 400) return c.text("not found", 404);
     console.error("[gallery] read failed:", e);
@@ -123,7 +135,7 @@ http.get("/api/gallery/files/:key", async (c) => {
       ...(obj.headers.get("content-length")
         ? { "content-length": obj.headers.get("content-length")! }
         : {}),
-      "cache-control": "public, max-age=31536000, immutable",
+      ...CACHE.immutable,
     },
   });
 });

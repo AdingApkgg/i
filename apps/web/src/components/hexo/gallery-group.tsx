@@ -1,3 +1,5 @@
+import { thumb } from "@/lib/thumb";
+
 type GalleryGroupProps = {
   name: string;
   desc?: string;
@@ -13,7 +15,7 @@ export function GalleryGroup({ name, desc, url, cover }: GalleryGroupProps) {
       className="group relative block aspect-video overflow-hidden rounded-[var(--radius-lg)] no-underline transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <img
-        src={cover}
+        src={thumb(cover, 640)}
         alt={name}
         className="absolute inset-0 size-full object-cover transition duration-300 group-hover:scale-105"
       />

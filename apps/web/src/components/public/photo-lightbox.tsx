@@ -15,6 +15,10 @@ import { ChevronLeft, ChevronRight, Download, RotateCcw, X, ZoomIn, ZoomOut } fr
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { thumbProps } from "@/lib/thumb";
+
+/** 大图用 WebP 缩放版（最大 2560，比手机原图小一个数量级）；下载按钮仍给原图 */
+const largeImage = (url: string) => thumbProps(url, [1280, 1920, 2560], "92vw");
 
 export interface LightboxPhoto {
   id: string;
@@ -190,12 +194,17 @@ export function PhotoLightbox({
     return () => el.removeEventListener("wheel", onWheel);
   }, [open, stagePoint, zoomAt]);
 
-  // 预加载相邻原图
+  // 预加载相邻大图（与展示用同一组 srcset，浏览器会挑同一档、命中缓存）
   useEffect(() => {
     if (index == null) return;
     for (const i of [index - 1, index + 1]) {
       const it = items[i];
-      if (it) new Image().src = it.imageUrl;
+      if (!it) continue;
+      const { src, srcSet, sizes } = largeImage(it.imageUrl);
+      const img = new Image();
+      if (sizes) img.sizes = sizes;
+      if (srcSet) img.srcset = srcSet;
+      img.src = src;
     }
   }, [index, items]);
 
@@ -318,7 +327,7 @@ export function PhotoLightbox({
               <img
                 key={photo.id}
                 ref={imgRef}
-                src={photo.imageUrl}
+                {...largeImage(photo.imageUrl)}
                 alt={photo.title || "照片"}
                 draggable={false}
                 onLoad={() => setLoaded(true)}

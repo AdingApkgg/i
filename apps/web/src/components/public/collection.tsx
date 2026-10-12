@@ -2,6 +2,7 @@ import { Card } from "@i/ui";
 import { Image as ImageIcon, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { Stagger, StaggerItem } from "@/components/motion";
+import { thumbProps } from "@/lib/thumb";
 
 export function Badge({ children }: { children: ReactNode }) {
   return (
@@ -39,7 +40,11 @@ export function Collection({ items, empty }: { items: CollectionItem[]; empty?: 
           <Card className="h-full overflow-hidden transition hover:shadow-md">
             {it.coverUrl ? (
               <img
-                src={it.coverUrl}
+                {...thumbProps(
+                  it.coverUrl,
+                  [320, 640],
+                  "(min-width: 768px) 240px, (min-width: 640px) 33vw, 50vw",
+                )}
                 alt={it.title}
                 loading="lazy"
                 className="aspect-[3/4] w-full object-cover"

@@ -9,6 +9,7 @@ import { adxChartUrl } from "@/lib/adx";
 import { formatDate } from "@/lib/format";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
+import { thumb, thumbProps } from "@/lib/thumb";
 import type { Route } from "./+types/home";
 
 function fmtDate(d: Date | string) {
@@ -176,7 +177,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
               >
                 <Link to="/gallery" className="block h-full w-full">
                   <img
-                    src={p.thumbUrl ?? p.imageUrl}
+                    {...thumbProps(
+                      p.thumbUrl || p.imageUrl,
+                      [320, 640],
+                      "(min-width: 768px) 160px, 34vw",
+                    )}
                     alt={p.title || "照片"}
                     loading="lazy"
                     className="h-full w-full object-cover transition hover:scale-105"
@@ -276,7 +281,7 @@ function TrackTile({
       <div className="flex items-center gap-3 p-3">
         {cover ? (
           <img
-            src={cover}
+            src={thumb(cover, 320)}
             alt=""
             className="size-14 shrink-0 rounded-[var(--radius-md)] object-cover"
           />

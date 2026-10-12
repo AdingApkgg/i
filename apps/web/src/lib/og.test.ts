@@ -23,6 +23,7 @@ describe("renderOgImage", () => {
     const res = await renderOgImage({ eyebrow: "博客", title: "你好，世界", meta: "2024年1月1日" });
     expect(res.headers.get("content-type")).toBe("image/png");
     expect(res.headers.get("cache-control")).toBe("public, max-age=3600");
+    expect(res.headers.get("cdn-cache-control")).toContain("stale-while-revalidate");
     expect(pngSize(await res.arrayBuffer())).toEqual(OG_SIZE);
   });
 });

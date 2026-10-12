@@ -5,10 +5,10 @@
 @source "./";
 @source "../../../packages/ui/src";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ==================== moe / 樱粉 theme ==================== */
+/* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
 :root {
+  color-scheme: light dark;
   --background: oklch(0.995 0.006 350);
   --foreground: oklch(0.25 0.02 340);
   --muted: oklch(0.97 0.012 345);
@@ -31,26 +31,28 @@
   --radius: 0.9rem;
 }
 
-.dark {
-  --background: oklch(0.17 0.02 335);
-  --foreground: oklch(0.95 0.01 345);
-  --muted: oklch(0.24 0.02 335);
-  --muted-foreground: oklch(0.68 0.02 340);
-  --border: oklch(0.3 0.02 335);
-  --input: oklch(0.28 0.02 335);
-  --ring: oklch(0.72 0.16 350);
-  --primary: oklch(0.78 0.16 350);
-  --primary-foreground: oklch(0.18 0.03 340);
-  --secondary: oklch(0.26 0.02 340);
-  --secondary-foreground: oklch(0.92 0.01 345);
-  --accent: oklch(0.3 0.05 345);
-  --accent-foreground: oklch(0.95 0.02 350);
-  --soft: oklch(0.28 0.04 345);
-  --destructive: oklch(0.66 0.2 25);
-  --card: oklch(0.2 0.02 338);
-  --card-foreground: oklch(0.95 0.01 345);
-  --popover: oklch(0.2 0.02 338);
-  --popover-foreground: oklch(0.95 0.01 345);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.02 335);
+    --foreground: oklch(0.95 0.01 345);
+    --muted: oklch(0.24 0.02 335);
+    --muted-foreground: oklch(0.68 0.02 340);
+    --border: oklch(0.3 0.02 335);
+    --input: oklch(0.28 0.02 335);
+    --ring: oklch(0.72 0.16 350);
+    --primary: oklch(0.78 0.16 350);
+    --primary-foreground: oklch(0.18 0.03 340);
+    --secondary: oklch(0.26 0.02 340);
+    --secondary-foreground: oklch(0.92 0.01 345);
+    --accent: oklch(0.3 0.05 345);
+    --accent-foreground: oklch(0.95 0.02 350);
+    --soft: oklch(0.28 0.04 345);
+    --destructive: oklch(0.66 0.2 25);
+    --card: oklch(0.2 0.02 338);
+    --card-foreground: oklch(0.95 0.01 345);
+    --popover: oklch(0.2 0.02 338);
+    --popover-foreground: oklch(0.95 0.01 345);
+  }
 }
 
 @theme inline {

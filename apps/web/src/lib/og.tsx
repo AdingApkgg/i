@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { siteConfig } from "@i/config";
 import { siteUrl } from "@/lib/site-url";
+import { CACHE } from "@/server/cache";
 
 /**
  * 分享卡片：樱粉底 + 白卡片 + 大标题，1200×630 PNG。
@@ -164,8 +165,8 @@ export async function renderOgImage(card: OgCard): Promise<Response> {
   return new Response(png as BodyInit, {
     headers: {
       "Content-Type": "image/png",
-      // 文章标题会改，缓存一小时即可
-      "Cache-Control": "public, max-age=3600",
+      // 文章标题会改：浏览器缓存一小时，CDN 一天
+      ...CACHE.og,
     },
   });
 }

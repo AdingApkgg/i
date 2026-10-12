@@ -14,7 +14,6 @@ permissions:
   contents: read
 
 env:
-  NEXT_TELEMETRY_DISABLED: 1
   TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
@@ -68,3 +67,107 @@ jobs:
       # React Router 8 + Vite 8；页面按请求渲染，构建期不连 DB / Redis
       - name: Build
         run: bun run build
+
+  # 浏览器端到端测试：真实的 Postgres / Redis / SeaweedFS + 生产构建 + Playwright（Chromium）
+  e2e:
+    name: e2e (Playwright)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: i
+          POSTGRES_PASSWORD: i
+          POSTGRES_DB: i
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U i -d i"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+    env:
+      DATABASE_URL: postgres://i:i@localhost:5432/i
+      REDIS_URL: redis://localhost:6379
+      BETTER_AUTH_SECRET: ci-only-e2e-secret-not-used-anywhere-else
+      BETTER_AUTH_URL: http://localhost:3123
+      # compose.yaml 里 SeaweedFS 的默认凭据
+      S3_ENDPOINT: http://localhost:8333
+      S3_ACCESS_KEY: seaweed
+      S3_SECRET_KEY: seaweed12345
+      S3_BUCKET: gallery
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # 直接用 compose.yaml 里的 SeaweedFS 定义（顺带验证这份配置能起来）
+      - name: Start SeaweedFS
+        run: docker compose up -d seaweedfs
+
+      - name: Migrate + seed
+        run: |
+          bun run db:migrate
+          bun run --filter @i/db db:seed
+
+      - name: Build
+        run: bun run build
+
+      - name: Playwright version
+        id: pw
+        working-directory: apps/web
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Chromium
+        working-directory: apps/web
+        run: bunx playwright install --with-deps chromium
+
+      # S3 网关起来后还要等 filer 就绪才能建桶；用应用自己的存储客户端试到成功为止
+      - name: Wait for SeaweedFS
+        run: |
+          timeout 120 bash -c 'until bun -e "
+            import { createStorage, storageConfigFromEnv } from \"./packages/db/src/storage.ts\";
+            await createStorage(storageConfigFromEnv()).ensureBucket();
+          " 2>/dev/null; do sleep 2; done'
+
+      - name: E2E
+        run: bun run test:e2e
+
+      - name: SeaweedFS logs
+        if: failure()
+        run: docker compose logs --tail 200 seaweedfs
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/e2e/.results
+          retention-days: 7

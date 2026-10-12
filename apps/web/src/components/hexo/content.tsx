@@ -2,6 +2,7 @@ import { type ComponentType, useMemo } from "react";
 import * as runtime from "react/jsx-runtime";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { thumbProps } from "@/lib/thumb";
 import { Btn } from "./btn";
 import { DPlayer } from "./dplayer";
 import { Gallery } from "./gallery";
@@ -25,10 +26,17 @@ const components: Record<string, any> = {
   GalleryGroup,
   DPlayer,
   Meting,
-  // give raw <img> in content lazy loading + rounded corners
+  // give raw <img> in content lazy loading + rounded corners；站内存储的图按正文宽度（max-w-2xl）取缩放版
   img: (p: React.ImgHTMLAttributes<HTMLImageElement>) => (
     // biome-ignore lint/a11y/useAltText: passthrough
-    <img {...p} loading="lazy" className="rounded-[var(--radius-md)]" />
+    <img
+      {...p}
+      {...(typeof p.src === "string"
+        ? thumbProps(p.src, [640, 960, 1280, 1920], "(min-width: 704px) 672px, 100vw")
+        : {})}
+      loading="lazy"
+      className="rounded-[var(--radius-md)]"
+    />
   ),
 };
 

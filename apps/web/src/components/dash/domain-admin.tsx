@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ADMIN_FIELDS, type FieldSpec } from "@/lib/admin-fields";
 import { client } from "@/lib/orpc/client";
 import { orpcErrText } from "@/lib/orpc/errors";
+import { thumb } from "@/lib/thumb";
 
 type Row = Record<string, unknown> & { id: string };
 type FormState = Record<string, unknown>;
@@ -379,7 +380,7 @@ function ImageField({
       <div className="flex items-start gap-3">
         {value ? (
           <img
-            src={value}
+            src={thumb(value, 320)}
             alt=""
             className="size-20 shrink-0 rounded-[var(--radius-md)] border border-border object-cover"
           />

@@ -4,6 +4,7 @@ import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
+import { thumb } from "@/lib/thumb";
 import type { Route } from "./+types/gallery";
 
 const PREVIEW = 8;
@@ -53,7 +54,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
               className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"
             >
               <img
-                src={cover}
+                src={thumb(cover, 640)}
                 alt={`${section.name} 封面`}
                 loading="lazy"
                 className="h-28 w-auto min-w-20 object-cover transition group-hover:scale-105 sm:h-36"
@@ -69,7 +70,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
                 className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"
               >
                 <img
-                  src={p.thumbUrl || p.imageUrl}
+                  src={thumb(p.thumbUrl || p.imageUrl, 640)}
                   alt={p.title || section.name}
                   loading="lazy"
                   className="h-28 w-auto min-w-20 object-cover transition group-hover:scale-105 sm:h-36"

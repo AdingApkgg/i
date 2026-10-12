@@ -29,10 +29,12 @@ export const meta: Route.MetaFunction = (args) =>
 
 export function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="zh-CN">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* CSS 还没加载时浏览器也按系统深浅色铺底，避免深色下白屏一闪 */}
+        <meta name="color-scheme" content="light dark" />
         <Meta />
         <Links />
       </head>

@@ -6,6 +6,7 @@ import { DOMAINS, siteConfig } from "@i/config";
 import { album, db, post } from "@i/db";
 import { desc, eq } from "drizzle-orm";
 import { absUrl } from "@/lib/site-url";
+import { CACHE } from "./cache";
 
 const FEED_SIZE = 30;
 
@@ -72,7 +73,7 @@ ${items}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8",
-      "Cache-Control": "public, max-age=600, s-maxage=3600",
+      ...CACHE.feed,
     },
   });
 }
@@ -141,7 +142,7 @@ ${body}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=600, s-maxage=3600",
+      ...CACHE.feed,
     },
   });
 }

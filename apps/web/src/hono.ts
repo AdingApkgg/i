@@ -3,6 +3,7 @@
  * 其余请求交给 React Router 渲染页面。开发（Vite）与生产共用这一个入口。
  */
 import { createHonoServer } from "react-router-hono-server/node";
+import { cachePolicy } from "./server/cache";
 import { startFriendCheckScheduler } from "./server/friend-check";
 import { http } from "./server/http";
 import { startMonitorScheduler } from "./server/monitor-scheduler";
@@ -18,6 +19,10 @@ if (!g.__schedulersStarted && process.env.DISABLE_SCHEDULERS !== "1") {
 
 export default await createHonoServer({
   defaultLogger: false,
+  // 最外层：给所有响应（含静态资源、页面）补齐缓存头
+  beforeAll(app) {
+    app.use("*", cachePolicy);
+  },
   configure(app) {
     app.route("/", http);
   },

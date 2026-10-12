@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { emptyForm, Field, inputCls, rowToForm, toBody } from "@/components/dash/domain-admin";
 import { ADMIN_FIELDS } from "@/lib/admin-fields";
 import { client, orpc } from "@/lib/orpc/client";
+import { thumb } from "@/lib/thumb";
 import type { RouterOutputs } from "@/server/router";
 
 type Photo = RouterOutputs["gallery"]["list"][number];
@@ -363,7 +364,7 @@ export function PhotosAdmin() {
                           onClick={() => toggle(p.id)}
                         >
                           <img
-                            src={p.thumbUrl || p.imageUrl}
+                            src={thumb(p.thumbUrl || p.imageUrl, 320)}
                             alt={p.title || "照片"}
                             loading="lazy"
                             className={cn(
