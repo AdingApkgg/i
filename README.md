@@ -35,6 +35,16 @@ WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 MINIO_PORT=19000 MINIO_CONSOLE_POR
 # → http://localhost:13000
 ```
 
+## 测试
+
+```bash
+bun run test                          # turbo → vitest run（apps/web）
+cd apps/web && bun run test:watch     # 监听模式
+```
+
+单测与源码同目录（`*.test.ts`），不连数据库：Prisma / Redis / better-auth 用 `vi.mock` 替身，
+oRPC 路由用 `call(procedure, input, { context })` 直接调用。
+
 ## 部署
 
 ```bash

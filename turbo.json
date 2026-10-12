@@ -25,6 +25,9 @@
     "typecheck": {
       "dependsOn": ["db:generate", "^db:generate"]
     },
+    "test": {
+      "dependsOn": ["^db:generate"]
+    },
     "dev": {
       "cache": false,
       "persistent": true,

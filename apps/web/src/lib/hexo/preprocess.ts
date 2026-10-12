@@ -106,7 +106,8 @@ export function hexoToMdx(input: string): string {
   for (const name of ["hideToggle", "hideBlock"]) {
     s = replacePaired(s, name, (args, body) => {
       const a = splitArgs(args);
-      const title = attr(a[0] ?? "详情");
+      // 无参数时 splitArgs 返回 [""]，用 || 才能落到默认标题
+      const title = attr(a[0] || "详情");
       const color = attr(a[1] ?? "");
       return `\n\n<HideToggle title="${title}" color="${color}">${wrap(body)}</HideToggle>\n\n`;
     });

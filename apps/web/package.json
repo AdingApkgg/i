@@ -7,7 +7,9 @@
     "dev": "next dev --turbopack -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
@@ -52,6 +54,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "5.0.2"
   }
 }
