@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 相册灯箱（交互规格参考 2x.nz/ai 的 image-lightbox）：
  * - 滚轮以光标为锚缩放（1–6 倍）、点图 1↔2.5 倍、缩放后拖拽平移（带边界）
@@ -316,7 +314,6 @@ export function PhotoLightbox({
               style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
             >
               {/* biome-ignore lint/a11y/useKeyWithClickEvents: 点图缩放，键盘走全局监听 */}
-              {/* biome-ignore lint/performance/noImgElement: MinIO 原图，灯箱直连 */}
               <img
                 key={photo.id}
                 ref={imgRef}

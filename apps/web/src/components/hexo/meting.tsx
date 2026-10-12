@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 选播 row for imported <meting-js> tags. Instead of stacking embedded players
  * (the old mistake), each song renders as a clickable row and playlists as a
@@ -74,7 +72,6 @@ function SongRow({ server, mid, onPlay }: { server: string; mid: string; onPlay:
       className="group my-0.5 flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-border bg-card px-3 py-2 text-left transition hover:border-primary/50 hover:bg-soft"
     >
       {song?.pic ? (
-        // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
         <motion.img
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

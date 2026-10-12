@@ -1,5 +1,3 @@
-"use client";
-
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import type * as React from "react";

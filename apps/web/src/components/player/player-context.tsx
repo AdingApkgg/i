@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery } from "@tanstack/react-query";
 /**
  * 全站左下角音乐播放器 — 自写实现（不再用 APlayer），设计参考 adx-dl：
@@ -382,7 +380,6 @@ function Cover({
         style={{ opacity: glowOpacity, scale: glowScale }}
       />
       {song.pic ? (
-        // biome-ignore lint/performance/noImgElement: 外链封面
         <img
           src={song.pic}
           alt=""

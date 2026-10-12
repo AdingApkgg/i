@@ -1,11 +1,10 @@
-"use client";
-
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Mail, Pencil, Plus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/format";
 import { client, orpc } from "@/lib/orpc/client";
 import { orpcErrText } from "@/lib/orpc/errors";
 import type { RouterOutputs } from "@/server/router";
@@ -33,7 +32,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function fmtTime(d: Date | string | null): string {
   if (!d) return "";
-  return new Date(d).toLocaleString("zh-CN", {
+  return formatDate(d, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -77,7 +76,6 @@ function CheckInfo({ f }: { f: FriendRow }) {
 
 function Avatar({ f, size = "size-9" }: { f: FriendRow; size?: string }) {
   return f.avatarUrl ? (
-    // biome-ignore lint/performance/noImgElement: 外站头像，沿用原生 img
     <img src={f.avatarUrl} alt="" className={cn(size, "shrink-0 rounded-full object-cover")} />
   ) : (
     <div

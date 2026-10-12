@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -7,13 +5,12 @@ import { LogOut, Send, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { authClient, useSession } from "@/lib/auth-client";
+import { formatDate } from "@/lib/format";
 import { orpc } from "@/lib/orpc/client";
 import { VisitorAuth } from "./visitor-auth";
 
 function fmt(d: string | Date) {
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(d),
-  );
+  return formatDate(d, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function Comments({ path, postId }: { path: string; postId?: string }) {

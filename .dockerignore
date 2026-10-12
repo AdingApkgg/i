@@ -1,5 +1,6 @@
 **/node_modules
-**/.next
+**/.react-router
+**/build
 **/.turbo
 **/dist
 **/*.tsbuildinfo

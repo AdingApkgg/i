@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 实时站点监控列表：react-query 每 30s 轮询 monitor.status（与服务端检查周期一致），
  * 服务端首屏数据作为 fallback，状态变化时圆点/延迟即时更新。
@@ -41,7 +39,7 @@ export function MonitorStatus({ initial }: { initial: MonitorRow[] }) {
   const { data: items = initial } = useQuery({
     ...orpc.monitor.status.queryOptions(),
     refetchInterval: 30_000,
-    // 数据经过 RSC 边界，checkedAt 可能已序列化为 string，与路由推断类型不完全一致，此处收敛一次
+    // loader 数据与 oRPC 推断的输出类型在 Date 字段上略有出入，此处收敛一次
     initialData: initial as RouterOutputs["monitor"]["status"],
   });
 
@@ -68,7 +66,11 @@ export function MonitorStatus({ initial }: { initial: MonitorRow[] }) {
                 </motion.span>
               )}
               <Badge>{m.kind}</Badge>
-              <span className="hidden text-xs text-muted-foreground sm:inline">
+              {/* 相对时间依赖当前时刻，服务端渲染与水合时必然差几秒，允许文本不一致 */}
+              <span
+                className="hidden text-xs text-muted-foreground sm:inline"
+                suppressHydrationWarning
+              >
                 {ago(m.checkedAt)}
               </span>
             </CardBody>

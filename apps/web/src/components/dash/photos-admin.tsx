@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 相册照片专属管理页（替代通用 CRUD 表格）：
  * - 缩略图网格 + 图集筛选（全部 / 各图集 / 未分类）
@@ -364,7 +362,6 @@ export function PhotosAdmin() {
                           aria-label={on ? "取消选择" : "选择"}
                           onClick={() => toggle(p.id)}
                         >
-                          {/* biome-ignore lint/performance/noImgElement: 管理端缩略图，沿用原生 img */}
                           <img
                             src={p.thumbUrl || p.imageUrl}
                             alt={p.title || "照片"}

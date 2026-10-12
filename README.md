@@ -2,13 +2,13 @@
 
 [![CI](https://github.com/AdingApkgg/i/actions/workflows/ci.yml/badge.svg)](https://github.com/AdingApkgg/i/actions/workflows/ci.yml)
 
-独属于某个变态的后花园。Next.js 全栈重写版。
+独属于某个变态的后花园。Hono + React Router 全栈重写版。
 
 ## 技术栈
 
-- **运行时/工具链**: bun + turborepo(单应用 + 共享包)
-- **框架**: Next.js 16(app router)+ React 19 + TypeScript
-- **后端**: 全进 Next · oRPC + @tanstack/react-query
+- **运行时/工具链**: Node 24 LTS + bun(包管理 / 脚本)+ turborepo(单应用 + 共享包)
+- **框架**: React Router 8(framework mode,SSR)+ Vite 8 + React 19 + TypeScript
+- **服务端**: Hono(react-router-hono-server)· oRPC + @tanstack/react-query
 - **数据**: Drizzle ORM(node-postgres)+ Postgres + Redis
 - **认证**: better-auth(管理员 + 访客账号)
 - **样式**: Tailwind v4 + shadcn/Radix · 萌系粉调 + Live2D 看板娘
@@ -18,10 +18,12 @@
 ## 结构
 
 ```
-apps/web            单 Next 全栈应用（公开前台 + /dash 后台路由组）
-  src/app           路由（页面 + api/rpc + api/auth）
-  src/server        oRPC procedure + routers（public/protected/admin procedure）
-  src/lib           auth / orpc client+server
+apps/web            单全栈应用（公开前台 + /dash 后台）
+  src/hono.ts       服务端入口：Hono 处理 API / auth / RSS / OG，其余交给 React Router
+  src/routes.ts     页面路由表；src/routes/** 路由模块（loader + meta + 组件）
+  src/root.tsx      HTML 骨架 / 全局 Provider
+  src/server        oRPC procedure + routers、Hono 端点（http.ts）、定时任务
+  src/lib           auth / orpc client + api.server（loader 直调）/ seo / og
 packages/db         Drizzle schema + client + redis + 脚本（@i/db）
 packages/ui         shadcn 组件 + 萌系主题（@i/ui）
 packages/config     站点配置 + 内容域注册表（@i/config）
@@ -35,6 +37,14 @@ cp .env.example .env
 WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 MINIO_PORT=19000 MINIO_CONSOLE_PORT=19001 \
   docker compose up
 # → http://localhost:13000
+```
+
+不用 Docker 时：
+
+```bash
+bun install
+bun run db:push && bun run db:seed   # 需要 DATABASE_URL
+bun run dev                          # Node ≥ 24.19（见 .node-version）
 ```
 
 ## 测试

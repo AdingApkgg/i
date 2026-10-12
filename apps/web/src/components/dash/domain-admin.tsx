@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -380,7 +378,6 @@ function ImageField({
       {label}
       <div className="flex items-start gap-3">
         {value ? (
-          // biome-ignore lint/performance/noImgElement: 上传预览，沿用原生 img
           <img
             src={value}
             alt=""

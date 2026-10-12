@@ -6,7 +6,8 @@
     "includes": [
       "**",
       "!**/generated",
-      "!**/.next",
+      "!**/.react-router",
+      "!**/build",
       "!**/dist",
       "!**/node_modules",
       "!apps/web/public/live2d/core",

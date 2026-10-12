@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * meting 歌曲元数据 → react-query 永不过期缓存。
  * 同一首歌出现在多个 SongRow / 全局播放器里时只请求一次。

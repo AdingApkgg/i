@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 瀑布流相册（参考 2x.nz/ai 精选 Tab 的 waterfall 布局）：
  * - 绝对定位 + 最短列贪心放置，图片按真实宽高比排布、不限高度
@@ -181,7 +179,6 @@ export function PhotoWaterfall({
                 className="block w-full cursor-zoom-in"
                 onClick={() => setLightbox(i)}
               >
-                {/* biome-ignore lint/performance/noImgElement: MinIO 图源，沿用原生 img */}
                 <img
                   src={srcOf(it)}
                   alt={it.title || "照片"}

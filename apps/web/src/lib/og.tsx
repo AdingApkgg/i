@@ -1,10 +1,31 @@
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { siteConfig } from "@i/config";
-import { ImageResponse } from "next/og";
 import { siteUrl } from "@/lib/site-url";
 
-/** 分享卡片（opengraph-image）统一样式：樱粉底 + 白卡片 + 大标题。 */
+/**
+ * 分享卡片：樱粉底 + 白卡片 + 大标题，1200×630 PNG。
+ * satori 把 JSX 排版成 SVG，resvg（WASM）光栅化成 PNG —— 即 next/og 内部的做法。
+ * 两者都在第一次出图时才加载，渲染出问题也不影响站点启动。
+ */
 export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_CONTENT_TYPE = "image/png";
+
+const require = createRequire(import.meta.url);
+
+/** 拉丁文兜底字体（@fontsource 的 woff，satori 不认 woff2） */
+let latinFont: Promise<Buffer> | undefined;
+const loadLatinFont = () =>
+  (latinFont ??= readFile(
+    require.resolve("@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff"),
+  ));
+
+let resvgReady: Promise<typeof import("@resvg/resvg-wasm")> | undefined;
+const loadResvg = () =>
+  (resvgReady ??= (async () => {
+    const mod = await import("@resvg/resvg-wasm");
+    await mod.initWasm(await readFile(require.resolve("@resvg/resvg-wasm/index_bg.wasm")));
+    return mod;
+  })());
 
 // globals.css 主题色（oklch → sRGB），satori 不认 CSS 变量
 const C = {
@@ -54,7 +75,7 @@ export interface OgCard {
   meta?: string;
 }
 
-export async function renderOgImage(card: OgCard): Promise<ImageResponse> {
+export async function renderOgImage(card: OgCard): Promise<Response> {
   const host = new URL(siteUrl()).host;
   const brand = `${siteConfig.title}${card.eyebrow ? ` · ${card.eyebrow}` : ""}`;
   const font = await loadFont(`${brand}${card.title}${card.meta ?? ""}${host}${siteConfig.name}`);
@@ -64,7 +85,12 @@ export async function renderOgImage(card: OgCard): Promise<ImageResponse> {
     : { title: siteConfig.title, brand: siteConfig.handle };
   const titleSize = c.title.length > 40 ? 52 : c.title.length > 20 ? 64 : 76;
 
-  return new ImageResponse(
+  const [{ default: satori }, latin, { Resvg }] = await Promise.all([
+    import("satori"),
+    loadLatinFont(),
+    loadResvg(),
+  ]);
+  const svg = await satori(
     <div
       style={{
         width: "100%",
@@ -72,7 +98,7 @@ export async function renderOgImage(card: OgCard): Promise<ImageResponse> {
         display: "flex",
         padding: 56,
         background: `linear-gradient(135deg, ${C.soft} 0%, ${C.bg} 55%, ${C.accent} 100%)`,
-        fontFamily: font ? FONT_FAMILY : undefined,
+        fontFamily: font ? `${FONT_FAMILY}, Noto Sans` : "Noto Sans",
       }}
     >
       <div
@@ -126,7 +152,20 @@ export async function renderOgImage(card: OgCard): Promise<ImageResponse> {
     </div>,
     {
       ...OG_SIZE,
-      fonts: font ? [{ name: FONT_FAMILY, data: font, weight: 700, style: "normal" }] : undefined,
+      fonts: [
+        { name: "Noto Sans", data: latin, weight: 700, style: "normal" },
+        ...(font
+          ? [{ name: FONT_FAMILY, data: font, weight: 700 as const, style: "normal" as const }]
+          : []),
+      ],
     },
   );
+  const png = new Resvg(svg, { fitTo: { mode: "width", value: OG_SIZE.width } }).render().asPng();
+  return new Response(png as BodyInit, {
+    headers: {
+      "Content-Type": "image/png",
+      // 文章标题会改，缓存一小时即可
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 }

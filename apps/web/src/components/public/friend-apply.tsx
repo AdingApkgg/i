@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, Card, CardBody } from "@i/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { Send } from "lucide-react";

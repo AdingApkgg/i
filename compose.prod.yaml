@@ -4,7 +4,7 @@
 #   docker compose -f compose.prod.yaml up -d --build
 #
 # A bundled nginx is the single entry; it routes same-origin:
-#   /  -> web (Next handles /api/rpc, /api/auth, /dash internally)
+#   /  -> web (Hono handles /api/rpc, /api/auth; React Router renders pages + /dash)
 # Only the proxy publishes a host port (127.0.0.1); front it with a cf tunnel.
 
 name: iv2-prod
@@ -45,7 +45,7 @@ services:
       - minio:/data
     restart: unless-stopped
 
-  # One-shot schema push. Uses a plain bun image (no Next build) — installs deps,
+  # One-shot schema push. Uses a plain bun image (no app build) — installs deps,
   # pushes the Drizzle schema (drizzle-kit push; no-op when already in sync), then exits.
   migrate:
     image: oven/bun:1
@@ -71,15 +71,16 @@ services:
       dockerfile: apps/web/Dockerfile
       tags:
         - iv2-prod-web:latest
-      args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL-}
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set a real 32+ char secret}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set the public origin}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set the public origin}
+      # 公网 origin（RSS / sitemap / 分享卡片的绝对地址）。旧变量名 NEXT_PUBLIC_SITE_URL
+      # 仍然认；都没设时退回 BETTER_AUTH_URL（同一个 origin）。
+      SITE_URL: ${SITE_URL-}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL-}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET-}
       # 友链邮件通知 + 反链检测（SMTP_HOST 留空则不发邮件）

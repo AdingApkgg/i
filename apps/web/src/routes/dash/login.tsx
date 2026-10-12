@@ -1,0 +1,84 @@
+import { Button, Card, CardBody } from "@i/ui";
+import { motion } from "framer-motion";
+import { LoaderCircle, LogIn } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { seo } from "@/lib/seo";
+import type { Route } from "./+types/login";
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    const { error } = await authClient.signIn.email({ email, password });
+    setBusy(false);
+    if (error) {
+      toast.error(`登录失败：${error.message ?? "请检查邮箱和密码"}`);
+      return;
+    }
+    navigate("/dash");
+  }
+
+  const input =
+    "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/40";
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-md items-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="w-full"
+      >
+        <Card className="w-full">
+          <CardBody className="p-7">
+            <h1 className="text-xl font-bold">登录后台 ✿</h1>
+            <p className="mt-1 text-sm text-muted-foreground">管理你的个人空间内容</p>
+            <form onSubmit={submit} className="mt-5 space-y-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-muted-foreground">邮箱</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  className={input}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-muted-foreground">密码</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className={input}
+                />
+              </label>
+              <Button type="submit" disabled={busy} className="w-full" size="lg">
+                {busy ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <LogIn className="size-4" />
+                )}
+                {busy ? "登录中…" : "登录"}
+              </Button>
+            </form>
+          </CardBody>
+        </Card>
+      </motion.div>
+    </main>
+  );
+}
+
+export const meta: Route.MetaFunction = (args) => seo(args, { title: "登录", noindex: true });

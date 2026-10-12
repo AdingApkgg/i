@@ -38,7 +38,6 @@ export function Collection({ items, empty }: { items: CollectionItem[]; empty?: 
         const inner = (
           <Card className="h-full overflow-hidden transition hover:shadow-md">
             {it.coverUrl ? (
-              // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
               <img
                 src={it.coverUrl}
                 alt={it.title}

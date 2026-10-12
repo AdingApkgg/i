@@ -1,4 +1,3 @@
-import "server-only";
 import { db, maimaiConfig, maimaiProfile, maimaiRecord } from "@i/db";
 import { eq } from "drizzle-orm";
 

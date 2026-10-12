@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 const trustedOrigins = [
   process.env.BETTER_AUTH_URL,
+  process.env.SITE_URL,
   process.env.NEXT_PUBLIC_SITE_URL,
   "http://localhost:3000",
 ].filter((x): x is string => Boolean(x));

@@ -1,8 +1,8 @@
 import { lookup } from "node:dns/promises";
 import net from "node:net";
-import { siteConfig } from "@i/config";
 import { db, friend } from "@i/db";
 import { and, eq, inArray } from "drizzle-orm";
+import { siteUrl } from "@/lib/site-url";
 
 /**
  * MX Space 式友链健康检查：
@@ -18,16 +18,13 @@ const TIMEOUT_MS = 10_000;
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
 const OUTDATE_AFTER_FAILS = 3;
-const UA =
-  "Mozilla/5.0 (compatible; i-friend-checker/1.0; +" +
-  (process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url) +
-  ")";
+const UA = `Mozilla/5.0 (compatible; i-friend-checker/1.0; +${siteUrl()})`;
 
 /** Hosts whose appearance in the friend's HTML counts as a backlink. */
 function backlinkHosts(): string[] {
   const hosts = new Set<string>();
   try {
-    const h = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url).hostname;
+    const h = new URL(siteUrl()).hostname;
     hosts.add(h);
     const parts = h.split(".");
     // Apex domain too (i.saop.cc → saop.cc): friends often link an older subdomain.

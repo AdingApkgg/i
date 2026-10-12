@@ -1,5 +1,3 @@
-"use client";
-
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Info, Quote, Rocket, Shirt, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";

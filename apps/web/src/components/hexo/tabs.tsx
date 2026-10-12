@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@i/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import {

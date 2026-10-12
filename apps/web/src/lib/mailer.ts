@@ -1,5 +1,6 @@
 import { siteConfig } from "@i/config";
 import nodemailer, { type Transporter } from "nodemailer";
+import { siteUrl } from "@/lib/site-url";
 
 /**
  * SMTP mailer for friend-link notifications (MX Space style: new application →
@@ -28,10 +29,6 @@ function getTransporter(): Transporter | null {
       : undefined,
   });
   return transporter;
-}
-
-function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url;
 }
 
 async function send(to: string, subject: string, html: string) {

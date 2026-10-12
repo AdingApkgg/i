@@ -6,6 +6,7 @@
     "REDIS_URL",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
+    "SITE_URL",
     "NEXT_PUBLIC_SITE_URL",
     "GITHUB_CLIENT_ID",
     "GITHUB_CLIENT_SECRET",
@@ -17,7 +18,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": ["build/**", "dist/**"]
     },
     "typecheck": {},
     "test": {},

@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@i/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogIn, UserRoundPlus } from "lucide-react";

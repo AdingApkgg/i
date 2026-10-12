@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 全站共享的 framer-motion 入场动画原语。
  * - FadeIn: 单元素淡入上浮（滚动进入视口触发一次）
