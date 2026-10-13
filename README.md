@@ -60,20 +60,27 @@ cd apps/web && bun run test:watch     # 监听模式
 表结构由真实的迁移文件建出，唯一索引 / 外键 / 分页都是真 SQL；Redis、邮件、外部探测用 `vi.mock` 替身，
 oRPC 路由用 `call(procedure, input, { context })` 直接调用。
 
-浏览器端到端测试（`apps/web/e2e/`，Playwright + Chromium）跑在生产构建上，需要迁移 + seed 过的
-Postgres、Redis、SeaweedFS（`docker compose up -d db redis seaweedfs` 即可）：
+浏览器端到端测试（`apps/web/e2e/`，Playwright + Chromium）有两种跑法：
 
 ```bash
-bun run db:migrate && bun run db:seed && bun run build
 cd apps/web && bunx playwright install chromium   # 首次
-bun run test:e2e                                  # 环境变量同 .env（DATABASE_URL、S3_* 等）
+
+# 1) 对着完整的生产栈（和 CI 一样）：Docker 镜像 + Postgres / Redis / SeaweedFS / 迁移 / nginx
+docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml up -d --build
+docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml run --rm migrate bash -lc 'bun run --filter @i/db db:seed'
+E2E_BASE_URL=http://localhost:8099 DATABASE_URL=postgres://i:i@localhost:5432/i bun run test:e2e
+
+# 2) 对着本机的生产构建（需要迁移 + seed 过的 Postgres / Redis / SeaweedFS，环境变量同 .env）
+bun run db:migrate && bun run db:seed && bun run build && bun run test:e2e
 ```
 
-覆盖前台各页（状态码 / 水合告警 / 客户端路由 / 404 / 深色模式）、登录、上传照片与缩略图、后台增改、评论、友链审核。
+覆盖前台各页（状态码 / 水合告警 / 客户端路由 / 404 / 深色模式 / 缓存头）、登录、访客注册、
+上传照片 → 缩略图 → 删除后存储回收、后台增改与表单校验、评论、友链申请与审核。
 每个用例都会断言浏览器控制台没有错误和警告。
 
 CI（`.github/workflows/ci.yml`）每次推送并行跑两个任务：
-lint → 迁移文件检查 → typecheck → test → build；以及 e2e（Postgres / Redis 服务容器 + compose 里的 SeaweedFS）。
+lint → 迁移文件检查 → typecheck → test → build；以及 e2e（用 `compose.prod.yaml` 构建并启动完整的生产栈，
+Playwright 经 nginx 访问，和线上部署走同一条路径）。
 
 ## 数据库
 
@@ -123,7 +130,10 @@ docker compose -f compose.prod.yaml up -d --build
 前台页面对所有人输出一样（登录状态在浏览器里取），所以可以放心让 CDN 缓存；发文、改内容后最多约 1 分钟生效，
 急的话在 Cloudflare 后台 Purge 对应 URL。
 
-Cloudflare 默认不缓存 HTML，需要在面板里设置两处：
+Cloudflare 默认不缓存 HTML，需要在面板里设置两处。
+
+> ⚠️ 第 2 步（Cache Rule）要等这个版本部署上线之后再加：规则会让 Cloudflare 照源站的缓存头缓存页面，
+> 旧版本（Next.js）给静态页发的是 `s-maxage=31536000`，会被缓存一年。第 1 步随时可以做。
 
 1. **Caching → Configuration → Browser Cache TTL** 设为 **Respect Existing Headers**
    （否则 Cloudflare 会把页面的浏览器缓存时间改长，访客看不到更新）。
@@ -143,11 +153,16 @@ Cloudflare 默认不缓存 HTML，需要在面板里设置两处：
 ### 存储迁移：MinIO → SeaweedFS（一次性）
 
 相册文件从 MinIO 搬到 SeaweedFS。数据库里存的是 `/api/gallery/files/<key>`，key 不变，库不用改。
-旧 `.env` 没有 `SEAWEEDFS_*` 时会沿用 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` 作为新存储的凭据。
+旧 `.env` 没有 `SEAWEEDFS_*` 时会沿用 `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` 作为新存储的凭据；
+旧 `.env` 里的 `S3_ENDPOINT=http://minio:9000` 不用删，新版本固定连 SeaweedFS。
+
+> ⚠️ `minio/minio` 镜像已经从 Docker Hub 下架（MinIO 不再发布社区版镜像）。迁移要用服务器上
+> **现有的** MinIO 镜像，所以迁移完成前不要 `docker image prune -a` / `docker system prune -a`。
+> 第一步 `up -d` 不会停掉正在运行的旧 MinIO 容器。
 
 ```bash
 docker compose -f compose.prod.yaml up -d --build                       # 新版本 + SeaweedFS
-docker compose -f compose.prod.yaml --profile legacy up -d minio        # 临时拉起旧 MinIO（数据还在 minio 卷里）
+docker compose -f compose.prod.yaml --profile legacy up -d minio        # 旧 MinIO（还在跑则无变化；数据在 minio 卷里）
 docker compose -f compose.prod.yaml --profile legacy run --rm storage-migrate   # 复制全部对象（可重复运行）
 docker compose -f compose.prod.yaml --profile legacy stop minio
 ```

@@ -58,6 +58,13 @@ services:
     volumes:
       - seaweedfs:/data
     restart: unless-stopped
+    # S3 网关的 /healthz 在 filer 就绪后才返回 200（冷启动约 20 秒），之后才能建桶 / 写入
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
 
   # ---- 仅用于从 MinIO 迁移旧数据（profile: legacy），用法见 README「存储迁移」 ----
   # 迁移完成并确认图片正常后，可删掉这两个服务和 minio 卷。
@@ -86,8 +93,10 @@ services:
       - ./:/app
       - prod_node_modules:/app/node_modules
     depends_on:
-      - minio
-      - seaweedfs
+      minio:
+        condition: service_started
+      seaweedfs:
+        condition: service_healthy
     restart: "no"
 
   # One-shot DB migration. Uses a plain bun image (no app build) — installs deps,
@@ -147,7 +156,7 @@ services:
       redis:
         condition: service_healthy
       seaweedfs:
-        condition: service_started
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     restart: unless-stopped

@@ -1,0 +1,6 @@
+# CI 专用（叠加在 compose.prod.yaml 上）：把数据库端口开到本机，
+# 给 e2e 的 global setup 建管理员账号用。生产部署不用这个文件，数据库不对外。
+services:
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"

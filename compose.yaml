@@ -55,6 +55,13 @@ services:
       - "${S3_PORT:-8333}:8333"
     volumes:
       - seaweedfs:/data
+    # S3 网关的 /healthz 在 filer 就绪后才返回 200（冷启动约 20 秒），之后才能建桶 / 写入
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
 
   web:
     image: oven/bun:1
@@ -92,7 +99,7 @@ services:
       redis:
         condition: service_healthy
       seaweedfs:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   pgdata:
