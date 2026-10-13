@@ -1,0 +1,5 @@
+# bun 解析依赖时只取发布满 3 天的版本，和 .github/renovate.json5 的 minimumReleaseAge 保持一致。
+# Renovate 的 minimumReleaseAge 只管直接依赖；升级 PR 里的间接依赖、每月的锁文件维护都由 bun 解析，靠这里兜住。
+# 只影响解析，bun install --frozen-lockfile（CI、Docker）不受影响。确实要用刚发布的版本时，加进 minimumReleaseAgeExcludes。
+[install]
+minimumReleaseAge = 259200 # 3 天（秒）
