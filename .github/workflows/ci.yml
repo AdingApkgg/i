@@ -69,7 +69,7 @@ jobs:
         run: bun run build
 
   # 浏览器端到端测试：用 compose.prod.yaml 起完整的生产栈（构建出的 Docker 镜像 + Postgres / Redis /
-  # SeaweedFS / 迁移 / nginx），Playwright 经 nginx 访问 —— 和线上部署走同一条路径
+  # SeaweedFS / 迁移 / Caddy），Playwright 经 Caddy 访问 —— 和线上部署走同一条路径
   e2e:
     name: e2e (Docker 生产栈 + Playwright)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository

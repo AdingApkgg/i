@@ -15,7 +15,7 @@
 - **代码风格**: Biome
 - **对象存储**: SeaweedFS(S3 网关,相册上传)· aws4fetch · sharp 缩略图(WebP,按需生成)
 - **测试**: Vitest(单测,PGlite)+ Playwright(浏览器端到端)
-- **部署**: Docker compose + nginx + Cloudflare Tunnel(自托管 VPS)
+- **部署**: Docker compose + Caddy + Cloudflare Tunnel(自托管 VPS)
 
 ## 结构
 
@@ -65,7 +65,7 @@ oRPC 路由用 `call(procedure, input, { context })` 直接调用。
 ```bash
 cd apps/web && bunx playwright install chromium   # 首次
 
-# 1) 对着完整的生产栈（和 CI 一样）：Docker 镜像 + Postgres / Redis / SeaweedFS / 迁移 / nginx
+# 1) 对着完整的生产栈（和 CI 一样）：Docker 镜像 + Postgres / Redis / SeaweedFS / 迁移 / Caddy
 docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml up -d --build
 docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml run --rm migrate bash -lc 'bun run --filter @i/db db:seed'
 E2E_BASE_URL=http://localhost:8099 DATABASE_URL=postgres://i:i@localhost:5432/i bun run test:e2e
@@ -80,7 +80,7 @@ bun run db:migrate && bun run db:seed && bun run build && bun run test:e2e
 
 CI（`.github/workflows/ci.yml`）每次推送并行跑两个任务：
 lint → 迁移文件检查 → typecheck → test → build；以及 e2e（用 `compose.prod.yaml` 构建并启动完整的生产栈，
-Playwright 经 nginx 访问，和线上部署走同一条路径）。
+Playwright 经 Caddy 访问，和线上部署走同一条路径）。
 
 ## 数据库
 
@@ -111,7 +111,7 @@ docker compose -f compose.prod.yaml up -d --build
 ### 自动部署
 
 GitHub → Actions → **Deploy** → Run workflow（`.github/workflows/deploy.yml`）：SSH 到服务器跑
-`deploy/deploy.sh`（拉 main → 构建并启动，数据库迁移自动完成 → 等站点就绪），然后清 Cloudflare 缓存。
+`deploy/deploy.sh`（拉 main → 构建并启动，数据库迁移自动完成 → 重新加载 Caddy 配置 → 等站点就绪），然后清 Cloudflare 缓存。
 两个可选项，都可以重复运行：
 
 - **migrate_storage**：部署完再做一次 MinIO → SeaweedFS 的存储迁移（见下文「存储迁移」）

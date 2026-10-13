@@ -82,7 +82,7 @@ test("未登录访问后台跳到登录页", async ({ page }) => {
 });
 
 test("友链申请：前端校验提示 → 提交成功", async ({ page }) => {
-  // 每次换一个访客 IP（线上由 Cloudflare 写入 CF-Connecting-IP，nginx 原样转发）和链接：
+  // 每次换一个访客 IP（线上由 Cloudflare 写入 CF-Connecting-IP，Caddy 原样转发）和链接：
   // 申请按 IP 限频、按链接去重，反复跑也不受影响
   const run = Date.now();
   await page.setExtraHTTPHeaders({ "cf-connecting-ip": `198.51.100.${run % 250}` });
