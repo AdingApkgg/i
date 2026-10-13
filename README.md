@@ -108,6 +108,36 @@ docker compose -f compose.prod.yaml up -d --build
 # 用 Cloudflare Tunnel 指向 127.0.0.1:8099
 ```
 
+### 自动部署
+
+GitHub → Actions → **Deploy** → Run workflow（`.github/workflows/deploy.yml`）：SSH 到服务器跑
+`deploy/deploy.sh`（拉 main → 构建并启动，数据库迁移自动完成 → 等站点就绪），然后清 Cloudflare 缓存。
+两个可选项，都可以重复运行：
+
+- **migrate_storage**：部署完再做一次 MinIO → SeaweedFS 的存储迁移（见下文「存储迁移」）
+- **configure_cloudflare**：设置 Browser Cache TTL 和页面缓存规则（见下文「Cloudflare 缓存」；规则只增改自己那一条）
+
+服务器上要先有：用 `git clone https://github.com/AdingApkgg/i.git` 克隆的仓库、仓库里的 `.env`、
+SSH 用户能直接运行 `docker`（在 docker 组里，或者把下面的 `DEPLOY_DOCKER` 设为 `sudo docker` 并给免密 sudo）。
+GitHub Actions 的机器要能连上服务器的 SSH 端口。
+
+仓库 Settings → Secrets and variables → Actions 里添加：
+
+| 名称 | 类型 | 内容 |
+| --- | --- | --- |
+| `DEPLOY_HOST` | Secret | 服务器 IP 或域名（不要用经过 Cloudflare 代理的域名） |
+| `DEPLOY_USER` | Secret | SSH 用户名 |
+| `DEPLOY_SSH_KEY` | Secret | 专用私钥：`ssh-keygen -t ed25519 -N "" -C github-deploy -f deploy_key`，`deploy_key.pub` 追加到服务器 `~/.ssh/authorized_keys`，`deploy_key` 的全部内容填这里 |
+| `DEPLOY_KNOWN_HOSTS` | Secret（可选） | `ssh-keyscan -p 端口 服务器` 的输出；不填时首次连接自动信任，日志里会打印指纹 |
+| `CLOUDFLARE_API_TOKEN` | Secret（可选） | 不填就跳过 Cloudflare 步骤。My Profile → API Tokens → Create Custom Token，权限：Zone · Zone · Read、Zone · Zone Settings · Edit、Zone · Cache Rules · Edit、Zone · Cache Purge · Purge；Zone Resources 选这个站点的域名 |
+| `DEPLOY_PATH` | Variable（可选） | 服务器上仓库的路径，相对 SSH 用户的家目录或绝对路径（不要写 `~`），默认 `i` |
+| `DEPLOY_PORT` | Variable（可选） | SSH 端口，默认 `22` |
+| `DEPLOY_DOCKER` | Variable（可选） | 默认 `docker` |
+| `CLOUDFLARE_ZONE` | Variable | Cloudflare 里的域名，如 `saop.cc` |
+| `SITE_HOST` | Variable | 站点域名，如 `i.saop.cc` |
+
+不方便从 GitHub 连服务器时，也可以在服务器上直接跑：`DEPLOY_PATH=~/i MIGRATE_STORAGE=1 bash deploy/deploy.sh`。
+
 ### 相册缩略图
 
 存储里的图片（`/api/gallery/files/<key>`）加 `?w=320|640|960|1280|1920|2560` 取等比缩放的 WebP（不放大、保留 GIF 动画）。
@@ -133,8 +163,10 @@ docker compose -f compose.prod.yaml up -d --build
 
 **每次部署新版本后**，在 Cloudflare 后台 Caching → Configuration → **Purge Everything** 清一次缓存：
 旧的 HTML 引用的是旧版本的 JS 文件，新容器里已经没有了，不清的话最多 2 分钟内可能有人打开页面报错。
+用「自动部署」并配了 `CLOUDFLARE_API_TOKEN` 时，工作流部署完会自动清。
 
-Cloudflare 默认不缓存 HTML，需要在面板里设置两处。
+Cloudflare 默认不缓存 HTML，需要在面板里设置两处（「自动部署」勾选 configure_cloudflare 会用 API 完成这两处，
+不用手动做；`deploy/cloudflare.sh`）。
 
 > ⚠️ 第 2 步（Cache Rule）要等这个版本部署上线之后再加：规则会让 Cloudflare 照源站的缓存头缓存页面，
 > 旧版本（Next.js）给静态页发的是 `s-maxage=31536000`，会被缓存一年。第 1 步随时可以做。
@@ -163,6 +195,8 @@ Cloudflare 默认不缓存 HTML，需要在面板里设置两处。
 > ⚠️ `minio/minio` 镜像已经从 Docker Hub 下架（MinIO 不再发布社区版镜像）。迁移要用服务器上
 > **现有的** MinIO 镜像，所以迁移完成前不要 `docker image prune -a` / `docker system prune -a`。
 > 第一步 `up -d` 不会停掉正在运行的旧 MinIO 容器。
+
+「自动部署」勾选 migrate_storage 就是依次执行下面四步；手动做：
 
 ```bash
 docker compose -f compose.prod.yaml up -d --build                       # 新版本 + SeaweedFS
