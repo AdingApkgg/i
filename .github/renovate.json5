@@ -1,6 +1,6 @@
 // Renovate：自动提依赖升级 PR（需要在 GitHub 上安装 Renovate App 并授权本仓库）。
 // 每周一早上一批；小版本 / 补丁合成一个 PR，大版本要先在 Dependency Dashboard issue 里勾选才会提。
-// 每个 PR 都会跑完整 CI（含 Playwright 端到端），绿了再合。
+// 每个 PR 都会跑完整 CI（含 Playwright 端到端）：小版本 / 补丁绿了自动合并，大版本绿了再手动合。
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
@@ -18,6 +18,13 @@
   // 大版本需要在 Dependency Dashboard 里手动批准
   major: { dependencyDashboardApproval: true },
   packageRules: [
+    // 小版本 / 补丁 CI 全绿后自动合并。仓库没开 GitHub 自动合并、main 也没有必需检查，
+    // 交给 GitHub 合会不等 CI —— 所以关掉 platformAutomerge，由 Renovate 等分支状态全绿后自己合
+    {
+      matchUpdateTypes: ["minor", "patch"],
+      automerge: true,
+      platformAutomerge: false,
+    },
     // 大版本按“家族”合并，相关包一起升
     {
       matchUpdateTypes: ["major"],
@@ -60,6 +67,8 @@
       matchPackageNames: ["satori"],
       groupName: "satori",
       dependencyDashboardApproval: true,
+      // 要人工在生产构建里验证出图，不自动合并
+      automerge: false,
       prBodyNotes: [
         "satori 停在 0.32 是因为之后的版本引入 harfbuzzjs；升级后在生产构建里实际打开 /og.png 确认能出图。",
       ],
