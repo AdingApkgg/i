@@ -32,7 +32,7 @@
     "drizzle-orm": "0.45.3",
     "hls.js": "^1.6.16",
     "hono": "4.13.9",
-    "ioredis": "^5.10.1",
+    "ioredis": "^6.0.0",
     "isbot": "5",
     "lucide-react": "^0.563.0",
     "motion": "13.4.4",
