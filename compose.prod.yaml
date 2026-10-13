@@ -12,9 +12,11 @@ name: iv2-prod
 # 对象存储凭据：SeaweedFS 用它建 S3 账号，web / 迁移脚本用它访问。
 # 沿用旧 .env 时自动取 MINIO_ROOT_USER / MINIO_ROOT_PASSWORD；新部署设 SEAWEEDFS_*。
 # 只用字母数字（会原样写进 SeaweedFS 的 s3.json）。
+# 密码为空时由 seaweedfs 启动时报错退出 —— 不用 ${…:?}：旧版 docker compose（v2.29 等）
+# 会提前检查默认值里嵌套的 :?，即使已经设了 SEAWEEDFS_SECRET_KEY 也报错。
 x-storage-env: &storage-env
   S3_ACCESS_KEY: ${SEAWEEDFS_ACCESS_KEY:-${MINIO_ROOT_USER:-seaweed}}
-  S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-${MINIO_ROOT_PASSWORD:?set SEAWEEDFS_SECRET_KEY to a strong password}}
+  S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-}}
   S3_BUCKET: ${S3_BUCKET:-gallery}
 
 services:
@@ -53,6 +55,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        [ -n "$$S3_SECRET_KEY" ] || { echo "缺少对象存储密码：在 .env 里设置 SEAWEEDFS_SECRET_KEY（强密码，只用字母数字）" >&2; exit 1; }
         printf '{"identities":[{"name":"app","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","List","Tagging","Write"]}]}' "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /etc/seaweedfs/s3.json
         exec /entrypoint.sh server -master.volumeSizeLimitMB=1024 -ip.bind=0.0.0.0 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port.iceberg=0 -s3.port.lance=0
     volumes:
