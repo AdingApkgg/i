@@ -59,6 +59,22 @@ test("顶栏导航走客户端路由，不整页刷新", async ({ page }) => {
   expect(await page.evaluate(() => (window as unknown as { __marker?: number }).__marker)).toBe(42);
 });
 
+test("客户端跳到 404 时播放器不重新挂载（音乐不中断）", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => {
+    document.querySelector("audio")!.dataset.mark = "same-element";
+  });
+  await page.evaluate(() => {
+    history.pushState(null, "", "/no-such-page");
+    dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await expect(page.getByText("这一页迷路了")).toBeVisible();
+  expect(await page.evaluate(() => document.querySelector("audio")?.dataset.mark)).toBe(
+    "same-element",
+  );
+});
+
 test("未登录访问后台跳到登录页", async ({ page }) => {
   await page.goto("/dash");
   await expect(page).toHaveURL(/\/dash\/login$/);

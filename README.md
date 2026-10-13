@@ -121,14 +121,18 @@ docker compose -f compose.prod.yaml up -d --build
 
 | 响应 | 浏览器 | Cloudflare |
 | --- | --- | --- |
-| 前台页面、页面数据（`*.data`） | 每次重新取 | 1 分钟；过期后 10 分钟内先给旧版、后台刷新 |
+| 前台页面、页面数据（`*.data`） | 每次重新取 | 1 分钟；过期后 1 分钟内先给旧版、后台刷新 |
 | `/assets/*`、相册原图与缩略图 | 1 年（immutable） | 同左 |
 | RSS / sitemap | 10 分钟 | 1 小时（过期后 1 天内先给旧版） |
 | 分享卡片 | 1 小时 | 1 天（过期后 7 天内先给旧版） |
 | `/dash`、`/api/*`、带 Set-Cookie 的、非 200 的页面 | 不缓存 | 不缓存 |
+| 数据库出错时降级出来的页面（空列表）、RSS / sitemap（503） | 不缓存 | 不缓存 |
 
 前台页面对所有人输出一样（登录状态在浏览器里取），所以可以放心让 CDN 缓存；发文、改内容后最多约 1 分钟生效，
 急的话在 Cloudflare 后台 Purge 对应 URL。
+
+**每次部署新版本后**，在 Cloudflare 后台 Caching → Configuration → **Purge Everything** 清一次缓存：
+旧的 HTML 引用的是旧版本的 JS 文件，新容器里已经没有了，不清的话最多 2 分钟内可能有人打开页面报错。
 
 Cloudflare 默认不缓存 HTML，需要在面板里设置两处。
 

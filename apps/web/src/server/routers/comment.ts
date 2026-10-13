@@ -2,6 +2,7 @@ import { comment } from "@i/db";
 import { ORPCError } from "@orpc/server";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { isAdminRole } from "@/lib/roles";
 import { commentBodySchema } from "@/lib/schemas";
 import type { Context } from "../orpc";
 import { protectedProcedure, publicProcedure } from "../orpc";
@@ -46,8 +47,7 @@ export const commentRouter = {
     .handler(async ({ context, input }) => {
       const c = await context.db.query.comment.findFirst({ where: eq(comment.id, input.id) });
       if (!c) throw new ORPCError("NOT_FOUND");
-      const role = (context.user as { role?: string }).role;
-      if (c.userId !== context.user.id && role !== "admin" && role !== "owner") {
+      if (c.userId !== context.user.id && !isAdminRole(context.user)) {
         throw new ORPCError("FORBIDDEN");
       }
       const [row] = await context.db.delete(comment).where(eq(comment.id, input.id)).returning();

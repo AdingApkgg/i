@@ -1,6 +1,7 @@
 import { HexoContent } from "@/components/hexo/content";
 import { Collection } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { compileHexo } from "@/lib/hexo/compile.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
@@ -12,11 +13,11 @@ const prose =
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
   // 优先展示从旧博客导入的整页（meting / dplayer 等），没有再退回手动维护的条目
-  const page = await api.page.get({ id: "music" }).catch(() => null);
+  const page = await api.page.get({ id: "music" }).catch(degradeTo(null));
   if (page) {
     return { page: { source: page.contentMd, code: await compileHexo(page.contentMd) }, items: [] };
   }
-  return { page: null, items: await api.music.list().catch(() => []) };
+  return { page: null, items: await api.music.list().catch(degradeTo([])) };
 }
 
 export const meta: Route.MetaFunction = (args) => seo(args, { title: "音乐", path: "/music" });

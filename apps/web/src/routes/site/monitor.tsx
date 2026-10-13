@@ -1,13 +1,14 @@
 import { EmptyCard } from "@/components/public/collection";
 import { MonitorStatus } from "@/components/public/monitor-status";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/monitor";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
-  const items = await api.monitor.status().catch(() => []);
+  const items = await api.monitor.status().catch(degradeTo([]));
   return { items };
 }
 

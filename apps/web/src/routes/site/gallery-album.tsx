@@ -1,6 +1,7 @@
 import { data, Link } from "react-router";
 import { PhotoWaterfall } from "@/components/public/photo-waterfall";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/gallery-album";
@@ -10,7 +11,7 @@ const PAGE_SIZE = 24;
 export async function loader({ request, params }: Route.LoaderArgs) {
   const api = serverApi(request);
   const name = params.album; // React Router 已解码路径参数
-  const album = await api.gallery.albumByName({ name }).catch(() => null);
+  const album = await api.gallery.albumByName({ name });
 
   // 「未分类」伪图集：没有同名真实图集时，展示 albumId 为空的照片
   const isUnassigned = !album && name === "未分类";
@@ -18,13 +19,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
   const albumId = album ? album.id : null;
   const [initial, unassignedCount] = await Promise.all([
-    api.gallery.page({ limit: PAGE_SIZE, albumId }).catch(() => null),
+    api.gallery.page({ limit: PAGE_SIZE, albumId }).catch(degradeTo(null)),
     // 伪图集副标题需要真实总数（首页 items 被 PAGE_SIZE 截断）
     isUnassigned
       ? api.gallery
           .albums({ preview: 1 })
           .then((r) => r.unassigned.count)
-          .catch(() => 0)
+          .catch(degradeTo(0))
       : Promise.resolve(0),
   ]);
   if (isUnassigned && initial && initial.items.length === 0) throw data(null, { status: 404 });

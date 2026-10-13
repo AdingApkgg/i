@@ -6,18 +6,23 @@
  *   不用 s-maxage：Cloudflare 把它当 proxy-revalidate，会让 stale-while-revalidate 失效。
  * - 只有和登录状态无关的响应才标 public：前台页面的登录态在客户端获取（useSession），
  *   loader 输出对所有人一样；后台 / API / 带 Set-Cookie 的响应一律 private, no-store。
+ * - 数据库出错时降级出来的响应（lib/degrade.server.ts 标记）不缓存。
  *
  * Cloudflare 侧需要一条 Cache Rule 让页面可缓存，见 README「Cloudflare 缓存」。
  */
 import { createMiddleware } from "hono/factory";
+import { isDegraded, withRequestState } from "@/lib/degrade.server";
 
 export const CACHE = {
   /** 内容不变的文件：带 hash 的构建产物、相册原图 / 缩略图（key 含 uuid） */
   immutable: { "cache-control": "public, max-age=31536000, immutable" },
-  /** 前台页面与其 loader 数据（.data）：CDN 缓存 1 分钟，过期后 10 分钟内先回旧版 */
+  /**
+   * 前台页面与其 loader 数据（.data）：CDN 缓存 1 分钟，过期后 1 分钟内先回旧版。
+   * stale 窗口刻意短：部署后旧 HTML 引用的旧 chunk 已经不在了（另见 README：部署后清 CDN 缓存）
+   */
   page: {
     "cache-control": "public, max-age=0, must-revalidate",
-    "cdn-cache-control": "max-age=60, stale-while-revalidate=600",
+    "cdn-cache-control": "max-age=60, stale-while-revalidate=60",
   },
   /** RSS / sitemap */
   feed: {
@@ -51,7 +56,11 @@ const isPrivatePath = (path: string) =>
  * 路由自己设置过的（相册文件、RSS、分享卡片等）保留，其余按路径 / 状态码归类。
  */
 export const cachePolicy = createMiddleware(async (c, next) => {
-  await next();
+  let degraded = false;
+  await withRequestState(async () => {
+    await next();
+    degraded = isDegraded();
+  });
   const { path, method } = c.req;
   const headers = c.res.headers;
   const apply = (policy: CachePolicy) => {
@@ -64,7 +73,13 @@ export const cachePolicy = createMiddleware(async (c, next) => {
     }
   };
 
-  if ((method !== "GET" && method !== "HEAD") || headers.has("set-cookie") || isPrivatePath(path)) {
+  // 降级产物（数据库出错时的空数据、兜底卡片）：即使路由设了缓存头也不缓存
+  if (
+    (method !== "GET" && method !== "HEAD") ||
+    headers.has("set-cookie") ||
+    isPrivatePath(path) ||
+    degraded
+  ) {
     return apply("none");
   }
   // 构建产物带内容 hash（react-router-hono-server 默认只给了 max-age）

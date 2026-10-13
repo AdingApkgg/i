@@ -11,6 +11,7 @@ import { authClient, useSession } from "@/lib/auth-client";
 import { reportSubmitError } from "@/lib/form";
 import { formatDate } from "@/lib/format";
 import { orpc } from "@/lib/orpc/client";
+import { isAdminRole } from "@/lib/roles";
 import { commentBodySchema } from "@/lib/schemas";
 import { VisitorAuth } from "./visitor-auth";
 
@@ -67,7 +68,6 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
   });
 
   const me = session?.user;
-  const myRole = (me as { role?: string } | undefined)?.role;
 
   return (
     <section className="mt-10">
@@ -130,7 +130,7 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
                       <div className="text-sm font-semibold">{c.user?.name ?? "访客"}</div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{fmt(c.createdAt)}</span>
-                        {(c.userId === me?.id || myRole === "admin" || myRole === "owner") && (
+                        {(c.userId === me?.id || isAdminRole(me)) && (
                           <button
                             type="button"
                             aria-label="删除评论"

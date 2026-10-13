@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { asc, desc, eq, inArray, max } from "drizzle-orm";
 import { z } from "zod";
 import { notifyApplicantReviewResult, notifyOwnerFriendApply } from "@/lib/mailer";
+import { isAdminRole } from "@/lib/roles";
 import { FRIEND_STATUSES, friendApplySchema, friendWriteSchema } from "@/lib/schemas";
 import { notFound } from "../crud";
 import { checkFriend, runFriendChecks } from "../friend-check";
@@ -105,8 +106,7 @@ export const friendsRouter = {
 
     // 频率限制：同 IP 每小时最多 3 次（redis 不可用时放行）。
     // expire 带 NX：INCR 后即使中途出错也不会留下永不过期的封禁 key。
-    const role = (context.user as { role?: string } | null)?.role;
-    if (role !== "admin" && role !== "owner") {
+    if (!isAdminRole(context.user)) {
       try {
         const key = KEYS.friendApply(clientIp(context.headers));
         const count = await redis.incr(key);

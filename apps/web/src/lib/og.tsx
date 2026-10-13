@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { siteConfig } from "@i/config";
+import { markDegraded } from "@/lib/degrade.server";
 import { siteUrl } from "@/lib/site-url";
 import { CACHE } from "@/server/cache";
 
@@ -80,6 +81,8 @@ export async function renderOgImage(card: OgCard): Promise<Response> {
   const host = new URL(siteUrl()).host;
   const brand = `${siteConfig.title}${card.eyebrow ? ` · ${card.eyebrow}` : ""}`;
   const font = await loadFont(`${brand}${card.title}${card.meta ?? ""}${host}${siteConfig.name}`);
+  // 拉丁文兜底卡片只是临时替代：标记降级，不让 CDN 缓存一整天
+  if (!font) markDegraded(new Error("OG 中文字体拉取失败，用拉丁字体兜底"));
   // 拿不到中文字体：只画拉丁文，避免整张图变豆腐块
   const c: OgCard & { brand: string } = font
     ? { ...card, brand }

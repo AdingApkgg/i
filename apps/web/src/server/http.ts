@@ -14,8 +14,10 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { auth } from "@/lib/auth";
+import { degradeTo } from "@/lib/degrade.server";
 import { formatDate } from "@/lib/format";
 import { renderOgImage } from "@/lib/og";
+import { isAdminRole } from "@/lib/roles";
 import { StorageError, storage } from "@/lib/s3";
 import { isThumbWidth } from "@/lib/thumb";
 import { CACHE } from "./cache";
@@ -63,8 +65,7 @@ const EXT: Record<string, string> = {
 
 async function isAdmin(headers: Headers) {
   const session = await auth.api.getSession({ headers }).catch(() => null);
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  return role === "admin" || role === "owner";
+  return isAdminRole(session?.user);
 }
 
 http.post("/api/gallery/upload", async (c) => {
@@ -163,8 +164,9 @@ http.get("/og/blog/:file{.+\\.png}", async (c) => {
     })
     .from(post)
     .where(eq(post.slug, slug))
-    .catch(() => []);
-  if (!row) return renderOgImage({ eyebrow: "博客", title: siteConfig.tagline });
+    .catch(degradeTo([]));
+  // 不存在的 slug 不现画（随便拼的 URL 都要渲染一次很费 CPU），跳到全站通用卡片
+  if (!row) return c.redirect("/og.png", 302);
   const meta = [
     fmtDate(row.publishedAt ?? row.createdAt),
     ...(row.tags ?? []).slice(0, 3).map((t) => `#${t}`),

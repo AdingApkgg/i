@@ -12,8 +12,13 @@
 import { fileURLToPath } from "node:url";
 import { sql } from "drizzle-orm";
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { db } from "../src/client";
+import pg from "pg";
+
+// 单独一条连接（不用连接池）：advisory lock 是会话级的，加锁、迁移、解锁必须在同一个连接上
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+const db = drizzle(client);
 
 const migrationsFolder = fileURLToPath(new URL("../drizzle", import.meta.url));
 // 与 drizzle-orm 迁移器的默认值一致
@@ -44,6 +49,7 @@ async function baselineIfNeeded() {
 }
 
 async function main() {
+  await client.connect();
   await db.execute(sql`SELECT pg_advisory_lock(${LOCK_KEY})`);
   try {
     await baselineIfNeeded();
@@ -62,4 +68,4 @@ main()
     console.error(e);
     process.exitCode = 1;
   })
-  .finally(() => db.$client.end());
+  .finally(() => client.end());

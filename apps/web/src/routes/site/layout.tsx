@@ -1,22 +1,18 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { isRouteErrorResponse, Outlet, useLocation, useRevalidator } from "react-router";
-import { MusicPlayer } from "@/components/player/music-player";
 import { ErrorView } from "@/components/public/error-view";
-import { MascotWidget } from "@/components/public/mascot-widget";
 import { NotFoundView } from "@/components/public/not-found-view";
 import { SiteHeader } from "@/components/public/site-header";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/layout";
 
-/** 前台外壳：播放器、顶栏、看板娘。正常页面和错误页共用。 */
+/** 前台外壳：顶栏 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
 function Chrome({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-      <MusicPlayer />
-      <MascotWidget />
     </>
   );
 }

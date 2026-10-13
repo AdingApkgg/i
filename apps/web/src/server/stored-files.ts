@@ -22,10 +22,10 @@ import {
 import { type AnyColumn, sql } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { storage } from "@/lib/s3";
+import { STORED } from "@/lib/thumb";
 import type { Context } from "./orpc";
+import { escapeLike } from "./sql";
 import { deleteThumbs } from "./thumbs";
-
-const STORED = "/api/gallery/files/";
 
 /** 可能出现站内图片地址的列（链接字段 + 会内嵌图片的正文） */
 const REFERENCES: [PgTable, AnyColumn][] = [
@@ -45,17 +45,27 @@ const REFERENCES: [PgTable, AnyColumn][] = [
   [user, user.image],
 ];
 
-/** /api/gallery/files/<key>[?w=…] → key；不是站内存储的地址返回 null */
+/**
+ * /api/gallery/files/<key>[?w=…] → 地址里的 key 原文（不解码：引用检查要按库里存的写法搜）；
+ * 不是站内存储的地址返回 null
+ */
 export function storedKey(url: string | null | undefined): string | null {
   if (!url?.startsWith(STORED)) return null;
   const key = url.slice(STORED.length).split(/[?#]/)[0]!;
-  return key && !key.includes("/") ? decodeURIComponent(key) : null;
+  return key && !key.includes("/") ? key : null;
 }
 
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+/** 地址里的 key → 存储里的 key（%xx 解码；不合法的编码原样用） */
+function objectKey(raw: string) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
 
-async function isReferenced(db: Context["db"], key: string) {
-  const pattern = `%${escapeLike(STORED + key)}%`;
+async function isReferenced(db: Context["db"], raw: string) {
+  const pattern = `%${escapeLike(STORED + raw)}%`;
   const checks = REFERENCES.map(
     ([table, col]) => sql`exists (select 1 from ${table} where ${col} like ${pattern})`,
   );
@@ -73,19 +83,19 @@ export async function releaseStoredFiles(
   db: Context["db"],
   urls: (string | null | undefined)[],
 ): Promise<string[]> {
-  const keys = [...new Set(urls.map(storedKey).filter((k): k is string => k !== null))];
-  const released = await Promise.all(
-    keys.map(async (key) => {
-      try {
-        if (await isReferenced(db, key)) return null;
-        await storage.delete(key);
-        await deleteThumbs(key);
-        return key;
-      } catch (e) {
-        console.error(`[storage] 回收 ${key} 失败:`, e);
-        return null;
-      }
-    }),
-  );
-  return released.filter((k): k is string => k !== null);
+  const raws = [...new Set(urls.map(storedKey).filter((k): k is string => k !== null))];
+  const released: string[] = [];
+  // 逐个处理：每个 key 的引用检查要扫多张表，批量删几百张时并发会占满连接池
+  for (const raw of raws) {
+    const key = objectKey(raw);
+    try {
+      if (await isReferenced(db, raw)) continue;
+      await storage.delete(key);
+      await deleteThumbs(key);
+      released.push(key);
+    } catch (e) {
+      console.error(`[storage] 回收 ${key} 失败:`, e);
+    }
+  }
+  return released;
 }

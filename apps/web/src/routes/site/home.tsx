@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Badge } from "@/components/public/collection";
 import { adxChartUrl } from "@/lib/adx";
+import { degradeTo } from "@/lib/degrade.server";
 import { formatDate } from "@/lib/format";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
@@ -19,19 +20,29 @@ function fmtDate(d: Date | string) {
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
   const [posts, music, movie, vn, moments, photos, mmProfile, mmB50] = await Promise.all([
-    api.blog.list().catch(() => []),
-    api.music.list().catch(() => []),
-    api.movie.list().catch(() => []),
-    api.vn.list().catch(() => []),
-    api.moments.list().catch(() => []),
+    api.blog.list().catch(degradeTo([])),
+    api.music.list().catch(degradeTo([])),
+    api.movie.list().catch(degradeTo([])),
+    api.vn.list().catch(degradeTo([])),
+    api.moments.list().catch(degradeTo([])),
     api.gallery
       .page({ limit: 6 })
       .then((r) => r.items)
-      .catch(() => []),
-    api.maimai.profile().catch(() => null),
-    api.maimai.b50().catch(() => ({ b35: [], b15: [] })),
+      .catch(degradeTo([])),
+    api.maimai.profile().catch(degradeTo(null)),
+    api.maimai.b50().catch(degradeTo({ b35: [], b15: [] })),
   ]);
-  return { posts, music, movie, vn, moments, photos, mmProfile, mmB50 };
+  // 只下发页面用到的条数：loader 数据会整个序列化进 HTML
+  return {
+    posts: posts.slice(0, 3),
+    music: music.slice(0, 1),
+    movie: movie.slice(0, 1),
+    vn: vn.slice(0, 1),
+    moments: moments.slice(0, 4),
+    photos,
+    mmProfile,
+    mmB50,
+  };
 }
 
 export const meta: Route.MetaFunction = (args) => seo(args, { path: "/" });

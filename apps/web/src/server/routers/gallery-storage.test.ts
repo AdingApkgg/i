@@ -102,6 +102,18 @@ describe("删除照片时回收存储", () => {
     expect(files.has("new.png")).toBe(true);
   });
 
+  it("key 带 %xx 编码：引用检查按库里的写法搜，删除时解码；编码不合法也不报错", async () => {
+    // 两张照片共用编码过的地址：删一张，文件保留
+    const a = await seedPhoto("a b.jpg", { imageUrl: url("a%20b.jpg") });
+    await seedPhoto("a b.jpg", { imageUrl: url("a%20b.jpg") });
+    await call(galleryRouter.delete, { id: a.id }, admin());
+    expect(files.has("a b.jpg")).toBe(true);
+
+    const bad = await seedPhoto("a%zz.jpg", { imageUrl: url("a%zz.jpg") });
+    await expect(call(galleryRouter.delete, { id: bad.id }, admin())).resolves.toBeTruthy();
+    expect(hasAny("a%zz.jpg")).toBe(false);
+  });
+
   it("外链图片不碰存储", async () => {
     const [p] = await t.db
       .insert(photo)
@@ -127,6 +139,7 @@ describe("storedKey", () => {
   it("只认站内存储地址，去掉查询参数", () => {
     expect(storedKey("/api/gallery/files/a.png")).toBe("a.png");
     expect(storedKey("/api/gallery/files/a.png?w=640")).toBe("a.png");
+    expect(storedKey("/api/gallery/files/a%20b.png")).toBe("a%20b.png");
     expect(storedKey("https://x.com/api/gallery/files/a.png")).toBeNull();
     expect(storedKey("/api/gallery/files/")).toBeNull();
     expect(storedKey(null)).toBeNull();

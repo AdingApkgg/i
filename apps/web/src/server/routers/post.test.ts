@@ -41,6 +41,45 @@ const seedImported = () =>
     .returning()
     .then((r) => r[0]!);
 
+describe("blog.list", () => {
+  const seed = () =>
+    t.db.insert(post).values([
+      {
+        slug: "pub",
+        title: "已发布",
+        contentMd: "正文 A",
+        status: "published",
+        publishedAt: OLD_DATE,
+      },
+      { slug: "draft", title: "草稿", contentMd: "正文 B", status: "draft" },
+    ]);
+  const anon = () => ({ context: makeContext(t.db) });
+
+  it("公开列表：只有已发布文章，且不带正文（loader 数据会进 HTML）", async () => {
+    await seed();
+    const rows = await call(postRouter.list, undefined, anon());
+    expect(rows.map((r) => r.slug)).toEqual(["pub"]);
+    expect(rows[0]).not.toHaveProperty("contentMd");
+  });
+
+  it("includeDrafts：访客 / 普通用户 FORBIDDEN，管理员拿到含草稿的完整记录", async () => {
+    await seed();
+    await expect(call(postRouter.list, { includeDrafts: true }, anon())).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    await expect(
+      call(
+        postRouter.list,
+        { includeDrafts: true },
+        { context: makeContext(t.db, { role: "user" }) },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const rows = await call(postRouter.list, { includeDrafts: true }, admin());
+    expect(rows.map((r) => r.slug).sort()).toEqual(["draft", "pub"]);
+    expect(rows.find((r) => r.slug === "draft")).toMatchObject({ contentMd: "正文 B" });
+  });
+});
+
 describe("blog.update", () => {
   it("后台编辑表单（不含 tags 字段）保存后，标签和原始发布日期都保留", async () => {
     const p = await seedImported();

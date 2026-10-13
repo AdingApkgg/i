@@ -1,6 +1,7 @@
 import { db } from "@i/db";
 import { ORPCError, os } from "@orpc/server";
 import { auth } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 
 export async function createContext(opts: { headers: Headers }) {
   const session = await auth.api.getSession({ headers: opts.headers }).catch(() => null);
@@ -24,9 +25,6 @@ export const protectedProcedure = base.use(({ context, next }) => {
 
 export const adminProcedure = base.use(({ context, next }) => {
   if (!context.user) throw new ORPCError("UNAUTHORIZED");
-  const role = (context.user as { role?: string }).role;
-  if (role !== "admin" && role !== "owner") {
-    throw new ORPCError("FORBIDDEN");
-  }
+  if (!isAdminRole(context.user)) throw new ORPCError("FORBIDDEN");
   return next({ context: { user: context.user, session: context.session! } });
 });

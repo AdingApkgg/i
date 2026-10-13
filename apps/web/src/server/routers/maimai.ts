@@ -5,9 +5,9 @@ import { z } from "zod";
 import { syncMaimai } from "@/lib/maimai";
 import { maimaiConfigSchema } from "@/lib/schemas";
 import { adminProcedure, publicProcedure } from "../orpc";
+import { escapeLike } from "../sql";
 
 /** LIKE 通配符转义（Prisma 的 contains 会自动转义，这里手动保持同样语义）。 */
-const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 export const maimaiRouter = {
   // ---- admin: config + sync ----

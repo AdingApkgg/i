@@ -20,6 +20,8 @@ export interface AdminDomain {
   label: string;
   fields: FieldSpec[];
   columns: string[];
+  /** 后台列表调用 list 时的参数（博客要带上草稿） */
+  listInput?: unknown;
 }
 
 const rating: FieldSpec = { name: "rating", label: "评分", type: "number", placeholder: "0–10" };
@@ -38,6 +40,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     key: "blog",
     label: "博客",
     columns: ["title", "status"],
+    listInput: { includeDrafts: true },
     fields: [
       { name: "slug", label: "Slug", type: "text", required: true, placeholder: "hello-world" },
       { name: "title", label: "标题", type: "text", required: true },

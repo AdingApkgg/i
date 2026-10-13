@@ -121,8 +121,13 @@ export const galleryRouter = {
       context.db.update(photo).set(data).where(eq(photo.id, id)).returning(),
     );
     if (!row) return notFound();
-    // 换了图：旧文件没人用了就回收
-    if (before) await releaseStoredFiles(context.db, [before.imageUrl, before.thumbUrl]);
+    // 换了图：旧文件没人用了就回收（没换的不查）
+    if (before) {
+      const replaced = [before.imageUrl, before.thumbUrl].filter(
+        (u) => u && u !== row.imageUrl && u !== row.thumbUrl,
+      );
+      if (replaced.length) await releaseStoredFiles(context.db, replaced);
+    }
     return row;
   }),
 

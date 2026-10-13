@@ -280,7 +280,10 @@ export function FriendsAdmin() {
                         type="number"
                         placeholder="排序"
                         aria-invalid={errors.sortOrder ? true : undefined}
-                        {...register("sortOrder", { valueAsNumber: true })}
+                        {...register("sortOrder", {
+                          // 清空视为 0（和以前一样）；其余交给 schema 校验整数
+                          setValueAs: (v) => (v === "" ? 0 : Number(v)),
+                        })}
                         className={inputCls}
                       />
                       <FieldError message={errors.sortOrder?.message} />

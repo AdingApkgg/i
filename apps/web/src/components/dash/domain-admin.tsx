@@ -33,7 +33,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     client as unknown as Record<
       string,
       {
-        list: () => Promise<Row[]>;
+        list: (input?: unknown) => Promise<Row[]>;
         create: (b: unknown) => Promise<unknown>;
         update: (b: unknown) => Promise<unknown>;
         delete: (b: { id: string }) => Promise<unknown>;
@@ -47,7 +47,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     data: rows = [],
     isLoading,
     isError,
-  } = useQuery({ queryKey: listKey, queryFn: () => api.list() });
+  } = useQuery({ queryKey: listKey, queryFn: () => api.list(spec.listInput) });
   const [editing, setEditing] = useState<Row | "new" | null>(null);
   const schema = useMemo(() => fieldsSchema(spec.fields), [spec.fields]);
   const form = useForm<FormValues>({

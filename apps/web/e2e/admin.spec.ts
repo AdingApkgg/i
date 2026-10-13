@@ -99,6 +99,22 @@ test.describe("后台（已登录）", () => {
     await expect(page.getByText("填一下水鱼用户名")).toBeVisible();
   });
 
+  test("博客草稿：后台列表里能看到，前台看不到", async ({ page }) => {
+    const title = `e2e 草稿 ${Date.now()}`;
+    await page.goto("/dash/blog");
+    await page.getByRole("button", { name: /新建/ }).click();
+    await page.getByLabel("Slug").fill(`e2e-draft-${Date.now()}`);
+    await page.getByLabel("标题").fill(title);
+    await page.getByLabel("正文").fill("草稿正文");
+    await page.getByRole("button", { name: "创建" }).click();
+    await expect(page.getByText("已保存")).toBeVisible();
+    await expect(page.getByRole("cell", { name: title })).toBeVisible();
+
+    await page.goto("/blog");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByText(title)).toHaveCount(0);
+  });
+
   test("评论：发表 → 删除", async ({ page }) => {
     const msg = `e2e 评论 ${Date.now()}`;
     await page.goto("/blog/hello-world");

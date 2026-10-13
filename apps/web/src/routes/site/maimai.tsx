@@ -4,6 +4,7 @@ import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
 import { adxChartUrl } from "@/lib/adx";
+import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/maimai";
@@ -28,9 +29,9 @@ type Rec = {
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
   const [profile, b50, records] = await Promise.all([
-    api.maimai.profile().catch(() => null),
-    api.maimai.b50().catch(() => ({ b35: [], b15: [] })),
-    api.maimai.records({ limit: 200 }).catch(() => []),
+    api.maimai.profile().catch(degradeTo(null)),
+    api.maimai.b50().catch(degradeTo({ b35: [], b15: [] })),
+    api.maimai.records({ limit: 200 }).catch(degradeTo([])),
   ]);
   return { profile, b50, records };
 }

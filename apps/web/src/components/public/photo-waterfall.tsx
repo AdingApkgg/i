@@ -74,12 +74,10 @@ export function PhotoWaterfall({
     return out;
   }, [data]);
 
-  // 容器宽度：ResizeObserver 跟踪，宽度未知时走 CSS columns fallback
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // 容器宽度：ResizeObserver 跟踪，宽度未知时走 CSS columns fallback。
+  // 用回调 ref：容器在「加载中 / 空相册」之后才出现时也能挂上（React 19 的 ref 清理函数负责断开）
   const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  const containerRef = useCallback((el: HTMLDivElement) => {
     setWidth(el.clientWidth);
     const ro = new ResizeObserver(() => setWidth(el.clientWidth));
     ro.observe(el);

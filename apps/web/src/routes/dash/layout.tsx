@@ -2,14 +2,14 @@ import { motion, useReducedMotion } from "motion/react";
 import { Outlet, redirect, useLocation } from "react-router";
 import { DashShell } from "@/components/dash/shell";
 import { auth } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/layout";
 
 /** 后台鉴权：未登录或非管理员一律跳登录页（每次进入后台路由都会重新校验） */
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({ headers: request.headers }).catch(() => null);
-  const role = (session?.user as { role?: string } | undefined)?.role;
-  if (!session?.user || (role !== "admin" && role !== "owner")) {
+  if (!session?.user || !isAdminRole(session.user)) {
     throw redirect("/dash/login");
   }
   return { userName: session.user.name ?? session.user.email };

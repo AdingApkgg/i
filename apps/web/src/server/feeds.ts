@@ -18,9 +18,20 @@ const esc = (s: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-/** 博客 RSS 2.0 —— 旧 Hexo 站的订阅地址，迁过来保持不变。 */
-export async function rssResponse(): Promise<Response> {
-  const posts = await db
+/**
+ * 订阅 / 站点地图查不到数据时回 503（带 Retry-After、不缓存），而不是空文档：
+ * 空的 RSS / sitemap 会被阅读器和爬虫当成「文章都没了」，还会被 CDN 缓存。
+ */
+function unavailable(err: unknown) {
+  console.error("[feeds]", err);
+  return new Response("暂时不可用，请稍后再试", {
+    status: 503,
+    headers: { "content-type": "text/plain; charset=utf-8", "retry-after": "120", ...CACHE.none },
+  });
+}
+
+const queryFeed = () =>
+  db
     .select({
       slug: post.slug,
       title: post.title,
@@ -32,8 +43,16 @@ export async function rssResponse(): Promise<Response> {
     .from(post)
     .where(eq(post.status, "published"))
     .orderBy(desc(post.publishedAt), desc(post.createdAt))
-    .limit(FEED_SIZE)
-    .catch(() => []);
+    .limit(FEED_SIZE);
+
+/** 博客 RSS 2.0 —— 旧 Hexo 站的订阅地址，迁过来保持不变。 */
+export async function rssResponse(): Promise<Response> {
+  let posts: Awaited<ReturnType<typeof queryFeed>>;
+  try {
+    posts = await queryFeed();
+  } catch (err) {
+    return unavailable(err);
+  }
 
   const self = absUrl("/rss.xml");
   const home = absUrl("/");
@@ -88,18 +107,20 @@ interface SitemapEntry {
 }
 
 export async function sitemapResponse(): Promise<Response> {
-  const [posts, albums] = await Promise.all([
-    db
-      .select({ slug: post.slug, updatedAt: post.updatedAt })
-      .from(post)
-      .where(eq(post.status, "published"))
-      .orderBy(desc(post.publishedAt))
-      .catch(() => []),
-    db
-      .select({ name: album.name, updatedAt: album.updatedAt })
-      .from(album)
-      .catch(() => []),
-  ]);
+  let posts: { slug: string; updatedAt: Date }[];
+  let albums: { name: string; updatedAt: Date }[];
+  try {
+    [posts, albums] = await Promise.all([
+      db
+        .select({ slug: post.slug, updatedAt: post.updatedAt })
+        .from(post)
+        .where(eq(post.status, "published"))
+        .orderBy(desc(post.publishedAt)),
+      db.select({ name: album.name, updatedAt: album.updatedAt }).from(album),
+    ]);
+  } catch (err) {
+    return unavailable(err);
+  }
   const entries: SitemapEntry[] = [
     { url: absUrl("/"), changeFrequency: "daily", priority: 1 },
     ...DOMAINS.map((d) => ({

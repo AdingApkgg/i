@@ -1,7 +1,8 @@
 import { post } from "@i/db";
 import { ORPCError } from "@orpc/server";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
+import { isAdminRole } from "@/lib/roles";
 import { notFound, stripDefaults, withDbErrors } from "../crud";
 import { adminProcedure, publicProcedure } from "../orpc";
 
@@ -18,16 +19,28 @@ const upsert = z.object({
   status: z.enum(["draft", "published"]).default("draft"),
 });
 
+// 公开列表不带正文：loader 数据会整个序列化进 HTML，列表页用不到正文
+const { contentMd: _contentMd, ...summaryColumns } = getTableColumns(post);
+const newestFirst = [desc(post.publishedAt), desc(post.createdAt)];
+
 export const postRouter = {
+  /** 公开：已发布文章的摘要列表；includeDrafts（后台用）只对管理员生效，返回含草稿的完整记录 */
   list: publicProcedure
     .input(z.object({ includeDrafts: z.boolean().default(false) }).optional())
-    .handler(({ context, input }) =>
-      context.db
-        .select()
+    .handler(({ context, input }) => {
+      if (input?.includeDrafts) {
+        if (!isAdminRole(context.user)) throw new ORPCError("FORBIDDEN");
+        return context.db
+          .select()
+          .from(post)
+          .orderBy(...newestFirst);
+      }
+      return context.db
+        .select(summaryColumns)
         .from(post)
-        .where(input?.includeDrafts ? undefined : eq(post.status, "published"))
-        .orderBy(desc(post.publishedAt), desc(post.createdAt)),
-    ),
+        .where(eq(post.status, "published"))
+        .orderBy(...newestFirst);
+    }),
 
   bySlug: publicProcedure
     .input(z.object({ slug: z.string() }))

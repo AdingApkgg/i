@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { formatDate } from "@/lib/format";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
@@ -12,7 +13,7 @@ const fmtDate = (d: Date | string) => formatDate(d);
 
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
-  const items = await api.blog.list().catch(() => []);
+  const items = await api.blog.list().catch(degradeTo([]));
   return { items };
 }
 

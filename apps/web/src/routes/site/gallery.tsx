@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { FadeIn } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import { thumb } from "@/lib/thumb";
@@ -91,7 +92,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
 
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
-  const data = await api.gallery.albums({ preview: PREVIEW }).catch(() => null);
+  const data = await api.gallery.albums({ preview: PREVIEW }).catch(degradeTo(null));
   return { data };
 }
 

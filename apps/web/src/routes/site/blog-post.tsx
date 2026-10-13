@@ -2,6 +2,7 @@ import { data } from "react-router";
 import { HexoContent } from "@/components/hexo/content";
 import { Badge } from "@/components/public/collection";
 import { Comments } from "@/components/public/comments";
+import { notFoundTo } from "@/lib/degrade.server";
 import { formatDate } from "@/lib/format";
 import { compileHexo } from "@/lib/hexo/compile.server";
 import { serverApi } from "@/lib/orpc/api.server";
@@ -16,11 +17,12 @@ function fmt(d: Date | string) {
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const post = await serverApi(request)
-    .blog.bySlug({ slug: params.slug })
-    .catch(() => null);
+  const post = await serverApi(request).blog.bySlug({ slug: params.slug }).catch(notFoundTo(null));
   if (!post) throw data(null, { status: 404 });
-  return { post, code: await compileHexo(post.contentMd) };
+  const { contentMd, ...rest } = post;
+  const code = await compileHexo(contentMd);
+  // 编译好的 MDX 已含全文；只有编译失败（回退纯 markdown 渲染）时才下发原文
+  return { post: rest, code, source: code ? "" : contentMd };
 }
 
 export const meta: Route.MetaFunction = (args) => {
@@ -42,7 +44,7 @@ export const meta: Route.MetaFunction = (args) => {
 };
 
 export default function PostPage({ loaderData }: Route.ComponentProps) {
-  const { post, code } = loaderData;
+  const { post, code, source } = loaderData;
   return (
     <article className="mx-auto max-w-2xl">
       <h1 className="text-3xl font-bold tracking-wide">{post.title}</h1>
@@ -52,7 +54,7 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
           <Badge key={t}>{t}</Badge>
         ))}
       </div>
-      <HexoContent code={code} source={post.contentMd} className={prose} />
+      <HexoContent code={code} source={source} className={prose} />
       {/* key：在两篇文章之间直接跳转时重置评论区状态 */}
       <Comments key={post.id} path={`/blog/${post.slug}`} postId={post.id} />
     </article>

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { markDegraded } from "@/lib/degrade.server";
 import { CACHE, cachePolicy } from "./cache";
 
 const html = (status = 200) =>
@@ -27,6 +28,15 @@ app.get("/login-cookie", () => {
 });
 app.get("/gone", () => Response.redirect("http://localhost/blog", 301));
 app.get("/missing", () => html(404));
+// 数据库出错时降级出的空数据 / 兜底内容：路由自己设了缓存头也不能缓存
+app.get("/degraded-page", () => {
+  markDegraded(new Error("db down"));
+  return html();
+});
+app.get("/degraded-feed", () => {
+  markDegraded(new Error("db down"));
+  return new Response("", { headers: CACHE.feed });
+});
 app.on(["GET", "POST"], "/blog", () => html());
 
 const get = async (path: string, method = "GET") => {
@@ -43,7 +53,7 @@ describe("缓存策略", () => {
     for (const path of ["/blog", "/blog.data"]) {
       expect(await get(path)).toMatchObject({
         cc: "public, max-age=0, must-revalidate",
-        cdn: "max-age=60, stale-while-revalidate=600",
+        cdn: "max-age=60, stale-while-revalidate=60",
       });
     }
   });
@@ -60,13 +70,16 @@ describe("缓存策略", () => {
     });
   });
 
-  it("后台、API、写请求、带 Set-Cookie、非 200 的页面一律不进共享缓存", async () => {
+  it("后台、API、写请求、带 Set-Cookie、非 200、降级产物一律不进共享缓存", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     for (const [path, method] of [
       ["/dash/gallery", "GET"],
       ["/api/rpc/blog/list", "GET"],
       ["/blog", "POST"],
       ["/login-cookie", "GET"],
       ["/missing", "GET"],
+      ["/degraded-page", "GET"],
+      ["/degraded-feed", "GET"],
     ]) {
       expect(await get(path!, method), `${method} ${path}`).toMatchObject({
         cc: "private, no-store",

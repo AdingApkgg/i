@@ -10,7 +10,8 @@ export type ThumbWidth = (typeof THUMB_WIDTHS)[number];
 export const isThumbWidth = (n: number): n is ThumbWidth =>
   (THUMB_WIDTHS as readonly number[]).includes(n);
 
-const STORED = "/api/gallery/files/";
+/** 自家对象存储里的图片地址前缀（/api/gallery/files/<key>） */
+export const STORED = "/api/gallery/files/";
 
 /** 能缩放：自家存储里的位图（svg 原样用） */
 export function isResizable(url: string) {

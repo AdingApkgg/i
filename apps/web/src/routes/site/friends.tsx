@@ -5,6 +5,7 @@ import { Stagger, StaggerItem } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
 import { FriendApply } from "@/components/public/friend-apply";
 import { PageTitle } from "@/components/public/site-header";
+import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
@@ -57,7 +58,7 @@ function FriendCard({ f, dim }: { f: FriendItem; dim?: boolean }) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
-  const items = (await api.friends.list().catch(() => [])) as FriendItem[];
+  const items = (await api.friends.list().catch(degradeTo([]))) as FriendItem[];
   // 「本站信息」卡片里的地址：服务端环境变量，客户端读不到，经 loader 下发
   return { items, siteUrl: siteUrl() };
 }
