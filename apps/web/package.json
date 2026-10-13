@@ -46,7 +46,7 @@
     "react-router": "8.4.0",
     "react-router-hono-server": "4.1.4",
     "remark-gfm": "^4.0.1",
-    "satori": "0.47.1",
+    "satori": "0.52.0",
     "sharp": "0.35.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
