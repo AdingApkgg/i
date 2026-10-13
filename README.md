@@ -138,9 +138,9 @@ Cloudflare 默认不缓存 HTML，需要在面板里设置两处。
 1. **Caching → Configuration → Browser Cache TTL** 设为 **Respect Existing Headers**
    （否则 Cloudflare 会把页面的浏览器缓存时间改长，访客看不到更新）。
 2. **Caching → Cache Rules** 新建一条：
-   - 匹配（Edit expression）：
+   - 匹配（Custom filter expression → Edit expression，域名换成你的）：
      ```
-     not starts_with(http.request.uri.path, "/dash") and not (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/gallery/files/"))
+     http.host eq "i.saop.cc" and not starts_with(http.request.uri.path, "/dash") and not (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/gallery/files/"))
      ```
    - Cache eligibility：**Eligible for cache**
    - Edge TTL：**Use cache-control header if present, bypass cache if not**
