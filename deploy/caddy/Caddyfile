@@ -1,0 +1,33 @@
+# Single same-origin entry for the v2 stack. The Hono server owns everything: pages,
+# /api/rpc, /api/auth, and the /dash admin route group. Front this with a
+# Cloudflare Tunnel pointing at 127.0.0.1:8099 (TLS ends at Cloudflare, so plain HTTP here).
+{
+	auto_https off
+}
+
+:80 {
+	log
+
+	# Uploaded images can be large; allow generous bodies for /api/* (uploads).
+	request_body {
+		max_size 32MB
+	}
+
+	# Security headers (defense in depth; cf can add more).
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+		defer
+	}
+
+	# Caddy 每次新建连接都会重新解析 web 的地址，web 容器重建、换了 IP 也能连上
+	# （nginx 只在启动时解析一次，部署后会一直 502）。
+	# 换容器的那几秒里连不上时，最多重试 10 秒再报错。
+	# X-Forwarded-For 只保留一跳（直连 Caddy 的地址，不信任客户端自带的值），
+	# X-Real-IP 同样写成直连地址；CF-Connecting-IP 原样转发。应用取 IP 的顺序见 routers/friends.ts。
+	reverse_proxy web:3000 {
+		header_up X-Real-IP {remote_host}
+		lb_try_duration 10s
+	}
+}

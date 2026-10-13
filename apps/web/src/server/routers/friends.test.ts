@@ -127,7 +127,7 @@ describe("friends.submit", () => {
   it.each([
     [{ "cf-connecting-ip": "1.1.1.1", "x-real-ip": "2.2.2.2" }, "1.1.1.1"],
     [{ "x-real-ip": "2.2.2.2", "x-forwarded-for": "9.9.9.9, 3.3.3.3" }, "2.2.2.2"],
-    // XFF 首跳是客户端自报的，只信最后一跳（本机 nginx 追加）
+    // XFF 首跳是客户端自报的，只信最后一跳（本机 Caddy 写入）
     [{ "x-forwarded-for": "9.9.9.9, 3.3.3.3" }, "3.3.3.3"],
     [{}, "unknown"],
   ])("限流按可信 IP 计数 %o → %s", async (headers, ip) => {

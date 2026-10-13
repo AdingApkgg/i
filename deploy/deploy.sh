@@ -30,6 +30,14 @@ compose() { $DOCKER compose -f compose.prod.yaml "$@"; }
 log "构建并启动（数据库迁移由 migrate 服务完成）"
 compose up -d --build
 
+# compose 看不出挂载的 Caddyfile 内容变了，不会重建 proxy，改过的配置要靠 reload 生效（没改时什么都不做）
+log "重新加载 Caddy 配置"
+for i in $(seq 1 10); do
+  compose exec -T proxy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && break
+  [ "$i" = 10 ] && { echo "Caddy 配置加载失败" >&2; exit 1; }
+  sleep 1
+done
+
 PORT="$(sed -n 's/^PROXY_PORT=//p' .env | tail -1)"
 URL="http://127.0.0.1:${PORT:-8099}/robots.txt"
 log "等待站点就绪：$URL"

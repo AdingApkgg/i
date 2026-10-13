@@ -47,8 +47,8 @@ function normalizeUrl(raw: string): string | null {
 }
 
 function clientIp(headers: Headers): string {
-  // 信任链：Cloudflare 的 CF-Connecting-IP → nginx 覆写的 X-Real-IP →
-  // XFF 最后一跳（由本机 nginx 追加）。首跳是客户端自报的，可伪造，不能用。
+  // 信任链：Cloudflare 的 CF-Connecting-IP → Caddy 覆写的 X-Real-IP →
+  // XFF 最后一跳（由本机 Caddy 写入）。首跳是客户端自报的，可伪造，不能用。
   const cf = headers.get("cf-connecting-ip");
   if (cf) return cf.trim();
   const real = headers.get("x-real-ip");
