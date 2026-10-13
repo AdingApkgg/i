@@ -1,0 +1,101 @@
+name: Deploy
+
+# 手动触发：Actions → Deploy → Run workflow。
+# SSH 到服务器拉取 main 并用 compose.prod.yaml 重建（数据库迁移自动完成）→ 健康检查 → 清 Cloudflare 缓存。
+# 需要的仓库配置见 README「自动部署」。
+on:
+  workflow_dispatch:
+    inputs:
+      migrate_storage:
+        description: "一次性：把旧 MinIO 里的相册文件搬到 SeaweedFS（可重复运行）"
+        type: boolean
+        default: false
+      configure_cloudflare:
+        description: "设置 Cloudflare：Browser Cache TTL = 遵循源站 + 页面缓存规则（可重复运行）"
+        type: boolean
+        default: false
+
+# 同一时间只跑一个部署，后来的排队（不取消正在进行的）
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      # 服务器上仓库的路径（相对 SSH 用户的家目录，或绝对路径）
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || 'i' }}
+      # docker 需要 sudo 时设为 "sudo docker"
+      DEPLOY_DOCKER: ${{ vars.DEPLOY_DOCKER || 'docker' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ZONE: ${{ vars.CLOUDFLARE_ZONE }}
+      SITE_HOST: ${{ vars.SITE_HOST }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check settings
+        env:
+          HAS_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY != '' }}
+          CONFIGURE_CLOUDFLARE: ${{ inputs.configure_cloudflare }}
+        run: |
+          missing=()
+          [ -n "$DEPLOY_HOST" ] || missing+=("secret DEPLOY_HOST")
+          [ -n "$DEPLOY_USER" ] || missing+=("secret DEPLOY_USER")
+          [ "$HAS_SSH_KEY" = "true" ] || missing+=("secret DEPLOY_SSH_KEY")
+          if [ "$CONFIGURE_CLOUDFLARE" = "true" ]; then
+            [ -n "$CLOUDFLARE_API_TOKEN" ] || missing+=("secret CLOUDFLARE_API_TOKEN")
+            [ -n "$CLOUDFLARE_ZONE" ] || missing+=("variable CLOUDFLARE_ZONE")
+            [ -n "$SITE_HOST" ] || missing+=("variable SITE_HOST")
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            printf '::error::缺少仓库配置：%s（见 README「自动部署」）\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # 没配 DEPLOY_KNOWN_HOSTS 时首次信任（打印指纹，可与服务器上 ssh-keygen -lf 的结果核对）
+            ssh-keyscan -p "$DEPLOY_PORT" -T 15 "$DEPLOY_HOST" > ~/.ssh/known_hosts || true
+            if [ ! -s ~/.ssh/known_hosts ]; then
+              echo "::error::连不上服务器的 SSH（端口 $DEPLOY_PORT）：检查 DEPLOY_HOST / DEPLOY_PORT，以及防火墙是否放行 GitHub Actions"
+              exit 1
+            fi
+            ssh-keygen -lf ~/.ssh/known_hosts
+          fi
+
+      - name: Deploy
+        env:
+          MIGRATE_STORAGE: ${{ inputs.migrate_storage && '1' || '0' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o BatchMode=yes -o ServerAliveInterval=30 \
+            -o UserKnownHostsFile=~/.ssh/known_hosts -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' DOCKER='$DEPLOY_DOCKER' MIGRATE_STORAGE='$MIGRATE_STORAGE' bash -s" \
+            < deploy/deploy.sh
+
+      - name: Cloudflare
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        env:
+          CONFIGURE_CLOUDFLARE: ${{ inputs.configure_cloudflare }}
+        run: |
+          steps=(purge)
+          if [ "$CONFIGURE_CLOUDFLARE" = "true" ]; then steps=(configure purge); fi
+          bash deploy/cloudflare.sh "${steps[@]}"
