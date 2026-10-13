@@ -1,6 +1,10 @@
-import { TRPCError } from "@trpc/server";
+import { post } from "@i/db";
+import { ORPCError } from "@orpc/server";
+import { desc, eq, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { isAdminRole } from "@/lib/roles";
+import { notFound, stripDefaults, withDbErrors } from "../crud";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
   slug: z
@@ -15,45 +19,72 @@ const upsert = z.object({
   status: z.enum(["draft", "published"]).default("draft"),
 });
 
-export const postRouter = router({
+// 公开列表不带正文：loader 数据会整个序列化进 HTML，列表页用不到正文
+const { contentMd: _contentMd, ...summaryColumns } = getTableColumns(post);
+const newestFirst = [desc(post.publishedAt), desc(post.createdAt)];
+
+export const postRouter = {
+  /** 公开：已发布文章的摘要列表；includeDrafts（后台用）只对管理员生效，返回含草稿的完整记录 */
   list: publicProcedure
     .input(z.object({ includeDrafts: z.boolean().default(false) }).optional())
-    .query(({ ctx, input }) =>
-      ctx.db.post.findMany({
-        where: input?.includeDrafts ? {} : { status: "published" },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      }),
-    ),
+    .handler(({ context, input }) => {
+      if (input?.includeDrafts) {
+        if (!isAdminRole(context.user)) throw new ORPCError("FORBIDDEN");
+        return context.db
+          .select()
+          .from(post)
+          .orderBy(...newestFirst);
+      }
+      return context.db
+        .select(summaryColumns)
+        .from(post)
+        .where(eq(post.status, "published"))
+        .orderBy(...newestFirst);
+    }),
 
-  bySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ ctx, input }) => {
-    const post = await ctx.db.post.findUnique({ where: { slug: input.slug } });
-    if (!post) throw new TRPCError({ code: "NOT_FOUND" });
-    return post;
+  bySlug: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .handler(async ({ context, input }) => {
+      const row = await context.db.query.post.findFirst({ where: eq(post.slug, input.slug) });
+      if (!row) throw new ORPCError("NOT_FOUND");
+      return row;
+    }),
+
+  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+    const [row] = await withDbErrors(() =>
+      context.db
+        .insert(post)
+        .values({ ...input, publishedAt: input.status === "published" ? new Date() : null })
+        .returning(),
+    );
+    return row!;
   }),
 
-  create: adminProcedure.input(upsert).mutation(({ ctx, input }) =>
-    ctx.db.post.create({
-      data: {
-        ...input,
-        publishedAt: input.status === "published" ? new Date() : null,
-      },
-    }),
-  ),
-
+  // stripDefaults：后台编辑表单不带 tags，不能让 .default([]) 把标签清空；
+  // 没带 status 时也不能被打回 draft
   update: adminProcedure
-    .input(upsert.partial().extend({ id: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .input(stripDefaults(upsert).partial().extend({ id: z.string() }))
+    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return ctx.db.post.update({
-        where: { id },
-        data: {
-          ...data,
-          ...(data.status === "published" ? { publishedAt: new Date() } : {}),
-        },
+      const cur = await context.db.query.post.findFirst({
+        where: eq(post.id, id),
+        columns: { publishedAt: true },
       });
+      if (!cur) notFound();
+      // 只在首次发布时记发布时间；已发布的文章再保存保留原日期（含旧博客导入的日期）
+      const publishedAt = data.status === "published" && !cur.publishedAt ? new Date() : undefined;
+      const [row] = await withDbErrors(() =>
+        context.db
+          .update(post)
+          .set({ ...data, publishedAt })
+          .where(eq(post.id, id))
+          .returning(),
+      );
+      return row ?? notFound();
     }),
 
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => ctx.db.post.delete({ where: { id: input.id } })),
-});
+  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+    const [row] = await context.db.delete(post).where(eq(post.id, input.id)).returning();
+    return row ?? notFound();
+  }),
+};

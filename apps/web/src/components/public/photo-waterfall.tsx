@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 瀑布流相册（参考 2x.nz/ai 精选 Tab 的 waterfall 布局）：
  * - 绝对定位 + 最短列贪心放置，图片按真实宽高比排布、不限高度
@@ -9,14 +7,14 @@
  * - 服务端预取失败时 initial 传 null，由客户端查询接管（可重试，而非误报空相册）
  */
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyCard } from "@/components/public/collection";
 import { PhotoLightbox } from "@/components/public/photo-lightbox";
-import { useTRPC } from "@/lib/trpc/client";
-import type { AppRouter } from "@/server/root";
+import { orpc } from "@/lib/orpc/client";
+import { thumbProps } from "@/lib/thumb";
+import type { RouterOutputs } from "@/server/router";
 
-export type GalleryPage = inferRouterOutputs<AppRouter>["gallery"]["page"];
+export type GalleryPage = RouterOutputs["gallery"]["page"];
 type Photo = GalleryPage["items"][number];
 
 /** 列间距（px），与 fallback 的 gap-3 一致 */
@@ -29,6 +27,10 @@ function columnsFor(w: number) {
   if (w >= 440) return 3;
   return 2;
 }
+
+/** 列宽随视口：≥1024 时 5 列约 190px，其余按列数占视口比例（给 srcset 挑档用，略偏大即可） */
+const CELL_SIZES =
+  "(min-width: 1024px) 200px, (min-width: 700px) 25vw, (min-width: 440px) 34vw, 50vw";
 
 /** 比例缓存按展示用的 src 键控：换图（同 id 不同 URL）后旧比例自动失效 */
 function srcOf(it: Photo) {
@@ -47,19 +49,16 @@ export function PhotoWaterfall({
   albumId?: string | null;
   emptyText?: string;
 }) {
-  const trpc = useTRPC();
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage, isPending, isError } =
     useInfiniteQuery(
-      trpc.gallery.page.infiniteQueryOptions(
-        { limit: pageSize, albumId },
-        {
-          getNextPageParam: (last) => last.nextCursor,
-          initialCursor: null,
-          // 照片不常变，5 分钟内窗口聚焦不重刷所有已加载页（避免滚动中布局跳动）
-          staleTime: 300_000,
-          ...(initial ? { initialData: { pages: [initial], pageParams: [null] } } : {}),
-        },
-      ),
+      orpc.gallery.page.infiniteOptions({
+        input: (cursor: string | null) => ({ cursor, limit: pageSize, albumId }),
+        initialPageParam: null,
+        getNextPageParam: (last) => last.nextCursor,
+        // 照片不常变，5 分钟内窗口聚焦不重刷所有已加载页（避免滚动中布局跳动）
+        staleTime: 300_000,
+        ...(initial ? { initialData: { pages: [initial], pageParams: [null] } } : {}),
+      }),
     );
 
   // 追加分页时按 id 去重，防御新增/删除导致的页间重叠
@@ -75,12 +74,10 @@ export function PhotoWaterfall({
     return out;
   }, [data]);
 
-  // 容器宽度：ResizeObserver 跟踪，宽度未知时走 CSS columns fallback
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  // 容器宽度：ResizeObserver 跟踪，宽度未知时走 CSS columns fallback。
+  // 用回调 ref：容器在「加载中 / 空相册」之后才出现时也能挂上（React 19 的 ref 清理函数负责断开）
   const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+  const containerRef = useCallback((el: HTMLDivElement) => {
     setWidth(el.clientWidth);
     const ro = new ResizeObserver(() => setWidth(el.clientWidth));
     ro.observe(el);
@@ -185,9 +182,8 @@ export function PhotoWaterfall({
                 className="block w-full cursor-zoom-in"
                 onClick={() => setLightbox(i)}
               >
-                {/* biome-ignore lint/performance/noImgElement: MinIO 图源，沿用原生 img */}
                 <img
-                  src={srcOf(it)}
+                  {...thumbProps(srcOf(it), [320, 640, 960], CELL_SIZES)}
                   alt={it.title || "照片"}
                   title={it.title || undefined}
                   loading="lazy"

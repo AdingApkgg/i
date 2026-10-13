@@ -1,5 +1,6 @@
 import net from "node:net";
-import { db } from "@i/db";
+import { db, monitor, monitorCheck } from "@i/db";
+import { eq } from "drizzle-orm";
 
 interface ProbeResult {
   ok: boolean;
@@ -44,13 +45,16 @@ function probeTcp(target: string): Promise<ProbeResult> {
 }
 
 async function tick() {
-  const monitors = await db.monitor.findMany({ where: { enabled: true } }).catch(() => []);
+  const monitors = await db
+    .select()
+    .from(monitor)
+    .where(eq(monitor.enabled, true))
+    .catch(() => []);
   for (const m of monitors) {
     const r = m.kind === "tcp" ? await probeTcp(m.target) : await probeHttp(m.target);
-    await db.monitorCheck
-      .create({
-        data: { monitorId: m.id, ok: r.ok, statusCode: r.statusCode, latencyMs: r.latencyMs },
-      })
+    await db
+      .insert(monitorCheck)
+      .values({ monitorId: m.id, ok: r.ok, statusCode: r.statusCode, latencyMs: r.latencyMs })
       .catch(() => {});
   }
 }

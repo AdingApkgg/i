@@ -1,7 +1,8 @@
 import { lookup } from "node:dns/promises";
 import net from "node:net";
-import { siteConfig } from "@i/config";
-import { db } from "@i/db";
+import { db, friend } from "@i/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { siteUrl } from "@/lib/site-url";
 
 /**
  * MX Space 式友链健康检查：
@@ -17,16 +18,13 @@ const TIMEOUT_MS = 10_000;
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
 const OUTDATE_AFTER_FAILS = 3;
-const UA =
-  "Mozilla/5.0 (compatible; i-friend-checker/1.0; +" +
-  (process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url) +
-  ")";
+const UA = `Mozilla/5.0 (compatible; i-friend-checker/1.0; +${siteUrl()})`;
 
 /** Hosts whose appearance in the friend's HTML counts as a backlink. */
 function backlinkHosts(): string[] {
   const hosts = new Set<string>();
   try {
-    const h = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? siteConfig.url).hostname;
+    const h = new URL(siteUrl()).hostname;
     hosts.add(h);
     const parts = h.split(".");
     // Apex domain too (i.saop.cc → saop.cc): friends often link an older subdomain.
@@ -151,37 +149,38 @@ export async function checkFriend(f: FriendRow) {
   if (ok) {
     const lower = html.toLowerCase();
     const backlinked = backlinkHosts().some((h) => lower.includes(h));
-    const updated = await db.friend.update({
-      where: { id: f.id },
-      data: { reachable: true, backlinked, failCount: 0, checkedAt: now },
-    });
-    await db.friend.updateMany({
-      where: { id: f.id, status: "outdate" },
-      data: { status: "active" },
-    });
+    const [updated] = await db
+      .update(friend)
+      .set({ reachable: true, backlinked, failCount: 0, checkedAt: now })
+      .where(eq(friend.id, f.id))
+      .returning();
+    await db
+      .update(friend)
+      .set({ status: "active" })
+      .where(and(eq(friend.id, f.id), eq(friend.status, "outdate")));
     return updated;
   }
   const fails = f.failCount + 1;
-  const updated = await db.friend.update({
-    where: { id: f.id },
-    data: { reachable: false, failCount: fails, checkedAt: now },
-  });
+  const [updated] = await db
+    .update(friend)
+    .set({ reachable: false, failCount: fails, checkedAt: now })
+    .where(eq(friend.id, f.id))
+    .returning();
   if (fails >= OUTDATE_AFTER_FAILS) {
-    await db.friend.updateMany({
-      where: { id: f.id, status: "active" },
-      data: { status: "outdate" },
-    });
+    await db
+      .update(friend)
+      .set({ status: "outdate" })
+      .where(and(eq(friend.id, f.id), eq(friend.status, "active")));
   }
   return updated;
 }
 
 /** Check every active/outdate friend, sequentially (be polite to small blogs). */
 export async function runFriendChecks() {
-  const friends = await db.friend
-    .findMany({
-      where: { status: { in: ["active", "outdate"] } },
-      select: { id: true, url: true, status: true, failCount: true },
-    })
+  const friends = await db
+    .select({ id: friend.id, url: friend.url, status: friend.status, failCount: friend.failCount })
+    .from(friend)
+    .where(inArray(friend.status, ["active", "outdate"]))
     .catch(() => [] as FriendRow[]);
   for (const f of friends) {
     await checkFriend(f).catch(() => {});

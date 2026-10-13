@@ -1,20 +1,24 @@
-"use client";
-
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Mail, Pencil, Plus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useTRPC, useTRPCClient } from "@/lib/trpc/client";
-import { trpcErrText } from "@/lib/trpc/errors";
-import type { AppRouter } from "@/server/root";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
+import { reportSubmitError } from "@/lib/form";
+import { formatDate } from "@/lib/format";
+import { client, orpc } from "@/lib/orpc/client";
+import { orpcErrText } from "@/lib/orpc/errors";
+import { type FRIEND_STATUSES, friendWriteSchema } from "@/lib/schemas";
+import type { RouterOutputs } from "@/server/router";
 
-type FriendRow = inferRouterOutputs<AppRouter>["friends"]["adminList"][number];
+type FriendRow = RouterOutputs["friends"]["adminList"][number];
 
 const inputCls =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   active: { label: "已通过", cls: "bg-emerald-500/10 text-emerald-600" },
@@ -34,7 +38,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function fmtTime(d: Date | string | null): string {
   if (!d) return "";
-  return new Date(d).toLocaleString("zh-CN", {
+  return formatDate(d, {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
@@ -78,7 +82,6 @@ function CheckInfo({ f }: { f: FriendRow }) {
 
 function Avatar({ f, size = "size-9" }: { f: FriendRow; size?: string }) {
   return f.avatarUrl ? (
-    // biome-ignore lint/performance/noImgElement: 外站头像，沿用原生 img
     <img src={f.avatarUrl} alt="" className={cn(size, "shrink-0 rounded-full object-cover")} />
   ) : (
     <div
@@ -92,18 +95,11 @@ function Avatar({ f, size = "size-9" }: { f: FriendRow; size?: string }) {
   );
 }
 
-interface FormState {
-  name: string;
-  url: string;
-  avatarUrl: string;
-  description: string;
-  group: string;
-  email: string;
-  status: string;
-  sortOrder: string;
-}
+type FriendIn = z.input<typeof friendWriteSchema>;
+type FriendOut = z.output<typeof friendWriteSchema>;
+type FriendStatus = (typeof FRIEND_STATUSES)[number];
 
-const EMPTY_FORM: FormState = {
+const EMPTY_FORM: FriendIn = {
   name: "",
   url: "",
   avatarUrl: "",
@@ -111,18 +107,23 @@ const EMPTY_FORM: FormState = {
   group: "",
   email: "",
   status: "active",
-  sortOrder: "0",
+  sortOrder: 0,
 };
 
 export function FriendsAdmin() {
-  const client = useTRPCClient();
-  const trpc = useTRPC();
   const qc = useQueryClient();
-  const listOpts = trpc.friends.adminList.queryOptions();
+  const listOpts = orpc.friends.adminList.queryOptions();
   const { data: rows = [], isLoading: loading, isError } = useQuery(listOpts);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<FriendRow | "new" | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const form = useForm<FriendIn, unknown, FriendOut>({
+    resolver: zodResolver(friendWriteSchema),
+    defaultValues: EMPTY_FORM,
+  });
+  const {
+    register,
+    formState: { errors, isSubmitting: saving },
+  } = form;
   // 待审核卡片上的分组草稿（通过时带上）。
   const [groupDraft, setGroupDraft] = useState<Record<string, string>>({});
 
@@ -138,14 +139,7 @@ export function FriendsAdmin() {
       if (ok) toast.success(ok);
       await qc.invalidateQueries({ queryKey: listOpts.queryKey });
     } catch (e) {
-      toast.error(
-        trpcErrText(e, "操作失败", {
-          url: "链接格式不对，要以 http(s):// 开头",
-          email: "邮箱格式不对",
-          avatarUrl: "头像链接格式不对",
-          name: "名称为空或太长（50 字以内）",
-        }),
-      );
+      toast.error(orpcErrText(e, "操作失败"));
     } finally {
       setBusy(false);
     }
@@ -154,7 +148,7 @@ export function FriendsAdmin() {
   function review(f: FriendRow, action: "approve" | "reject") {
     void run(
       () =>
-        client.friends.review.mutate({
+        client.friends.review({
           id: f.id,
           action,
           group: groupDraft[f.id]?.trim() || undefined,
@@ -165,7 +159,7 @@ export function FriendsAdmin() {
 
   function checkOne(f: FriendRow) {
     void run(async () => {
-      const r = await client.friends.check.mutate({ id: f.id });
+      const r = await client.friends.check({ id: f.id });
       const c = r.friend;
       if (c) {
         if (c.reachable) {
@@ -179,18 +173,18 @@ export function FriendsAdmin() {
 
   function checkAll() {
     void run(async () => {
-      const r = await client.friends.check.mutate({});
+      const r = await client.friends.check({});
       toast.success(`已开始检测 ${r.queued} 条友链，稍后刷新查看结果`);
     });
   }
 
   function remove(f: FriendRow) {
     if (!window.confirm(`确定删除「${f.name}」？`)) return;
-    void run(() => client.friends.delete.mutate({ id: f.id }), "已删除");
+    void run(() => client.friends.delete({ id: f.id }), "已删除");
   }
 
   function startEdit(f: FriendRow | "new") {
-    setForm(
+    form.reset(
       f === "new"
         ? EMPTY_FORM
         : {
@@ -200,37 +194,42 @@ export function FriendsAdmin() {
             description: f.description ?? "",
             group: f.group ?? "",
             email: f.email ?? "",
-            status: f.status,
-            sortOrder: String(f.sortOrder),
+            status: f.status as FriendStatus,
+            sortOrder: f.sortOrder,
           },
     );
     setEditing(f);
   }
 
-  function save() {
-    if (!form.name.trim() || !form.url.trim()) {
-      toast.error("名称和链接不能为空");
-      return;
-    }
-    const body = {
-      name: form.name.trim(),
-      url: form.url.trim(),
-      avatarUrl: form.avatarUrl.trim(),
-      description: form.description.trim(),
-      group: form.group.trim(),
-      email: form.email.trim(),
-      status: form.status as "active" | "pending" | "rejected" | "outdate",
-      sortOrder: Number(form.sortOrder) || 0,
-    };
-    void run(async () => {
-      if (editing === "new") await client.friends.create.mutate(body);
-      else if (editing) await client.friends.update.mutate({ ...body, id: editing.id });
+  const save = form.handleSubmit(async (body) => {
+    try {
+      if (editing === "new") await client.friends.create(body);
+      else if (editing) await client.friends.update({ ...body, id: editing.id });
       setEditing(null);
-    }, "已保存 ✿");
-  }
+      toast.success("已保存 ✿");
+      await qc.invalidateQueries({ queryKey: listOpts.queryKey });
+    } catch (e) {
+      reportSubmitError(e, form, "保存失败");
+    }
+  });
 
-  const set = (k: keyof FormState) => (e: { target: { value: string } }) =>
-    setForm((p) => ({ ...p, [k]: e.target.value }));
+  /** 输入框 + 下方错误提示 */
+  const field = (
+    name: Exclude<keyof FriendIn, "status" | "sortOrder">,
+    placeholder: string,
+    opts: { className?: string; list?: string } = {},
+  ) => (
+    <div className={opts.className}>
+      <input
+        placeholder={placeholder}
+        list={opts.list}
+        aria-invalid={errors[name] ? true : undefined}
+        {...register(name)}
+        className={inputCls}
+      />
+      <FieldError message={errors[name]?.message} />
+    </div>
+  );
 
   return (
     <div>
@@ -260,75 +259,53 @@ export function FriendsAdmin() {
             className="overflow-hidden"
           >
             <Card className="mt-4">
-              <CardBody className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    placeholder="名称 *"
-                    value={form.name}
-                    onChange={set("name")}
-                    className={inputCls}
-                  />
-                  <input
-                    placeholder="链接 * https://…"
-                    value={form.url}
-                    onChange={set("url")}
-                    className={inputCls}
-                  />
-                  <input
-                    placeholder="头像链接"
-                    value={form.avatarUrl}
-                    onChange={set("avatarUrl")}
-                    className={inputCls}
-                  />
-                  <input
-                    placeholder="分组（如 朋友 / 收藏）"
-                    list="friend-groups"
-                    value={form.group}
-                    onChange={set("group")}
-                    className={inputCls}
-                  />
-                  <input
-                    placeholder="邮箱（通知用，不公开）"
-                    value={form.email}
-                    onChange={set("email")}
-                    className={inputCls}
-                  />
-                  <select value={form.status} onChange={set("status")} className={inputCls}>
-                    {Object.entries(STATUS_META).map(([v, m]) => (
-                      <option key={v} value={v}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    placeholder="描述"
-                    value={form.description}
-                    onChange={set("description")}
-                    className={cn(inputCls, "sm:col-span-2")}
-                  />
-                  <input
-                    type="number"
-                    placeholder="排序"
-                    value={form.sortOrder}
-                    onChange={set("sortOrder")}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={save} disabled={busy}>
-                    {busy && <Loader2 className="size-3.5 animate-spin" />}
-                    {editing === "new" ? "创建" : "保存修改"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditing(null)}
-                    disabled={busy}
-                  >
-                    取消
-                  </Button>
-                </div>
-              </CardBody>
+              <form noValidate onSubmit={save}>
+                <CardBody className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {field("name", "名称 *")}
+                    {field("url", "链接 * https://…")}
+                    {field("avatarUrl", "头像链接")}
+                    {field("group", "分组（如 朋友 / 收藏）", { list: "friend-groups" })}
+                    {field("email", "邮箱（通知用，不公开）")}
+                    <select {...register("status")} className={inputCls}>
+                      {Object.entries(STATUS_META).map(([v, m]) => (
+                        <option key={v} value={v}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    {field("description", "描述", { className: "sm:col-span-2" })}
+                    <div>
+                      <input
+                        type="number"
+                        placeholder="排序"
+                        aria-invalid={errors.sortOrder ? true : undefined}
+                        {...register("sortOrder", {
+                          // 清空视为 0（和以前一样）；其余交给 schema 校验整数
+                          setValueAs: (v) => (v === "" ? 0 : Number(v)),
+                        })}
+                        className={inputCls}
+                      />
+                      <FieldError message={errors.sortOrder?.message} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={saving}>
+                      {saving && <Loader2 className="size-3.5 animate-spin" />}
+                      {editing === "new" ? "创建" : "保存修改"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditing(null)}
+                      disabled={saving}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </CardBody>
+              </form>
             </Card>
           </motion.div>
         )}

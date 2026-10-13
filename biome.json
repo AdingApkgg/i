@@ -1,9 +1,20 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.8/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/generated/**", "!**/.next/**", "!**/dist/**", "!**/node_modules/**"]
+    "includes": [
+      "**",
+      "!**/generated",
+      "!**/.react-router",
+      "!**/build",
+      "!packages/db/drizzle",
+      "!**/dist",
+      "!**/node_modules",
+      "!apps/web/public/live2d/core",
+      "!apps/web/public/live2d/asuna",
+      "!apps/web/public/live2d/asteroids.js"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -14,7 +25,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "warn"
@@ -23,6 +34,9 @@
         "noExplicitAny": "warn"
       }
     }
+  },
+  "css": {
+    "parser": { "tailwindDirectives": true }
   },
   "javascript": {
     "formatter": {

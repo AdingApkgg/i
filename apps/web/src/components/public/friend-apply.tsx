@@ -1,27 +1,30 @@
-"use client";
-
-import { Button, Card, CardBody } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button, Card, CardBody, cn } from "@i/ui";
 import { Send } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
 import { useSession } from "@/lib/auth-client";
-import { useTRPCClient } from "@/lib/trpc/client";
-import { trpcErrText } from "@/lib/trpc/errors";
+import { reportSubmitError } from "@/lib/form";
+import { client } from "@/lib/orpc/client";
+import { friendApplySchema } from "@/lib/schemas";
 
-const FIELD_HINTS = {
-  url: "链接格式不对，要以 http(s):// 开头～",
-  email: "邮箱格式不对，检查一下～",
-  avatarUrl: "头像链接格式不对～",
-  name: "名称为空或太长啦（50 字以内）",
-  description: "描述太长啦（200 字以内）",
-  message: "留言太长啦（500 字以内）",
-};
+// 匿名访客必须留邮箱（审核结果发过去）；登录用户不填则沿用账号邮箱
+const anonymousSchema = friendApplySchema.refine((v) => v.email, {
+  message: "留个邮箱吧，审核结果会发过去 ✿",
+  path: ["email"],
+});
+
+type FormIn = z.input<typeof friendApplySchema>;
+type FormOut = z.output<typeof friendApplySchema>;
+
+const EMPTY: FormIn = { name: "", url: "", avatarUrl: "", description: "", email: "", message: "" };
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
-
-const EMPTY = { name: "", url: "", avatarUrl: "", description: "", email: "", message: "" };
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 /** 自助申请友链：匿名填邮箱，登录则沿用账号信息。 */
 export function FriendApply({
@@ -29,60 +32,60 @@ export function FriendApply({
 }: {
   site: { name: string; url: string; description: string };
 }) {
-  const client = useTRPCClient();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY);
-  const [busy, setBusy] = useState(false);
+  const form = useForm<FormIn, unknown, FormOut>({
+    resolver: zodResolver(session?.user ? friendApplySchema : anonymousSchema),
+    defaultValues: EMPTY,
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = form;
 
   function openForm() {
+    // 登录用户：空着的字段用账号信息预填
     const u = session?.user;
-    setForm((p) => ({
-      ...p,
-      name: p.name || u?.name || "",
-      email: p.email || u?.email || "",
-      avatarUrl: p.avatarUrl || u?.image || "",
-    }));
+    const cur = getValues();
+    reset({
+      ...cur,
+      name: cur.name || u?.name || "",
+      email: cur.email || u?.email || "",
+      avatarUrl: cur.avatarUrl || u?.image || "",
+    });
     setOpen(true);
   }
 
-  function set(k: keyof typeof EMPTY) {
-    return (e: { target: { value: string } }) => setForm((p) => ({ ...p, [k]: e.target.value }));
-  }
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    if (!form.name.trim() || !form.url.trim()) {
-      toast.error("名称和链接是必填的");
-      return;
-    }
-    if (!form.email.trim() && !session?.user) {
-      toast.error("留个邮箱吧，审核结果会发过去 ✿");
-      return;
-    }
-    // 少打协议头是常态，自动补 https://
-    let url = form.url.trim();
-    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
-    setBusy(true);
+  const submit = handleSubmit(async (values) => {
     try {
-      await client.friends.submit.mutate({
-        name: form.name.trim(),
-        url,
-        avatarUrl: form.avatarUrl.trim() || undefined,
-        description: form.description.trim() || undefined,
-        email: form.email.trim() || undefined,
-        message: form.message.trim() || undefined,
-      });
+      await client.friends.submit(values);
       toast.success("已提交，通过审核后就会出现在这里 ✿");
-      setForm(EMPTY);
+      reset(EMPTY);
       setOpen(false);
     } catch (err) {
-      toast.error(trpcErrText(err, "提交失败，稍后再试", FIELD_HINTS));
-    } finally {
-      setBusy(false);
+      reportSubmitError(err, form, "提交失败，稍后再试");
     }
-  }
+  });
+
+  const field = (
+    name: keyof FormIn,
+    placeholder: string,
+    opts: { className?: string; type?: string } = {},
+  ) => (
+    <div className={opts.className}>
+      <input
+        type={opts.type ?? "text"}
+        placeholder={placeholder}
+        aria-invalid={errors[name] ? true : undefined}
+        {...register(name)}
+        className={input}
+      />
+      <FieldError message={errors[name]?.message} />
+    </div>
+  );
 
   return (
     <Card className="mt-8">
@@ -111,6 +114,7 @@ export function FriendApply({
           {open && (
             <motion.form
               key="apply-form"
+              noValidate
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -118,55 +122,34 @@ export function FriendApply({
               onSubmit={submit}
               className="grid gap-3 overflow-hidden sm:grid-cols-2"
             >
-              <input
-                placeholder="站点名称 *"
-                value={form.name}
-                onChange={set("name")}
-                className={input}
-              />
-              <input
-                placeholder="站点链接 * https://…"
-                value={form.url}
-                onChange={set("url")}
-                className={input}
-              />
-              <input
-                placeholder="头像链接 https://…"
-                value={form.avatarUrl}
-                onChange={set("avatarUrl")}
-                className={input}
-              />
-              <input
-                type="email"
-                placeholder={session?.user ? "邮箱（默认用账号邮箱）" : "邮箱 *（接收审核结果）"}
-                value={form.email}
-                onChange={set("email")}
-                className={input}
-              />
-              <input
-                placeholder="一句话描述"
-                value={form.description}
-                onChange={set("description")}
-                className="w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 sm:col-span-2"
-              />
-              <textarea
-                placeholder="想对站长说的话（仅站长可见）"
-                value={form.message}
-                onChange={set("message")}
-                rows={3}
-                className="w-full resize-y rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 sm:col-span-2"
-              />
+              {field("name", "站点名称 *")}
+              {field("url", "站点链接 * https://…")}
+              {field("avatarUrl", "头像链接 https://…")}
+              {field("email", session?.user ? "邮箱（默认用账号邮箱）" : "邮箱 *（接收审核结果）", {
+                type: "email",
+              })}
+              {field("description", "一句话描述", { className: "sm:col-span-2" })}
+              <div className="sm:col-span-2">
+                <textarea
+                  placeholder="想对站长说的话（仅站长可见）"
+                  rows={3}
+                  aria-invalid={errors.message ? true : undefined}
+                  {...register("message")}
+                  className={cn(input, "resize-y")}
+                />
+                <FieldError message={errors.message?.message} />
+              </div>
               <div className="flex gap-2 sm:col-span-2">
-                <Button type="submit" size="sm" disabled={busy}>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
                   <Send className="size-3.5" />
-                  {busy ? "提交中…" : "提交申请"}
+                  {isSubmitting ? "提交中…" : "提交申请"}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => setOpen(false)}
-                  disabled={busy}
+                  disabled={isSubmitting}
                 >
                   收起
                 </Button>

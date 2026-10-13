@@ -1,5 +1,5 @@
-import "server-only";
-import { db } from "@i/db";
+import { db, maimaiConfig, maimaiProfile, maimaiRecord } from "@i/db";
+import { eq } from "drizzle-orm";
 
 /** Normalized record shape stored in MaimaiRecord. */
 export interface MappedRecord {
@@ -149,8 +149,12 @@ async function fetchLxns(token: string) {
     put(mapLxns(r, null, 0));
   }
   if (bests) {
-    (bests.standard ?? []).forEach((r: unknown, i: number) => put(mapLxns(r, "b35", i)));
-    (bests.dx ?? []).forEach((r: unknown, i: number) => put(mapLxns(r, "b15", i)));
+    (bests.standard ?? []).forEach((r: unknown, i: number) => {
+      put(mapLxns(r, "b35", i));
+    });
+    (bests.dx ?? []).forEach((r: unknown, i: number) => {
+      put(mapLxns(r, "b15", i));
+    });
   }
   return {
     nickname: String(player?.name ?? "maimai"),
@@ -161,8 +165,10 @@ async function fetchLxns(token: string) {
 
 // ---------------- 同步 ----------------
 
+const INSERT_CHUNK = 1000;
+
 export async function syncMaimai(): Promise<SyncResult> {
-  const cfg = await db.maimaiConfig.findUnique({ where: { id: "current" } });
+  const cfg = await db.query.maimaiConfig.findFirst({ where: eq(maimaiConfig.id, "current") });
   if (!cfg) throw new Error("请先在后台配置查分器");
   const source = cfg.source;
 
@@ -175,17 +181,19 @@ export async function syncMaimai(): Promise<SyncResult> {
     out = await fetchDivingFish(cfg.divingFishUsername, cfg.divingFishImportToken);
   }
 
-  await db.$transaction([
-    db.maimaiRecord.deleteMany({}),
-    db.maimaiRecord.createMany({
-      data: out.records.map((r) => ({ ...r, source })),
-    }),
-    db.maimaiProfile.upsert({
-      where: { id: "current" },
-      update: { source, nickname: out.nickname, rating: out.rating },
-      create: { id: "current", source, nickname: out.nickname, rating: out.rating },
-    }),
-  ]);
+  const rows = out.records.map((r) => ({ ...r, source }));
+  const profile = { source, nickname: out.nickname, rating: out.rating };
+  await db.transaction(async (tx) => {
+    await tx.delete(maimaiRecord);
+    // 全部成绩可能上千行 × 17 列，分批插入，避免超出 Postgres 单语句 65535 个参数
+    for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+      await tx.insert(maimaiRecord).values(rows.slice(i, i + INSERT_CHUNK));
+    }
+    await tx
+      .insert(maimaiProfile)
+      .values({ id: "current", ...profile })
+      .onConflictDoUpdate({ target: maimaiProfile.id, set: profile });
+  });
 
   return { source, nickname: out.nickname, rating: out.rating, count: out.records.length };
 }

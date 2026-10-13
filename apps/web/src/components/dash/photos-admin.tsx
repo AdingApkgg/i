@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 相册照片专属管理页（替代通用 CRUD 表格）：
  * - 缩略图网格 + 图集筛选（全部 / 各图集 / 未分类）
@@ -7,53 +5,66 @@
  * - 多文件批量上传到指定图集（走 /api/gallery/upload → gallery.create）
  * - 悬停铅笔进入单张编辑（复用通用 Field + 图集下拉）
  */
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { inferRouterOutputs } from "@trpc/server";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Loader2, Pencil, Plus, Upload } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useRef, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { emptyForm, Field, inputCls, rowToForm, toBody } from "@/components/dash/domain-admin";
+import { z } from "zod";
+import { Field, inputCls } from "@/components/dash/domain-admin";
 import { ADMIN_FIELDS } from "@/lib/admin-fields";
-import { useTRPC, useTRPCClient } from "@/lib/trpc/client";
-import type { AppRouter } from "@/server/root";
+import {
+  emptyForm,
+  type FormValues,
+  fieldLabels,
+  fieldsSchema,
+  rowToForm,
+  toBody,
+} from "@/lib/admin-form";
+import { reportSubmitError } from "@/lib/form";
+import { client, orpc } from "@/lib/orpc/client";
+import { thumb } from "@/lib/thumb";
+import type { RouterOutputs } from "@/server/router";
 
-type Photo = inferRouterOutputs<AppRouter>["gallery"]["list"][number];
-type FormState = Record<string, unknown>;
+type Photo = RouterOutputs["gallery"]["list"][number];
 
 /** 筛选值："all" | "none"(未分类) | albumId */
 type Filter = "all" | "none" | (string & {});
 
 // 通用编辑器字段（图集下拉在下方单独渲染）
 const PHOTO_FIELDS = ADMIN_FIELDS.gallery!.fields;
+// 通用字段 + 图集（"" = 未分类）
+const photoSchema = fieldsSchema(PHOTO_FIELDS).extend({ albumId: z.string() });
 
 export function PhotosAdmin() {
-  const trpc = useTRPC();
-  const client = useTRPCClient();
   const qc = useQueryClient();
 
-  const photosQ = useQuery(trpc.gallery.list.queryOptions());
+  const photosQ = useQuery(orpc.gallery.list.queryOptions());
   // /dash/albums 通用编辑器用自己的 ["admin-list"] 缓存键，不会失效这里的
   // 类型化键——进页强制刷新，避免刚建/删的图集在下拉里缺席
   const albumsQ = useQuery({
-    ...trpc.albums.list.queryOptions(),
+    ...orpc.albums.list.queryOptions(),
     staleTime: 0,
     refetchOnMount: "always",
   });
   const albums = albumsQ.data ?? [];
   const invalidate = () =>
     Promise.all([
-      qc.invalidateQueries({ queryKey: trpc.gallery.list.queryKey() }),
-      qc.invalidateQueries({ queryKey: trpc.albums.list.queryKey() }),
+      qc.invalidateQueries({ queryKey: orpc.gallery.list.queryKey() }),
+      qc.invalidateQueries({ queryKey: orpc.albums.list.queryKey() }),
     ]);
 
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Photo | "new" | null>(null);
-  const [form, setForm] = useState<FormState>({});
-  const [formAlbumId, setFormAlbumId] = useState("");
-  const [saving, setSaving] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(photoSchema),
+    defaultValues: { ...emptyForm(PHOTO_FIELDS), albumId: "" },
+  });
+  const saving = form.formState.isSubmitting;
   const [moveTarget, setMoveTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
@@ -76,42 +87,39 @@ export function PhotosAdmin() {
   }
 
   function openEdit(p: Photo | "new") {
-    setForm(p === "new" ? emptyForm(PHOTO_FIELDS) : rowToForm(PHOTO_FIELDS, p));
-    setFormAlbumId(
-      p === "new" ? (filter !== "all" && filter !== "none" ? filter : "") : (p.albumId ?? ""),
+    form.reset(
+      p === "new"
+        ? {
+            ...emptyForm(PHOTO_FIELDS),
+            // 新建默认放进当前筛选的图集
+            albumId: filter !== "all" && filter !== "none" ? filter : "",
+          }
+        : { ...rowToForm(PHOTO_FIELDS, p), albumId: p.albumId ?? "" },
     );
     setEditing(p);
   }
 
-  async function save() {
-    if (saving || !editing) return;
-    const body = toBody(PHOTO_FIELDS, form);
-    if (typeof body.imageUrl !== "string" || !body.imageUrl.trim()) {
-      toast.error("「图片链接」不能为空");
-      return;
-    }
-    setSaving(true);
+  const save = form.handleSubmit(async (values) => {
+    if (!editing) return;
     try {
-      const payload = { ...body, albumId: formAlbumId || null };
-      if (editing === "new") await client.gallery.create.mutate(payload as never);
-      else await client.gallery.update.mutate({ ...payload, id: editing.id } as never);
+      const payload = { ...toBody(PHOTO_FIELDS, values), albumId: values.albumId || null };
+      if (editing === "new") await client.gallery.create(payload as never);
+      else await client.gallery.update({ ...payload, id: editing.id } as never);
       toast.success("已保存 ✿");
       setEditing(null);
       // 编辑可能把照片改到当前筛选之外：清掉选择，避免批量操作命中不可见照片
       setSelected(new Set());
       await invalidate();
-    } catch {
-      toast.error("保存失败");
-    } finally {
-      setSaving(false);
+    } catch (e) {
+      reportSubmitError(e, form, "保存失败", fieldLabels(PHOTO_FIELDS));
     }
-  }
+  });
 
   async function bulkMove() {
     if (busy || selected.size === 0) return;
     setBusy(true);
     try {
-      await client.gallery.movePhotos.mutate({
+      await client.gallery.movePhotos({
         ids: [...selected],
         albumId: moveTarget || null,
       });
@@ -130,7 +138,7 @@ export function PhotosAdmin() {
     if (!window.confirm(`确定删除选中的 ${selected.size} 张照片？`)) return;
     setBusy(true);
     try {
-      await client.gallery.deletePhotos.mutate({ ids: [...selected] });
+      await client.gallery.deletePhotos({ ids: [...selected] });
       toast.success("已删除");
       setSelected(new Set());
       await invalidate();
@@ -159,7 +167,7 @@ export function PhotosAdmin() {
         if (!res.ok) throw new Error();
         const { imageUrl } = (await res.json()) as { imageUrl: string };
         try {
-          await client.gallery.create.mutate({ imageUrl, albumId });
+          await client.gallery.create({ imageUrl, albumId });
         } catch (e) {
           // 建档失败则删掉刚传的对象，避免存储孤儿
           const key = imageUrl.split("/").pop();
@@ -251,44 +259,44 @@ export function PhotosAdmin() {
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             <Card className="mt-4">
-              <CardBody className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {PHOTO_FIELDS.map((f) => (
-                    <Field
-                      key={f.name}
-                      field={f}
-                      value={form[f.name]}
-                      onChange={(v) => setForm((p) => ({ ...p, [f.name]: v }))}
-                    />
-                  ))}
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-muted-foreground">
-                      图集
-                    </span>
-                    <select
-                      value={formAlbumId}
-                      onChange={(e) => setFormAlbumId(e.target.value)}
-                      className={inputCls}
-                    >
-                      <option value="">未分类</option>
-                      {albums.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
+              <FormProvider {...form}>
+                <form noValidate onSubmit={save}>
+                  <CardBody className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {PHOTO_FIELDS.map((f) => (
+                        <Field key={f.name} field={f} />
                       ))}
-                    </select>
-                  </label>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => void save()} disabled={saving}>
-                    {saving && <Loader2 className="size-4 animate-spin" />}
-                    {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setEditing(null)} disabled={saving}>
-                    取消
-                  </Button>
-                </div>
-              </CardBody>
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-muted-foreground">
+                          图集
+                        </span>
+                        <select {...form.register("albumId")} className={inputCls}>
+                          <option value="">未分类</option>
+                          {albums.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={saving}>
+                        {saving && <Loader2 className="size-4 animate-spin" />}
+                        {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setEditing(null)}
+                        disabled={saving}
+                      >
+                        取消
+                      </Button>
+                    </div>
+                  </CardBody>
+                </form>
+              </FormProvider>
             </Card>
           </motion.div>
         ) : (
@@ -367,9 +375,8 @@ export function PhotosAdmin() {
                           aria-label={on ? "取消选择" : "选择"}
                           onClick={() => toggle(p.id)}
                         >
-                          {/* biome-ignore lint/performance/noImgElement: 管理端缩略图，沿用原生 img */}
                           <img
-                            src={p.thumbUrl || p.imageUrl}
+                            src={thumb(p.thumbUrl || p.imageUrl, 320)}
                             alt={p.title || "照片"}
                             loading="lazy"
                             className={cn(

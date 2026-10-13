@@ -15,15 +15,20 @@
     "format": "biome format --write .",
     "check": "biome check --write .",
     "typecheck": "turbo run typecheck",
-    "db:generate": "turbo run db:generate",
-    "db:push": "bun --filter @i/db db:push",
+    "test": "turbo run test",
+    "test:e2e": "bun run --filter @i/web test:e2e",
+    "db:generate": "bun --filter @i/db db:generate",
     "db:migrate": "bun --filter @i/db db:migrate",
+    "db:push": "bun --filter @i/db db:push",
     "db:studio": "bun --filter @i/db db:studio",
     "db:seed": "bun --filter @i/db db:seed"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.0",
+    "@biomejs/biome": "^2.5.8",
     "turbo": "^2.5.9",
     "typescript": "^6.0.2"
+  },
+  "engines": {
+    "node": ">=24.19"
   }
 }

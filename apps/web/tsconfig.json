@@ -1,16 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "plugins": [{ "name": "next" }],
+    "types": ["node", "vite/client"],
+    "rootDirs": [".", "./.react-router/types"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": [
-    "next-env.d.ts",
     "src/**/*",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "test/**/*",
+    "e2e/**/*",
+    ".react-router/types/**/*",
+    "vite.config.ts",
+    "react-router.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
   ],
   "exclude": ["node_modules"]
 }

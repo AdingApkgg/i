@@ -1,8 +1,6 @@
-"use client";
-
 import { cn } from "@i/ui";
-import { AnimatePresence, motion } from "framer-motion";
 import { ExternalLink, Play } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -108,7 +106,6 @@ export function DPlayer({ url, pic }: { url: string; pic?: string }) {
             className="group absolute inset-0 block cursor-pointer"
           >
             {pic ? (
-              // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
               <img
                 src={pic}
                 alt="视频封面"

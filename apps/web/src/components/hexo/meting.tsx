@@ -1,16 +1,15 @@
-"use client";
-
 /**
  * 选播 row for imported <meting-js> tags. Instead of stacking embedded players
  * (the old mistake), each song renders as a clickable row and playlists as a
  * play button — both hand the target to the global bottom-left player.
  * 歌曲元数据经 SWR 去重缓存，进入视口才请求。
  */
-import { AnimatePresence, motion } from "framer-motion";
+
 import { Music2, Play } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useMetingSong } from "@/lib/use-meting";
-import { usePlayer } from "../player/player-context";
+import { usePlayerStore } from "@/stores/player";
 
 const TYPE_LABEL: Record<string, string> = {
   playlist: "歌单",
@@ -27,7 +26,7 @@ export function Meting({
   type?: string;
   mid?: string;
 }) {
-  const { play } = usePlayer();
+  const play = usePlayerStore((s) => s.play);
   if (type !== "song") {
     const label = TYPE_LABEL[type] ?? type;
     return (
@@ -74,7 +73,6 @@ function SongRow({ server, mid, onPlay }: { server: string; mid: string; onPlay:
       className="group my-0.5 flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-border bg-card px-3 py-2 text-left transition hover:border-primary/50 hover:bg-soft"
     >
       {song?.pic ? (
-        // biome-ignore lint/performance/noImgElement: 外链封面，沿用原生 img
         <motion.img
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

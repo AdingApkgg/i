@@ -6,6 +6,7 @@
     "REDIS_URL",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
+    "SITE_URL",
     "NEXT_PUBLIC_SITE_URL",
     "GITHUB_CLIENT_ID",
     "GITHUB_CLIENT_SECRET",
@@ -15,20 +16,22 @@
     "S3_BUCKET"
   ],
   "tasks": {
-    "db:generate": {
-      "cache": false
-    },
     "build": {
-      "dependsOn": ["^db:generate", "^build"],
-      "outputs": [".next/**", "!.next/cache/**", "src/generated/**", "dist/**"]
+      "dependsOn": ["^build"],
+      "outputs": ["build/**", "dist/**"]
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
     },
     "typecheck": {
-      "dependsOn": ["db:generate", "^db:generate"]
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
     },
     "dev": {
       "cache": false,
-      "persistent": true,
-      "dependsOn": ["^db:generate"]
+      "persistent": true
     },
     "start": {
       "cache": false,

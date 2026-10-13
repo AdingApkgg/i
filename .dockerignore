@@ -1,8 +1,8 @@
 **/node_modules
-**/.next
+**/.react-router
+**/build
 **/.turbo
 **/dist
-**/src/generated
 **/*.tsbuildinfo
 .git
 .github

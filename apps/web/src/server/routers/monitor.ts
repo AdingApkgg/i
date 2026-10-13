@@ -1,5 +1,8 @@
+import { monitor, monitorCheck } from "@i/db";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { notFound, stripDefaults } from "../crud";
+import { adminProcedure, publicProcedure } from "../orpc";
 
 const upsert = z.object({
   name: z.string().min(1),
@@ -9,37 +12,50 @@ const upsert = z.object({
   enabled: z.boolean().default(true),
 });
 
-export const monitorRouter = router({
-  list: publicProcedure.query(({ ctx }) =>
-    ctx.db.monitor.findMany({ orderBy: { createdAt: "desc" } }),
+export const monitorRouter = {
+  list: publicProcedure.handler(({ context }) =>
+    context.db.select().from(monitor).orderBy(desc(monitor.createdAt)),
   ),
 
-  create: adminProcedure
-    .input(upsert)
-    .mutation(({ ctx, input }) => ctx.db.monitor.create({ data: input })),
+  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+    const [row] = await context.db.insert(monitor).values(input).returning();
+    return row!;
+  }),
 
   update: adminProcedure
-    .input(upsert.partial().extend({ id: z.string().min(1) }))
-    .mutation(({ ctx, input }) => {
+    // stripDefaults：部分更新不能把 enabled/kind/intervalSec 悄悄重置成默认值
+    .input(
+      stripDefaults(upsert)
+        .partial()
+        .extend({ id: z.string().min(1) }),
+    )
+    .handler(async ({ context, input }) => {
       const { id, ...data } = input;
-      return ctx.db.monitor.update({ where: { id }, data });
+      const [row] = await context.db
+        .update(monitor)
+        .set(data)
+        .where(eq(monitor.id, id))
+        .returning();
+      return row ?? notFound();
     }),
 
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(({ ctx, input }) => ctx.db.monitor.delete({ where: { id: input.id } })),
+  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+    const [row] = await context.db.delete(monitor).where(eq(monitor.id, input.id)).returning();
+    return row ?? notFound();
+  }),
 
   /** Latest check per enabled target (populated by the background scheduler). */
-  status: publicProcedure.query(async ({ ctx }) => {
-    const monitors = await ctx.db.monitor.findMany({
-      where: { enabled: true },
-      orderBy: { createdAt: "desc" },
-    });
-    const rows = await Promise.all(
+  status: publicProcedure.handler(async ({ context }) => {
+    const monitors = await context.db
+      .select()
+      .from(monitor)
+      .where(eq(monitor.enabled, true))
+      .orderBy(desc(monitor.createdAt));
+    return Promise.all(
       monitors.map(async (m) => {
-        const last = await ctx.db.monitorCheck.findFirst({
-          where: { monitorId: m.id },
-          orderBy: { checkedAt: "desc" },
+        const last = await context.db.query.monitorCheck.findFirst({
+          where: eq(monitorCheck.monitorId, m.id),
+          orderBy: desc(monitorCheck.checkedAt),
         });
         return {
           id: m.id,
@@ -53,6 +69,5 @@ export const monitorRouter = router({
         };
       }),
     );
-    return rows;
   }),
-});
+};

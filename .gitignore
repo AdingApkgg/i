@@ -4,18 +4,14 @@ node_modules/
 .yarn/*
 
 # builds
-.next/
+.react-router/
 out/
 dist/
 build/
 *.tsbuildinfo
-next-env.d.ts
 
 # turbo
 .turbo/
-
-# prisma generated client
-**/src/generated/
 
 # env & secrets
 .env
@@ -37,3 +33,8 @@ npm-debug.log*
 # docker volume data (if bind-mounted locally)
 data/
 .import/
+
+# e2e (Playwright)
+apps/web/e2e/.auth/
+apps/web/e2e/.results/
+apps/web/playwright-report/

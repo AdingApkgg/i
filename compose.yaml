@@ -2,7 +2,7 @@
 #
 #   cp .env.example .env && docker compose up
 #
-# Host ports are overridable (this machine already uses 5432/6379/3000/9000):
+# Host ports are overridable (this machine already uses 5432/6379/3000):
 #   WEB_PORT=13000 DB_PORT=15432 REDIS_PORT=16379 docker compose up
 #
 # web -> http://localhost:${WEB_PORT:-3000}
@@ -39,28 +39,39 @@ services:
       timeout: 3s
       retries: 20
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  # 对象存储：SeaweedFS（S3 网关 :8333）。凭据写成 s3.json 后交给镜像自带入口。
+  # 卷大小显式设 1GB（二进制默认 30GB，磁盘不大时新桶会分不到卷、上传报 500）。
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.47
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio12345}
+      S3_ACCESS_KEY: ${SEAWEEDFS_ACCESS_KEY:-seaweed}
+      S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-seaweed12345}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        printf '{"identities":[{"name":"app","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","List","Tagging","Write"]}]}' "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" > /etc/seaweedfs/s3.json
+        exec /entrypoint.sh server -master.volumeSizeLimitMB=1024 -ip.bind=0.0.0.0 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port.iceberg=0 -s3.port.lance=0
     ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${S3_PORT:-8333}:8333"
     volumes:
-      - minio:/data
+      - seaweedfs:/data
+    # S3 网关的 /healthz 在 filer 就绪后才返回 200（冷启动约 20 秒），之后才能建桶 / 写入
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 60s
 
   web:
     image: oven/bun:1
     working_dir: /app
-    # First boot installs deps into the shared volume, generates the Prisma
-    # client, pushes the schema to Postgres, then runs the Next dev server.
+    # First boot installs deps into the shared volume, applies DB migrations,
+    # seeds sample data, then runs the React Router dev server.
     command: >
       bash -lc '
       bun install &&
-      bun run --filter @i/db db:generate &&
-      bun run --filter @i/db db:push &&
+      bun run --filter @i/db db:migrate &&
       (bun run --filter @i/db db:seed || true) &&
       bun run --filter @i/web dev'
     env_file:
@@ -72,25 +83,25 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-dev-secret-change-me-32-chars-or-more}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minio}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio12345}
+      SITE_URL: ${SITE_URL:-${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}}
+      S3_ENDPOINT: http://seaweedfs:8333
+      S3_ACCESS_KEY: ${SEAWEEDFS_ACCESS_KEY:-seaweed}
+      S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-seaweed12345}
       S3_BUCKET: ${S3_BUCKET:-gallery}
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
       - ./:/app
       - node_modules:/app/node_modules
-      - web_next:/app/apps/web/.next
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
 
 volumes:
   pgdata:
-  minio:
+  seaweedfs:
   node_modules:
-  web_next:

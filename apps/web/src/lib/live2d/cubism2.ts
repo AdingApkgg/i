@@ -191,7 +191,6 @@ export class Cubism2Mascot {
     // 那是旧框架 viewMatrix 语义，直接当 clip 变换会放大裁切）。带纵横比补偿，
     // 模型像素保持正方；水平居中、垂直贴顶（看板娘露头身，底边裁脚）。---
     const cw = this.model.getCanvasWidth();
-    const ch = this.model.getCanvasHeight();
     const aspect = this.canvas.width / this.canvas.height; // 物理像素比即可
     // x 方向铺满：sx=2/cw；y 保持正方形像素：sy = sx * aspect
     const sx = 2 / cw;

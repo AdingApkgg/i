@@ -1,6 +1,6 @@
 /**
- * One-shot re-hosting: pull remote images referenced by the DB into MinIO
- * (the `gallery` bucket, served back through /api/gallery/files/<key>) and
+ * One-shot re-hosting: pull remote images referenced by the DB into
+ * object storage (the `gallery` bucket, served back through /api/gallery/files/<key>) and
  * rewrite every reference in the database to point at the local copy.
  *
  * Sources scanned:
@@ -15,32 +15,19 @@
  *
  *   bun packages/db/scripts/migrate-images.ts
  *
- * Env: S3_ENDPOINT S3_ACCESS_KEY S3_SECRET_KEY S3_BUCKET (see defaults below).
+ * Env: S3_ENDPOINT S3_ACCESS_KEY S3_SECRET_KEY S3_BUCKET (see src/storage.ts).
  */
 import { createHash } from "node:crypto";
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { eq } from "drizzle-orm";
 import { db } from "../src/client";
-
-const S3_ENDPOINT = process.env.S3_ENDPOINT ?? "http://minio:9000";
-const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY ?? "minio";
-const S3_SECRET_KEY = process.env.S3_SECRET_KEY ?? "minio12345";
-const S3_BUCKET = process.env.S3_BUCKET ?? "gallery";
+import { friend, movie, photo, post } from "../src/schema";
+import { createStorage, storageConfigFromEnv } from "../src/storage";
 
 const ORIGIN = "https://gh.saop.cc";
 const CONCURRENCY = 6;
 const FETCH_TIMEOUT_MS = 30_000;
 
-const s3 = new S3Client({
-  endpoint: S3_ENDPOINT,
-  region: "us-east-1",
-  credentials: { accessKeyId: S3_ACCESS_KEY, secretAccessKey: S3_SECRET_KEY },
-  forcePathStyle: true,
-});
+const storage = createStorage(storageConfigFromEnv());
 
 // ---------------- url helpers ----------------
 
@@ -115,19 +102,7 @@ function mapRef(raw: string | null | undefined): string | null {
   return uploaded.get(resolved) ?? null;
 }
 
-// ---------------- minio ----------------
-
-async function ensureBucket(): Promise<void> {
-  try {
-    await s3.send(new HeadBucketCommand({ Bucket: S3_BUCKET }));
-  } catch {
-    try {
-      await s3.send(new CreateBucketCommand({ Bucket: S3_BUCKET }));
-    } catch {
-      // already exists / race — ignore
-    }
-  }
-}
+// ---------------- object storage ----------------
 
 let uploadedCount = 0;
 let failedCount = 0;
@@ -147,9 +122,7 @@ async function rehost(url: string): Promise<void> {
     const contentType =
       res.headers.get("content-type")?.split(";")[0]?.trim() || guessContentType(ext);
     const key = `${createHash("sha1").update(url).digest("hex").slice(0, 16)}.${ext}`;
-    await s3.send(
-      new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: body, ContentType: contentType }),
-    );
+    await storage.put(key, body, contentType);
     uploaded.set(url, `/api/gallery/files/${key}`);
     uploadedCount++;
     console.log(`[ok] ${url} -> ${key}`);
@@ -176,12 +149,14 @@ async function pool<T>(items: T[], limit: number, worker: (x: T) => Promise<void
 // ---------------- main ----------------
 
 async function main(): Promise<void> {
-  await ensureBucket();
+  await storage.ensureBucket();
 
-  const posts = await db.post.findMany({ select: { id: true, contentMd: true, coverUrl: true } });
-  const photos = await db.photo.findMany({ select: { id: true, imageUrl: true } });
-  const movies = await db.movie.findMany({ select: { id: true, coverUrl: true } });
-  const friends = await db.friend.findMany({ select: { id: true, avatarUrl: true } });
+  const posts = await db
+    .select({ id: post.id, contentMd: post.contentMd, coverUrl: post.coverUrl })
+    .from(post);
+  const photos = await db.select({ id: photo.id, imageUrl: photo.imageUrl }).from(photo);
+  const movies = await db.select({ id: movie.id, coverUrl: movie.coverUrl }).from(movie);
+  const friends = await db.select({ id: friend.id, avatarUrl: friend.avatarUrl }).from(friend);
 
   // 1) collect unique resolved image urls
   const found = new Set<string>();
@@ -224,10 +199,10 @@ async function main(): Promise<void> {
       }
       const newCover = mapRef(p.coverUrl) ?? p.coverUrl;
       if (content !== p.contentMd || newCover !== p.coverUrl) {
-        await db.post.update({
-          where: { id: p.id },
-          data: { contentMd: content, coverUrl: newCover },
-        });
+        await db
+          .update(post)
+          .set({ contentMd: content, coverUrl: newCover })
+          .where(eq(post.id, p.id));
         postsUpdated++;
       }
     } catch (e) {
@@ -239,7 +214,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(ph.imageUrl);
       if (np && np !== ph.imageUrl) {
-        await db.photo.update({ where: { id: ph.id }, data: { imageUrl: np } });
+        await db.update(photo).set({ imageUrl: np }).where(eq(photo.id, ph.id));
         photosUpdated++;
       }
     } catch (e) {
@@ -251,7 +226,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(mv.coverUrl);
       if (np && np !== mv.coverUrl) {
-        await db.movie.update({ where: { id: mv.id }, data: { coverUrl: np } });
+        await db.update(movie).set({ coverUrl: np }).where(eq(movie.id, mv.id));
         moviesUpdated++;
       }
     } catch (e) {
@@ -263,7 +238,7 @@ async function main(): Promise<void> {
     try {
       const np = mapRef(fr.avatarUrl);
       if (np && np !== fr.avatarUrl) {
-        await db.friend.update({ where: { id: fr.id }, data: { avatarUrl: np } });
+        await db.update(friend).set({ avatarUrl: np }).where(eq(friend.id, fr.id));
         friendsUpdated++;
       }
     } catch (e) {

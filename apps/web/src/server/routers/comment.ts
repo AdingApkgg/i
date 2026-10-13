@@ -1,47 +1,56 @@
-import { TRPCError } from "@trpc/server";
+import { comment } from "@i/db";
+import { ORPCError } from "@orpc/server";
+import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { isAdminRole } from "@/lib/roles";
+import { commentBodySchema } from "@/lib/schemas";
+import type { Context } from "../orpc";
+import { protectedProcedure, publicProcedure } from "../orpc";
 
-const withUser = { user: { select: { id: true, name: true, image: true } } };
+const withUser = { user: { columns: { id: true, name: true, image: true } } } as const;
 
-export const commentRouter = router({
-  list: publicProcedure.input(z.object({ path: z.string() })).query(({ ctx, input }) =>
-    ctx.db.comment.findMany({
-      where: { path: input.path, status: "visible" },
-      orderBy: { createdAt: "asc" },
-      include: withUser,
+const byId = (db: Context["db"], id: string) =>
+  db.query.comment.findFirst({ where: eq(comment.id, id), with: withUser });
+
+export const commentRouter = {
+  list: publicProcedure.input(z.object({ path: z.string() })).handler(({ context, input }) =>
+    context.db.query.comment.findMany({
+      where: and(eq(comment.path, input.path), eq(comment.status, "visible")),
+      orderBy: asc(comment.createdAt),
+      with: withUser,
     }),
   ),
 
   create: protectedProcedure
     .input(
-      z.object({
+      commentBodySchema.extend({
         path: z.string().min(1),
-        contentMd: z.string().min(1).max(2000),
         postId: z.string().optional(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.db.comment.create({
-        data: {
+    .handler(async ({ context, input }) => {
+      const [row] = await context.db
+        .insert(comment)
+        .values({
           path: input.path,
           contentMd: input.contentMd,
           postId: input.postId ?? null,
-          userId: ctx.user.id,
-        },
-        include: withUser,
-      }),
-    ),
+          userId: context.user.id,
+        })
+        .returning({ id: comment.id });
+      // 带上作者信息，和 list 的形状一致（前端乐观更新直接用）
+      return (await byId(context.db, row!.id))!;
+    }),
 
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const c = await ctx.db.comment.findUnique({ where: { id: input.id } });
-      if (!c) throw new TRPCError({ code: "NOT_FOUND" });
-      const role = (ctx.user as { role?: string }).role;
-      if (c.userId !== ctx.user.id && role !== "admin" && role !== "owner") {
-        throw new TRPCError({ code: "FORBIDDEN" });
+    .handler(async ({ context, input }) => {
+      const c = await context.db.query.comment.findFirst({ where: eq(comment.id, input.id) });
+      if (!c) throw new ORPCError("NOT_FOUND");
+      if (c.userId !== context.user.id && !isAdminRole(context.user)) {
+        throw new ORPCError("FORBIDDEN");
       }
-      return ctx.db.comment.delete({ where: { id: input.id } });
+      const [row] = await context.db.delete(comment).where(eq(comment.id, input.id)).returning();
+      return row!;
     }),
-});
+};

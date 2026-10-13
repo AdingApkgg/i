@@ -1,12 +1,10 @@
-"use client";
-
 /**
- * 全站共享的 framer-motion 入场动画原语。
+ * 全站共享的 motion 入场动画原语。
  * - FadeIn: 单元素淡入上浮（滚动进入视口触发一次）
  * - Stagger / StaggerItem: 网格、列表的交错入场；StaggerItem 可选 hover 悬浮
  * 均通过 useReducedMotion 尊重系统的“减少动态效果”设置。
  */
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "motion/react";
 import type { ReactNode } from "react";
 
 const EASE = [0.22, 1, 0.36, 1] as const;

@@ -1,6 +1,6 @@
 /**
- * UI field registry for the config-driven /dash admin. Each domain maps to a
- * tRPC router key (same as server/root.ts) + a field list the generic editor
+ * UI field registry for the config-driven /dash admin. Each domain maps to
+ * an oRPC router key (same as server/router.ts) + a field list the generic editor
  * renders, and the columns the list table shows. Field types drive the control.
  */
 export type FieldType = "text" | "textarea" | "number" | "boolean" | "select" | "image";
@@ -15,11 +15,13 @@ export interface FieldSpec {
 }
 
 export interface AdminDomain {
-  /** tRPC router key + url segment. */
+  /** oRPC router key + url segment. */
   key: string;
   label: string;
   fields: FieldSpec[];
   columns: string[];
+  /** 后台列表调用 list 时的参数（博客要带上草稿） */
+  listInput?: unknown;
 }
 
 const rating: FieldSpec = { name: "rating", label: "评分", type: "number", placeholder: "0–10" };
@@ -38,6 +40,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     key: "blog",
     label: "博客",
     columns: ["title", "status"],
+    listInput: { includeDrafts: true },
     fields: [
       { name: "slug", label: "Slug", type: "text", required: true, placeholder: "hello-world" },
       { name: "title", label: "标题", type: "text", required: true },

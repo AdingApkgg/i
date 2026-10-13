@@ -101,10 +101,23 @@ export async function fetchHitokoto(): Promise<{ text: string; followup: string 
 }
 
 /**
+ * 页面主动让看板娘说话（如 404 页）。看板娘已挂载时走事件即时显示；
+ * 首屏还没挂载的情况由页面上的 `data-waifu-tip` 兜底（见 welcomeMessage）。
+ */
+export const WAIFU_SAY_EVENT = "waifu:say";
+
+export function waifuSay(text: string) {
+  window.dispatchEvent(new CustomEvent<string>(WAIFU_SAY_EVENT, { detail: text }));
+}
+
+/**
  * 进站欢迎语（参考实现语义）：
- * 首页 → 时段问候；其它页 →「欢迎阅读『标题』」；带外站 referrer → 来源问候。
+ * 页面声明了 `data-waifu-tip` → 用它；首页 → 时段问候；
+ * 其它页 →「欢迎阅读『标题』」；带外站 referrer → 来源问候。
  */
 export function welcomeMessage(tips: WaifuTips): string {
+  const pageTip = document.querySelector<HTMLElement>("[data-waifu-tip]")?.dataset.waifuTip;
+  if (pageTip) return pageTip;
   if (location.pathname === "/") {
     return timeGreeting(tips) ?? pick(tips.message.default);
   }

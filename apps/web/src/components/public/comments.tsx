@@ -1,43 +1,55 @@
-"use client";
-
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Send, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import type { z } from "zod";
+import { FieldError } from "@/components/field-error";
 import { authClient, useSession } from "@/lib/auth-client";
-import { useTRPC } from "@/lib/trpc/client";
+import { reportSubmitError } from "@/lib/form";
+import { formatDate } from "@/lib/format";
+import { orpc } from "@/lib/orpc/client";
+import { isAdminRole } from "@/lib/roles";
+import { commentBodySchema } from "@/lib/schemas";
 import { VisitorAuth } from "./visitor-auth";
 
 function fmt(d: string | Date) {
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(d),
-  );
+  return formatDate(d, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function Comments({ path, postId }: { path: string; postId?: string }) {
   const { data: session } = useSession();
-  const trpc = useTRPC();
   const qc = useQueryClient();
-  const listOpts = trpc.comment.list.queryOptions({ path });
+  const listOpts = orpc.comment.list.queryOptions({ input: { path } });
   const { data: comments = [], isLoading } = useQuery(listOpts);
-  const [text, setText] = useState("");
+  const form = useForm<z.input<typeof commentBodySchema>>({
+    resolver: zodResolver(commentBodySchema),
+    defaultValues: { contentMd: "" },
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = form;
 
   const create = useMutation({
-    ...trpc.comment.create.mutationOptions(),
+    ...orpc.comment.create.mutationOptions(),
     onSuccess: () => {
-      setText("");
+      reset();
       void qc.invalidateQueries({ queryKey: listOpts.queryKey });
     },
-    onError: () => toast.error("发送失败"),
+    onError: (e) => reportSubmitError(e, form, "发送失败"),
   });
 
   // 乐观删除：先从列表移除，失败自动回滚。
   // 不 spread mutationOptions()：它会把 context 类型钉死为 undefined，
   // 只取 mutationFn，让 context 从 onMutate 的返回值推断。
   const remove = useMutation({
-    mutationFn: trpc.comment.remove.mutationOptions().mutationFn,
+    mutationFn: orpc.comment.remove.mutationOptions().mutationFn,
     onMutate: async ({ id }: { id: string }) => {
       await qc.cancelQueries({ queryKey: listOpts.queryKey });
       const prev = qc.getQueryData(listOpts.queryKey);
@@ -51,30 +63,34 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
     onSettled: () => qc.invalidateQueries({ queryKey: listOpts.queryKey }),
   });
 
-  function send() {
-    const contentMd = text.trim();
-    if (!contentMd || create.isPending) return;
-    create.mutate({ path, contentMd, postId });
-  }
+  const send = handleSubmit(({ contentMd }) => {
+    if (!create.isPending) create.mutate({ path, contentMd, postId });
+  });
 
   const me = session?.user;
-  const myRole = (me as { role?: string } | undefined)?.role;
 
   return (
     <section className="mt-10">
       <h2 className="mb-3 text-lg font-semibold">评论 · {comments.length}</h2>
 
       {me ? (
-        <div className="space-y-2">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={`以 ${me.name ?? me.email} 的身份评论…`}
-            rows={3}
-            className="w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
-          />
+        <form noValidate onSubmit={send} className="space-y-2">
+          <div>
+            <textarea
+              placeholder={`以 ${me.name ?? me.email} 的身份评论…`}
+              rows={3}
+              aria-invalid={errors.contentMd ? true : undefined}
+              {...register("contentMd")}
+              className="w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive"
+            />
+            <FieldError message={errors.contentMd?.message} />
+          </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" disabled={create.isPending || !text.trim()} onClick={send}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={create.isPending || !watch("contentMd").trim()}
+            >
               <Send className="size-3.5" />
               {create.isPending ? "发送中…" : "发送"}
             </Button>
@@ -87,7 +103,7 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
               退出（{me.name ?? me.email}）
             </button>
           </div>
-        </div>
+        </form>
       ) : (
         <VisitorAuth />
       )}
@@ -114,7 +130,7 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
                       <div className="text-sm font-semibold">{c.user?.name ?? "访客"}</div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{fmt(c.createdAt)}</span>
-                        {(c.userId === me?.id || myRole === "admin" || myRole === "owner") && (
+                        {(c.userId === me?.id || isAdminRole(me)) && (
                           <button
                             type="button"
                             aria-label="删除评论"

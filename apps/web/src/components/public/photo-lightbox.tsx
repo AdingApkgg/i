@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 相册灯箱（交互规格参考 2x.nz/ai 的 image-lightbox）：
  * - 滚轮以光标为锚缩放（1–6 倍）、点图 1↔2.5 倍、缩放后拖拽平移（带边界）
@@ -12,10 +10,15 @@
  *   分离的 setState 嵌套会把锚点数学应用两次导致漂移）
  * - 变换作用在包装层，motion 组件会接管自身 transform
  */
-import { AnimatePresence, motion } from "framer-motion";
+
 import { ChevronLeft, ChevronRight, Download, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { thumbProps } from "@/lib/thumb";
+
+/** 大图用 WebP 缩放版（最大 2560，比手机原图小一个数量级）；下载按钮仍给原图 */
+const largeImage = (url: string) => thumbProps(url, [1280, 1920, 2560], "92vw");
 
 export interface LightboxPhoto {
   id: string;
@@ -130,6 +133,7 @@ export function PhotoLightbox({
 
   // 换图 / 重开：重置变换与加载态（打开路径不经过 goto，必须在这里兜底）
   const photoId = photo?.id;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: photoId 是触发器，换图即重置
   useEffect(() => {
     setView(RESET_VIEW);
     setLoaded(false);
@@ -190,12 +194,17 @@ export function PhotoLightbox({
     return () => el.removeEventListener("wheel", onWheel);
   }, [open, stagePoint, zoomAt]);
 
-  // 预加载相邻原图
+  // 预加载相邻大图（与展示用同一组 srcset，浏览器会挑同一档、命中缓存）
   useEffect(() => {
     if (index == null) return;
     for (const i of [index - 1, index + 1]) {
       const it = items[i];
-      if (it) new Image().src = it.imageUrl;
+      if (!it) continue;
+      const { src, srcSet, sizes } = largeImage(it.imageUrl);
+      const img = new Image();
+      if (sizes) img.sizes = sizes;
+      if (srcSet) img.srcset = srcSet;
+      img.src = src;
     }
   }, [index, items]);
 
@@ -314,13 +323,11 @@ export function PhotoLightbox({
               className={gesturing ? "" : "transition-transform duration-150"}
               style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
             >
-              {/* biome-ignore lint/a11y/noStaticElementInteractions: 点图缩放，键盘走全局监听 */}
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: 同上 */}
-              {/* biome-ignore lint/performance/noImgElement: MinIO 原图，灯箱直连 */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: 点图缩放，键盘走全局监听 */}
               <img
                 key={photo.id}
                 ref={imgRef}
-                src={photo.imageUrl}
+                {...largeImage(photo.imageUrl)}
                 alt={photo.title || "照片"}
                 draggable={false}
                 onLoad={() => setLoaded(true)}

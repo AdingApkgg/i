@@ -1,7 +1,4 @@
-"use client";
-
 import { cn } from "@i/ui";
-import { motion } from "framer-motion";
 import {
   Activity,
   Camera,
@@ -20,8 +17,8 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { motion } from "motion/react";
+import { Link, useLocation, useNavigate } from "react-router";
 import { ADMIN_FIELDS, ADMIN_ORDER } from "@/lib/admin-fields";
 import { authClient } from "@/lib/auth-client";
 
@@ -42,19 +39,19 @@ const DOMAIN_ICONS: Record<string, LucideIcon> = {
 };
 
 export function DashShell({ userName, children }: { userName: string; children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   async function signOut() {
     await authClient.signOut();
-    router.push("/dash/login");
-    router.refresh();
+    // 跳转会重新跑后台布局的 loader，会话已失效即进登录页
+    navigate("/dash/login", { replace: true });
   }
 
   const item = (href: string, label: string, active: boolean, Icon: LucideIcon) => (
     <Link
       key={href}
-      href={href}
+      to={href}
       className={cn(
         "relative block rounded-[var(--radius-md)] px-3 py-2 text-sm transition",
         active
@@ -79,7 +76,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
   return (
     <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
       <aside className="w-44 shrink-0">
-        <Link href="/" className="mb-4 block px-3 text-lg font-bold">
+        <Link to="/" className="mb-4 block px-3 text-lg font-bold">
           i · 后台
         </Link>
         <nav className="space-y-1">

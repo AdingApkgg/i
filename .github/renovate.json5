@@ -1,0 +1,83 @@
+// Renovate：自动提依赖升级 PR（需要在 GitHub 上安装 Renovate App 并授权本仓库）。
+// 每周一早上一批；小版本 / 补丁合成一个 PR，大版本要先在 Dependency Dashboard issue 里勾选才会提。
+// 每个 PR 都会跑完整 CI（含 Playwright 端到端），绿了再合。
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+    ":timezone(Asia/Shanghai)",
+    // 所有非大版本升级合成一个 PR，减少噪音
+    "group:allNonMajor",
+    // 每月刷新一次 bun.lock 里的间接依赖
+    ":maintainLockFilesMonthly",
+  ],
+  schedule: ["before 9am on monday"],
+  labels: ["dependencies"],
+  // 新版本发布满 3 天再升级：躲开发布即撤回的版本和投毒包
+  minimumReleaseAge: "3 days",
+  // 大版本需要在 Dependency Dashboard 里手动批准
+  major: { dependencyDashboardApproval: true },
+  packageRules: [
+    // 大版本按“家族”合并，相关包一起升
+    {
+      matchUpdateTypes: ["major"],
+      matchDepNames: ["node", "@types/node"],
+      groupName: "Node.js",
+      prBodyNotes: [
+        "Node 大版本：.node-version、Dockerfile、@types/node 一起升；确认 react-router-hono-server 等支持新版本。",
+      ],
+    },
+    {
+      matchUpdateTypes: ["major"],
+      matchPackageNames: ["react", "react-dom", "@types/react", "@types/react-dom"],
+      groupName: "React",
+    },
+    {
+      matchUpdateTypes: ["major"],
+      matchPackageNames: ["drizzle-orm", "drizzle-kit"],
+      groupName: "Drizzle",
+    },
+    {
+      matchUpdateTypes: ["major"],
+      matchPackageNames: ["@orpc/**"],
+      groupName: "oRPC",
+    },
+    {
+      matchUpdateTypes: ["major"],
+      matchPackageNames: ["bun", "oven/bun"],
+      groupName: "Bun",
+    },
+    {
+      matchDatasources: ["docker"],
+      matchPackageNames: ["postgres"],
+      matchUpdateTypes: ["major"],
+      prBodyNotes: [
+        "⚠️ Postgres 大版本不能直接合并：数据目录要先迁移（pg_dump / pg_restore 或 pg_upgrade），否则新容器起不来。",
+      ],
+    },
+    // satori 刻意停在 0.32：之后的版本带 harfbuzzjs，分享卡片的服务端构建要重新验证
+    {
+      matchPackageNames: ["satori"],
+      groupName: "satori",
+      dependencyDashboardApproval: true,
+      prBodyNotes: [
+        "satori 停在 0.32 是因为之后的版本引入 harfbuzzjs；升级后在生产构建里实际打开 /og.png 确认能出图。",
+      ],
+    },
+    // 只用于一次性迁移的旧 MinIO：不跟踪
+    {
+      matchPackageNames: ["minio/minio"],
+      enabled: false,
+    },
+  ],
+  customManagers: [
+    // biome.json 的 $schema 版本跟着 @biomejs/biome 走（同名依赖会进同一个 PR）
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^biome\\.json$/"],
+      matchStrings: ['"https://biomejs\\.dev/schemas/(?<currentValue>[^/]+)/schema\\.json"'],
+      depNameTemplate: "@biomejs/biome",
+      datasourceTemplate: "npm",
+    },
+  ],
+}

@@ -1,12 +1,20 @@
-import { TRPCError } from "@trpc/server";
+import { maimaiConfig, maimaiProfile, maimaiRecord } from "@i/db";
+import { ORPCError } from "@orpc/server";
+import { asc, desc, eq, ilike, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { syncMaimai } from "@/lib/maimai";
-import { adminProcedure, publicProcedure, router } from "../trpc";
+import { maimaiConfigSchema } from "@/lib/schemas";
+import { adminProcedure, publicProcedure } from "../orpc";
+import { escapeLike } from "../sql";
 
-export const maimaiRouter = router({
+/** LIKE 通配符转义（Prisma 的 contains 会自动转义，这里手动保持同样语义）。 */
+
+export const maimaiRouter = {
   // ---- admin: config + sync ----
-  config: adminProcedure.query(async ({ ctx }) => {
-    const c = await ctx.db.maimaiConfig.findUnique({ where: { id: "current" } });
+  config: adminProcedure.handler(async ({ context }) => {
+    const c = await context.db.query.maimaiConfig.findFirst({
+      where: eq(maimaiConfig.id, "current"),
+    });
     return (
       c ?? {
         id: "current",
@@ -18,41 +26,37 @@ export const maimaiRouter = router({
     );
   }),
 
-  saveConfig: adminProcedure
-    .input(
-      z.object({
-        source: z.enum(["diving-fish", "lxns"]),
-        divingFishUsername: z.string().optional(),
-        divingFishImportToken: z.string().optional(),
-        lxnsPersonalToken: z.string().optional(),
-      }),
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.db.maimaiConfig.upsert({
-        where: { id: "current" },
-        update: input,
-        create: { id: "current", ...input },
-      }),
-    ),
+  saveConfig: adminProcedure.input(maimaiConfigSchema).handler(async ({ context, input }) => {
+    const [row] = await context.db
+      .insert(maimaiConfig)
+      .values({ id: "current", ...input })
+      .onConflictDoUpdate({ target: maimaiConfig.id, set: input })
+      .returning();
+    return row!;
+  }),
 
-  sync: adminProcedure.mutation(async () => {
+  sync: adminProcedure.handler(async () => {
     try {
       return await syncMaimai();
     } catch (e) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+      throw new ORPCError("BAD_REQUEST", { message: (e as Error).message });
     }
   }),
 
   // ---- public: profile + b50 + all records ----
-  profile: publicProcedure.query(({ ctx }) =>
-    ctx.db.maimaiProfile.findUnique({ where: { id: "current" } }),
+  profile: publicProcedure.handler(
+    async ({ context }) =>
+      (await context.db.query.maimaiProfile.findFirst({
+        where: eq(maimaiProfile.id, "current"),
+      })) ?? null,
   ),
 
-  b50: publicProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.db.maimaiRecord.findMany({
-      where: { pool: { not: null } },
-      orderBy: [{ pool: "asc" }, { boardOrder: "asc" }],
-    });
+  b50: publicProcedure.handler(async ({ context }) => {
+    const rows = await context.db
+      .select()
+      .from(maimaiRecord)
+      .where(isNotNull(maimaiRecord.pool))
+      .orderBy(asc(maimaiRecord.pool), asc(maimaiRecord.boardOrder));
     return {
       b35: rows.filter((r) => r.pool === "b35"),
       b15: rows.filter((r) => r.pool === "b15"),
@@ -65,11 +69,12 @@ export const maimaiRouter = router({
         .object({ q: z.string().optional(), limit: z.number().int().min(1).max(500).default(200) })
         .optional(),
     )
-    .query(({ ctx, input }) =>
-      ctx.db.maimaiRecord.findMany({
-        where: input?.q ? { title: { contains: input.q, mode: "insensitive" } } : undefined,
-        orderBy: [{ achievements: "desc" }],
-        take: input?.limit ?? 200,
-      }),
+    .handler(({ context, input }) =>
+      context.db
+        .select()
+        .from(maimaiRecord)
+        .where(input?.q ? ilike(maimaiRecord.title, `%${escapeLike(input.q)}%`) : undefined)
+        .orderBy(desc(maimaiRecord.achievements))
+        .limit(input?.limit ?? 200),
     ),
-});
+};
