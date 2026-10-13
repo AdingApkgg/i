@@ -25,6 +25,13 @@
       automerge: true,
       platformAutomerge: false,
     },
+    // config:recommended 里的 workarounds:typesNodeVersioning 只匹配 npm 管理器，本仓库走的是 bun 管理器，这里补上：
+    // @types/node 用 node 版本规则（大版本进入 LTS 才算稳定），不会抢在 .node-version / Dockerfile 前面升
+    {
+      matchManagers: ["bun"],
+      matchPackageNames: ["@types/node"],
+      versioning: "node",
+    },
     // 大版本按“家族”合并，相关包一起升
     {
       matchUpdateTypes: ["major"],
