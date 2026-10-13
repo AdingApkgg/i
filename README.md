@@ -212,10 +212,12 @@ docker compose -f compose.prod.yaml --profile legacy stop minio
 
 Renovate（`.github/renovate.json5`）每周一早上提升级 PR，需要先在 GitHub 上安装 [Renovate App](https://github.com/apps/renovate) 并授权本仓库：
 
-- 小版本 / 补丁合成一个 PR，跑完整 CI（含 e2e）后手动合并；新版本发布满 3 天才会提
+- 小版本 / 补丁合成一个 PR，跑完整 CI（含 e2e）全绿后由 Renovate 自动合并；新版本发布满 3 天才会提
 - 大版本（以及 satori）列在 Dependency Dashboard issue 里，勾选后才提 PR；Node、React、Drizzle、oRPC 等相关包一起升
 - Postgres 大版本的 PR 会提示先迁移数据目录；`biome.json` 的 `$schema` 跟着 Biome 版本一起改
 - 每月刷新一次 `bun.lock`
+- Mend 托管的 Renovate 装在「All repositories」下时默认是静默模式（只扫描，不提 PR / issue）：
+  在 [developer.mend.io](https://developer.mend.io/) → 仓库 → Settings → Dependency Updates 里改成 Renovate（Automated PRs）
 
 ## 内容域
 
