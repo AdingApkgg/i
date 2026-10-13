@@ -40,7 +40,7 @@ jobs:
       CLOUDFLARE_ZONE: ${{ vars.CLOUDFLARE_ZONE }}
       SITE_HOST: ${{ vars.SITE_HOST }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Check settings
         env:
