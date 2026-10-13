@@ -99,6 +99,8 @@ export async function renderOgImage(card: OgCard): Promise<Response> {
       style={{
         width: "100%",
         height: "100%",
+        // satori 0.4x 起按 content-box 算尺寸：不加这句，padding 会把卡片挤出画布右下角
+        boxSizing: "border-box",
         display: "flex",
         padding: 56,
         background: `linear-gradient(135deg, ${C.soft} 0%, ${C.bg} 55%, ${C.accent} 100%)`,
