@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       configure_cloudflare:
-        description: "设置 Cloudflare：Browser Cache TTL = 遵循源站 + 页面缓存规则（可重复运行）"
+        description: "设置 Cloudflare 页面缓存规则（只作用于 SITE_HOST，可重复运行）"
         type: boolean
         default: false
 
