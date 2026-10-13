@@ -4,18 +4,24 @@
  */
 import {
   Ban,
+  BatteryMedium,
   Bell,
+  Bomb,
   Book,
   Bug,
+  Car,
   Check,
   CircleAlert,
   CircleCheck,
   CircleHelp,
   CircleX,
+  CreditCard,
   Download,
+  Fan,
   Flame,
   Gamepad2,
   Gift,
+  Globe,
   Heart,
   Info,
   Key,
@@ -26,10 +32,13 @@ import {
   Music,
   Paperclip,
   PawPrint,
+  Pointer,
   Quote,
   Rocket,
+  Scissors,
   Star,
   TriangleAlert,
+  Type,
 } from "lucide-react";
 
 const MATCHERS: [RegExp, LucideIcon][] = [
@@ -59,6 +68,15 @@ const MATCHERS: [RegExp, LucideIcon][] = [
   [/quote/, Quote],
   [/rocket/, Rocket],
   [/star/, Star],
+  [/hand-point|hand-pointer/, Pointer],
+  [/scissors/, Scissors],
+  [/\bfan\b/, Fan],
+  [/bomb/, Bomb],
+  [/battery/, BatteryMedium],
+  [/car-crash|\bcar\b/, Car],
+  [/cc-visa|cc-mastercard|credit-card|apple-pay/, CreditCard],
+  [/internet-explorer|globe|earth/, Globe],
+  [/\bfont\b/, Type],
 ];
 
 /** 解析 FA 类名；`none`/空 → null，未识别 → Info 兜底。 */

@@ -34,7 +34,7 @@
     "hono": "4.13.13",
     "ioredis": "^6.0.0",
     "isbot": "5",
-    "lucide-react": "^1.0.0",
+    "lucide-react": "^1.56.0",
     "motion": "14.1.1",
     "nodemailer": "^10.0.0",
     "pg": "^8.20.0",
