@@ -13,9 +13,6 @@
   ],
   schedule: ["before 9am on monday"],
   labels: ["dependencies"],
-  // 新版本发布满 3 天再升级：躲开发布即撤回的版本和投毒包
-  // （这里只管直接依赖；间接依赖和锁文件维护由 bunfig.toml 的 install.minimumReleaseAge 兜住）
-  minimumReleaseAge: "3 days",
   // 大版本需要在 Dependency Dashboard 里手动批准
   major: { dependencyDashboardApproval: true },
   packageRules: [
