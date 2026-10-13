@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Cloudflare 缓存配置（.github/workflows/deploy.yml 在部署完成后调用）：
-#   configure  Browser Cache TTL 设为「遵循源站」+ 维护一条页面缓存规则（幂等，只动自己这条，其他规则原样保留）
+#   configure  维护一条页面缓存规则（只匹配 SITE_HOST；幂等，只动自己这条，其他规则原样保留）。
+#              浏览器缓存时间由规则里的 browser_ttl 遵循源站；不改 zone 级的 Browser Cache TTL ——
+#              那是整个域名的设置，同一 zone 下的其他站点也会受影响
 #   purge      清空整个 zone 的缓存（每次部署后：旧 HTML 引用的旧 JS 已不存在）
 #
-# 需要：CLOUDFLARE_API_TOKEN（权限：Zone Read、Zone Settings Edit、Cache Rules Edit、Cache Purge），
+# 需要：CLOUDFLARE_API_TOKEN（权限：Zone Read、Cache Rules Edit、Cache Purge），
 #      CLOUDFLARE_ZONE（域名，如 saop.cc）或 CLOUDFLARE_ZONE_ID，SITE_HOST（如 i.saop.cc）
 #
 #   bash deploy/cloudflare.sh configure purge
@@ -65,9 +67,6 @@ rule_json() {
 
 configure() {
   local zone=$1
-  echo "==> Browser Cache TTL：遵循源站（Respect Existing Headers）"
-  cf PATCH "/zones/$zone/settings/browser_cache_ttl" '{"value":0}' >/dev/null
-
   echo "==> 缓存规则（$SITE_HOST）"
   local phase="/zones/$zone/rulesets/phases/http_request_cache_settings/entrypoint"
   local existing='[]' out

@@ -115,7 +115,7 @@ GitHub → Actions → **Deploy** → Run workflow（`.github/workflows/deploy.y
 两个可选项，都可以重复运行：
 
 - **migrate_storage**：部署完再做一次 MinIO → SeaweedFS 的存储迁移（见下文「存储迁移」）
-- **configure_cloudflare**：设置 Browser Cache TTL 和页面缓存规则（见下文「Cloudflare 缓存」；规则只增改自己那一条）
+- **configure_cloudflare**：设置页面缓存规则（见下文「Cloudflare 缓存」；只作用于 `SITE_HOST`，规则只增改自己那一条）
 
 服务器上要先有：用 `git clone https://github.com/AdingApkgg/i.git` 克隆的仓库、仓库里的 `.env`、
 SSH 用户能直接运行 `docker`（在 docker 组里，或者把下面的 `DEPLOY_DOCKER` 设为 `sudo docker` 并给免密 sudo）。
@@ -129,7 +129,7 @@ GitHub Actions 的机器要能连上服务器的 SSH 端口。
 | `DEPLOY_USER` | Secret | SSH 用户名 |
 | `DEPLOY_SSH_KEY` | Secret | 专用私钥：`ssh-keygen -t ed25519 -N "" -C github-deploy -f deploy_key`，`deploy_key.pub` 追加到服务器 `~/.ssh/authorized_keys`，`deploy_key` 的全部内容填这里 |
 | `DEPLOY_KNOWN_HOSTS` | Secret（可选） | `ssh-keyscan -p 端口 服务器` 的输出；不填时首次连接自动信任，日志里会打印指纹 |
-| `CLOUDFLARE_API_TOKEN` | Secret（可选） | 不填就跳过 Cloudflare 步骤。My Profile → API Tokens → Create Custom Token，权限：Zone · Zone · Read、Zone · Zone Settings · Edit、Zone · Cache Rules · Edit、Zone · Cache Purge · Purge；Zone Resources 选这个站点的域名 |
+| `CLOUDFLARE_API_TOKEN` | Secret（可选） | 不填就跳过 Cloudflare 步骤。My Profile → API Tokens → Create Custom Token，权限：Zone · Zone · Read、Zone · Cache Rules · Edit、Zone · Cache Purge · Purge；Zone Resources 选这个站点的域名 |
 | `DEPLOY_PATH` | Variable（可选） | 服务器上仓库的路径，相对 SSH 用户的家目录或绝对路径（不要写 `~`），默认 `i` |
 | `DEPLOY_PORT` | Variable（可选） | SSH 端口，默认 `22` |
 | `DEPLOY_DOCKER` | Variable（可选） | 默认 `docker` |
@@ -165,22 +165,22 @@ GitHub Actions 的机器要能连上服务器的 SSH 端口。
 旧的 HTML 引用的是旧版本的 JS 文件，新容器里已经没有了，不清的话最多 2 分钟内可能有人打开页面报错。
 用「自动部署」并配了 `CLOUDFLARE_API_TOKEN` 时，工作流部署完会自动清。
 
-Cloudflare 默认不缓存 HTML，需要在面板里设置两处（「自动部署」勾选 configure_cloudflare 会用 API 完成这两处，
+Cloudflare 默认不缓存 HTML，需要在面板里加一条缓存规则（「自动部署」勾选 configure_cloudflare 会用 API 完成，
 不用手动做；`deploy/cloudflare.sh`）。
 
-> ⚠️ 第 2 步（Cache Rule）要等这个版本部署上线之后再加：规则会让 Cloudflare 照源站的缓存头缓存页面，
-> 旧版本（Next.js）给静态页发的是 `s-maxage=31536000`，会被缓存一年。第 1 步随时可以做。
+> ⚠️ 规则要等这个版本部署上线之后再加：规则会让 Cloudflare 照源站的缓存头缓存页面，
+> 旧版本（Next.js）给静态页发的是 `s-maxage=31536000`，会被缓存一年。
 
-1. **Caching → Configuration → Browser Cache TTL** 设为 **Respect Existing Headers**
-   （否则 Cloudflare 会把页面的浏览器缓存时间改长，访客看不到更新）。
-2. **Caching → Cache Rules** 新建一条：
+**Caching → Cache Rules** 新建一条：
    - 匹配（Custom filter expression → Edit expression，域名换成你的）：
      ```
      http.host eq "i.saop.cc" and not starts_with(http.request.uri.path, "/dash") and not (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/gallery/files/"))
      ```
    - Cache eligibility：**Eligible for cache**
    - Edge TTL：**Use cache-control header if present, bypass cache if not**
-   - Browser TTL：**Respect origin**
+   - Browser TTL：**Respect origin**（不设的话 Cloudflare 会按 zone 的 Browser Cache TTL 把浏览器缓存时间改长，
+     访客看不到更新。不要为此去改 Caching → Configuration 里的 Browser Cache TTL：那是整个域名的设置，
+     同一域名下的其他站点也会跟着变）
    - 缓存键保持默认（包含查询串，缩略图靠 `?w=` 区分）
 
 验证：同一个页面请求两次，第二次响应头应为 `cf-cache-status: HIT`，且 `cache-control` 仍是 `max-age=0`；
