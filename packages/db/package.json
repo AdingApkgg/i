@@ -27,7 +27,7 @@
     "yaml": "^2.6.1"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "24",
     "@types/pg": "^8.20.0",
     "dotenv": "^17.4.1",
     "drizzle-kit": "0.31.11",
