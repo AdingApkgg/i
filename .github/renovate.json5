@@ -1,5 +1,5 @@
 // Renovate：自动提依赖升级 PR（需要在 GitHub 上安装 Renovate App 并授权本仓库）。
-// 每周一早上一批；小版本 / 补丁合成一个 PR，大版本要先在 Dependency Dashboard issue 里勾选才会提。
+// 新正式版一发布就提（不设时间表）；小版本 / 补丁合成一个 PR，大版本要先在 Dependency Dashboard issue 里勾选才会提。
 // 每个 PR 都会跑完整 CI（含 Playwright 端到端）：小版本 / 补丁绿了自动合并，大版本绿了再手动合。
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
@@ -11,7 +11,6 @@
     // 每月刷新一次 bun.lock 里的间接依赖
     ":maintainLockFilesMonthly",
   ],
-  schedule: ["before 9am on monday"],
   labels: ["dependencies"],
   // 大版本需要在 Dependency Dashboard 里手动批准
   major: { dependencyDashboardApproval: true },

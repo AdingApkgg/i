@@ -210,7 +210,7 @@ docker compose -f compose.prod.yaml --profile legacy stop minio
 
 ## 依赖升级
 
-Renovate（`.github/renovate.json5`）每周一早上提升级 PR，需要先在 GitHub 上安装 [Renovate App](https://github.com/apps/renovate) 并授权本仓库：
+Renovate（`.github/renovate.json5`）有新正式版就提升级 PR，需要先在 GitHub 上安装 [Renovate App](https://github.com/apps/renovate) 并授权本仓库：
 
 - 小版本 / 补丁合成一个 PR，跑完整 CI（含 e2e）全绿后由 Renovate 自动合并
 - 大版本（以及 satori）列在 Dependency Dashboard issue 里，勾选后才提 PR；Node、React、Drizzle、oRPC 等相关包一起升
