@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OG_SIZE, renderOgImage } from "./og";
 
@@ -25,5 +26,22 @@ describe("renderOgImage", () => {
     expect(res.headers.get("cache-control")).toBe("public, max-age=3600");
     expect(res.headers.get("cdn-cache-control")).toContain("stale-while-revalidate");
     expect(pngSize(await res.arrayBuffer())).toEqual(OG_SIZE);
+  });
+
+  // satori 0.4x 起默认 content-box：外层 100% 宽高 + padding 会把卡片挤出画布，右下角变成白色卡片
+  it("卡片留在画布内：右下角是背景色而不是白色卡片", { timeout: 30_000 }, async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+    const res = await renderOgImage({ title: "hello" });
+    const { data } = await sharp(Buffer.from(await res.arrayBuffer()))
+      .extract({ left: OG_SIZE.width - 10, top: OG_SIZE.height - 10, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    expect([...data]).not.toEqual([255, 255, 255]);
   });
 });
