@@ -11,7 +11,7 @@ export default function DashHome() {
       <Stagger className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {ADMIN_ORDER.map((k) => (
           <StaggerItem key={k} hover>
-            <Link to={`/dash/${k}`} className="block h-full">
+            <Link prefetch="intent" to={`/dash/${k}`} className="block h-full">
               <Card className="h-full transition hover:shadow-md">
                 <CardBody className="py-5 text-center">
                   <div className="font-semibold">{ADMIN_FIELDS[k]?.label ?? k}</div>

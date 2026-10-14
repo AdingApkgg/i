@@ -23,7 +23,9 @@ export function ErrorView({ error, onRetry }: { error: unknown; onRetry: () => v
         <div className="mt-4 flex gap-2">
           <Button onClick={onRetry}>重试</Button>
           <Button asChild variant="soft">
-            <Link to="/">回首页</Link>
+            <Link prefetch="intent" to="/">
+              回首页
+            </Link>
           </Button>
         </div>
       </div>

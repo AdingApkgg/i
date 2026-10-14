@@ -9,7 +9,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
-        <Link to="/" className="shrink-0 text-lg font-bold tracking-wide">
+        <Link prefetch="intent" to="/" className="shrink-0 text-lg font-bold tracking-wide">
           {siteConfig.name}
           <span className="text-primary">.</span>
         </Link>
@@ -18,6 +18,7 @@ export function SiteHeader() {
             const active = pathname === d.path || pathname.startsWith(`${d.path}/`);
             return (
               <Link
+                prefetch="intent"
                 key={d.key}
                 to={d.path}
                 className={cn(

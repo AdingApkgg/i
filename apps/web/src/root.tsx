@@ -8,6 +8,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { NavProgress } from "@/components/nav-progress";
 import { Providers } from "@/components/providers";
 import { seo } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
@@ -48,7 +49,12 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <NavProgress />
+      <Outlet />
+    </>
+  );
 }
 
 /** 兜底：前台 / 后台布局各自有更友好的错误页，能冒泡到这里说明布局本身挂了 */

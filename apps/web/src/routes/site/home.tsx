@@ -70,6 +70,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <div className="mt-5 flex flex-wrap gap-2">
               {NAV_DOMAINS.map((d) => (
                 <Link
+                  prefetch="intent"
                   key={d.key}
                   to={d.path}
                   className="rounded-pill bg-soft px-3.5 py-1.5 text-[13px] font-medium text-accent-foreground transition hover:-translate-y-0.5 hover:brightness-95"
@@ -186,7 +187,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                 hover
                 className="aspect-square overflow-hidden rounded-[var(--radius-md)] bg-soft"
               >
-                <Link to="/gallery" className="block h-full w-full">
+                <Link prefetch="intent" to="/gallery" className="block h-full w-full">
                   <img
                     {...thumbProps(
                       p.thumbUrl || p.imageUrl,
@@ -212,7 +213,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <Stagger className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             {posts.slice(0, 3).map((p) => (
               <StaggerItem key={p.id} hover>
-                <Link to={`/blog/${p.slug}`} className="block h-full">
+                <Link prefetch="intent" to={`/blog/${p.slug}`} className="block h-full">
                   <Card className="h-full transition hover:shadow-md">
                     <CardBody>
                       <div className="font-semibold">{p.title}</div>
@@ -253,6 +254,7 @@ function Section({
         <h2 className="text-lg font-semibold">{title}</h2>
         {moreHref && (
           <Link
+            prefetch="intent"
             to={moreHref}
             className="group inline-flex items-center gap-1 text-sm text-primary hover:underline"
           >
