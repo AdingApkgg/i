@@ -100,7 +100,13 @@ function PostEditor({ post }: { post: Post | null }) {
   const [editorKey, setEditorKey] = useState(0);
   const docRef = useRef<RichDoc>(initialDoc);
   const editorRef = useRef<Editor | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirtyState] = useState(false);
+  // 离开拦截读 ref：保存后紧接着 navigate 时，state 还没更新，读 state 会把这次跳转拦下来
+  const dirtyRef = useRef(false);
+  const setDirty = useCallback((v: boolean) => {
+    dirtyRef.current = v;
+    setDirtyState(v);
+  }, []);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(post ? new Date(post.updatedAt) : null);
   const [coverBusy, setCoverBusy] = useState(false);
@@ -120,7 +126,7 @@ function PostEditor({ post }: { post: Post | null }) {
         // 存满或隐私模式：不影响编辑
       }
     }, 800);
-  }, [key]);
+  }, [key, setDirty]);
   const metaRef = useRef(meta);
   metaRef.current = meta;
 
@@ -149,7 +155,7 @@ function PostEditor({ post }: { post: Post | null }) {
       },
       cancel: { label: "丢弃", onClick: () => localStorage.removeItem(key) },
     });
-  }, [key, post]);
+  }, [key, post, setDirty]);
 
   const save = useCallback(
     async (status?: Meta["status"]) => {
@@ -192,7 +198,7 @@ function PostEditor({ post }: { post: Post | null }) {
         setSaving(false);
       }
     },
-    [saving, post, key, qc, navigate],
+    [saving, post, key, qc, navigate, setDirty],
   );
 
   // ⌘S / Ctrl+S 保存
@@ -216,7 +222,7 @@ function PostEditor({ post }: { post: Post | null }) {
   }, [dirty]);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      dirty && currentLocation.pathname !== nextLocation.pathname,
+      dirtyRef.current && currentLocation.pathname !== nextLocation.pathname,
   );
   useEffect(() => {
     if (blocker.state !== "blocked") return;

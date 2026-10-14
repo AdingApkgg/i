@@ -36,7 +36,13 @@ function PageEditor({ page }: { page: Page }) {
   const qc = useQueryClient();
   const [title, setTitle] = useState(page.title);
   const docRef = useRef<RichDoc>((page.content as RichDoc | null) ?? emptyDoc());
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirtyState] = useState(false);
+  // 离开拦截读 ref：保存后紧接着 navigate 时，state 还没更新，读 state 会把这次跳转拦下来
+  const dirtyRef = useRef(false);
+  const setDirty = useCallback((v: boolean) => {
+    dirtyRef.current = v;
+    setDirtyState(v);
+  }, []);
   const [saving, setSaving] = useState(false);
   const legacyOnly = !page.content && !!page.contentMd;
 
@@ -57,7 +63,7 @@ function PageEditor({ page }: { page: Page }) {
     } finally {
       setSaving(false);
     }
-  }, [saving, page, title, qc]);
+  }, [saving, page, title, qc, setDirty]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -78,7 +84,7 @@ function PageEditor({ page }: { page: Page }) {
   }, [dirty]);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      dirty && currentLocation.pathname !== nextLocation.pathname,
+      dirtyRef.current && currentLocation.pathname !== nextLocation.pathname,
   );
   useEffect(() => {
     if (blocker.state !== "blocked") return;
