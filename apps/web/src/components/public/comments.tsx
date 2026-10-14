@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Send, Trash2 } from "lucide-react";
+import { LoaderCircle, LogOut, Send, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -91,7 +91,11 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
               size="sm"
               disabled={create.isPending || !watch("contentMd").trim()}
             >
-              <Send className="size-3.5" />
+              {create.isPending ? (
+                <LoaderCircle className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5" />
+              )}
               {create.isPending ? "发送中…" : "发送"}
             </Button>
             <button
@@ -110,7 +114,8 @@ export function Comments({ path, postId }: { path: string; postId?: string }) {
 
       <div className="mt-5 space-y-3">
         {comments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            {isLoading && <LoaderCircle className="size-3.5 animate-spin" />}
             {isLoading ? "评论加载中…" : "还没有评论，来说点什么吧 ✿"}
           </p>
         ) : (

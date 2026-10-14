@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
-import { Send } from "lucide-react";
+import { LoaderCircle, Send } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -141,7 +141,11 @@ export function FriendApply({
               </div>
               <div className="flex gap-2 sm:col-span-2">
                 <Button type="submit" size="sm" disabled={isSubmitting}>
-                  <Send className="size-3.5" />
+                  {isSubmitting ? (
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                  ) : (
+                    <Send className="size-3.5" />
+                  )}
                   {isSubmitting ? "提交中…" : "提交申请"}
                 </Button>
                 <Button

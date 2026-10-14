@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody } from "@i/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Save } from "lucide-react";
+import { LoaderCircle, RefreshCw, Save } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -167,7 +167,7 @@ export default function MaimaiAdmin() {
           <div className="flex gap-2">
             <Button onClick={() => void submit()} disabled={save.isPending} variant="soft">
               {save.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
+                <LoaderCircle className="size-4 animate-spin" />
               ) : (
                 <Save className="size-4" />
               )}

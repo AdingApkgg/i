@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { LoaderCircle, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useId, useMemo, useRef, useState } from "react";
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
@@ -120,7 +120,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
                     </div>
                     <div className="flex gap-2">
                       <Button type="submit" disabled={saving}>
-                        {saving && <Loader2 className="size-4 animate-spin" />}
+                        {saving && <LoaderCircle className="size-4 animate-spin" />}
                         {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
                       </Button>
                       <Button
@@ -380,7 +380,7 @@ function ImageField({
             disabled={uploading}
           >
             {uploading ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <LoaderCircle className="size-3.5 animate-spin" />
             ) : (
               <Upload className="size-3.5" />
             )}

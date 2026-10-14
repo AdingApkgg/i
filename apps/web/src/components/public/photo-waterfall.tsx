@@ -7,6 +7,7 @@
  * - 服务端预取失败时 initial 传 null，由客户端查询接管（可重试，而非误报空相册）
  */
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { LoaderCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyCard } from "@/components/public/collection";
 import { PhotoLightbox } from "@/components/public/photo-lightbox";
@@ -147,7 +148,13 @@ export function PhotoWaterfall({
     return () => io.disconnect();
   }, [hasNextPage, fetchNextPage, items.length, isFetchingNextPage]);
 
-  if (isPending) return <p className="py-10 text-center text-sm text-muted-foreground">加载中…</p>;
+  if (isPending)
+    return (
+      <p className="flex items-center justify-center gap-1.5 py-10 text-sm text-muted-foreground">
+        <LoaderCircle className="size-4 animate-spin" />
+        加载中…
+      </p>
+    );
   if (isError && items.length === 0)
     return <EmptyCard>照片加载失败了，稍后刷新再试试 ᐕ)⁾⁾</EmptyCard>;
   if (items.length === 0)
@@ -208,7 +215,10 @@ export function PhotoWaterfall({
       </div>
       <div ref={sentinelRef} className="h-px" />
       {isFetchingNextPage ? (
-        <p className="py-6 text-center text-xs text-muted-foreground">加载中…</p>
+        <p className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground">
+          <LoaderCircle className="size-3.5 animate-spin" />
+          加载中…
+        </p>
       ) : hasNextPage ? null : (
         <p className="py-6 text-center text-xs text-muted-foreground">已经到底啦 ✿</p>
       )}

@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { data, Link } from "react-router";
 import { PhotoWaterfall } from "@/components/public/photo-waterfall";
 import { PageTitle } from "@/components/public/site-header";
@@ -53,8 +54,12 @@ export default function AlbumPage({ loaderData }: Route.ComponentProps) {
   return (
     <>
       <div className="mb-2">
-        <Link to="/gallery" className="text-xs text-muted-foreground transition hover:text-primary">
-          ← 相册
+        <Link
+          to="/gallery"
+          className="group inline-flex items-center gap-1 text-xs text-muted-foreground transition hover:text-primary"
+        >
+          <ArrowLeft className="size-3 transition-transform group-hover:-translate-x-0.5" />
+          相册
         </Link>
       </div>
       <PageTitle title={name} subtitle={description || `${count} 张照片`} />

@@ -1,7 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Mail, Pencil, Plus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
+import {
+  Check,
+  LoaderCircle,
+  Mail,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -291,7 +301,7 @@ export function FriendsAdmin() {
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" size="sm" disabled={saving}>
-                      {saving && <Loader2 className="size-3.5 animate-spin" />}
+                      {saving && <LoaderCircle className="size-3.5 animate-spin" />}
                       {editing === "new" ? "创建" : "保存修改"}
                     </Button>
                     <Button

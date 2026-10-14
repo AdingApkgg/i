@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { FadeIn } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
@@ -37,9 +38,10 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
           </Link>
           <Link
             to={href}
-            className="shrink-0 text-xs text-muted-foreground transition hover:text-primary"
+            className="group inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition hover:text-primary"
           >
-            查看全部 →
+            查看全部
+            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
         {section.description && (
