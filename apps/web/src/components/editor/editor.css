@@ -1,0 +1,179 @@
+/* 编辑器专属样式（只随后台编辑页加载）。正文排版沿用 .prose-content（globals.css）。 */
+
+.rich-editor > * + * {
+  margin-top: 0.85em;
+}
+.rich-editor h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.rich-editor h2 {
+  margin-top: 1.4em;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.rich-editor h3 {
+  margin-top: 1.2em;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.rich-editor a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.rich-editor blockquote {
+  border-left: 2px solid var(--primary);
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+}
+.rich-editor ul:not([data-type="taskList"]) {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.rich-editor ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.rich-editor :not(pre) > code {
+  border-radius: 0.25rem;
+  background: var(--soft, var(--muted));
+  padding: 0.1rem 0.35rem;
+  font-size: 13px;
+}
+
+/* 空段落的占位提示 */
+.rich-editor p.is-empty::before,
+.rich-editor h1.is-empty::before,
+.rich-editor h2.is-empty::before,
+.rich-editor h3.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--muted-foreground) 70%, transparent);
+}
+
+/* 选中的原子节点（图片、公式、按钮等） */
+.rich-editor .ProseMirror-selectednode {
+  outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.rich-editor .ProseMirror-gapcursor::after {
+  border-top-color: var(--foreground);
+}
+
+/* 折叠块（官方 Details 的 DOM） */
+.rich-editor [data-type="details"] {
+  display: flex;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  background: var(--card);
+}
+.rich-editor [data-type="details"] > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.5rem;
+  color: var(--muted-foreground);
+}
+.rich-editor [data-type="details"] > button::before {
+  content: "▸";
+  transition: transform 150ms;
+}
+.rich-editor [data-type="details"].is-open > button::before {
+  transform: rotate(90deg);
+}
+.rich-editor [data-type="details"] > div {
+  flex: 1;
+}
+.rich-editor [data-type="details"] summary {
+  font-weight: 500;
+  list-style: none;
+}
+.rich-editor [data-type="detailsContent"] {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+.rich-editor [data-type="details"]:not(.is-open) [data-type="detailsContent"] {
+  display: none;
+}
+
+/* 待办清单 */
+.rich-editor ul[data-type="taskList"] {
+  padding-left: 0.25rem;
+}
+.rich-editor ul[data-type="taskList"] li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.rich-editor ul[data-type="taskList"] li > label {
+  margin-top: 0.3em;
+  user-select: none;
+}
+.rich-editor ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+.rich-editor ul[data-type="taskList"] input[type="checkbox"] {
+  accent-color: var(--primary);
+}
+
+/* 表格（可拖动列宽） */
+.rich-editor table {
+  table-layout: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+.rich-editor td,
+.rich-editor th {
+  position: relative;
+  min-width: 3em;
+}
+.rich-editor .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.rich-editor .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  pointer-events: none;
+  background-color: var(--primary);
+}
+.rich-editor.resize-cursor,
+.resize-cursor {
+  cursor: col-resize;
+}
+.rich-editor .tableWrapper {
+  overflow-x: auto;
+}
+
+/* 公式 */
+.rich-editor [data-type="inline-math"],
+.rich-editor [data-type="block-math"] {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.rich-editor [data-type="inline-math"]:hover,
+.rich-editor [data-type="block-math"]:hover {
+  background: var(--muted);
+}
+.rich-editor [data-type="block-math"] {
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+/* 拖拽手柄 */
+.drag-handle {
+  transition: opacity 120ms;
+}

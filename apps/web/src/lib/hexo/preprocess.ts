@@ -1,6 +1,6 @@
 /**
  * Convert Butterfly/Hexo tag-plugins in the imported markdown into JSX that MDX
- * can compile against our component map (see components/hexo/*). Children that
+ * can compile against our component map (see components/content/blocks/*). Children that
  * should stay markdown are wrapped in blank lines so MDX re-parses them.
  *
  * Emitted contract (must match the components):
@@ -39,11 +39,34 @@ function replacePaired(
   name: string,
   fn: (args: string, body: string) => string,
 ): string {
-  const re = new RegExp(`\\{%\\s*${name}([^%]*)%\\}([\\s\\S]*?)\\{%\\s*end${name}\\s*%\\}`, "g");
+  // 参数里可能有 %（「卡 45%」、带 %xx 的地址），所以匹配到 %} 为止而不是 [^%]*；
+  // 名字后不能紧跟字母，否则 gallery 会吃掉 galleryGroup
+  const re = new RegExp(
+    `\\{%\\s*${name}(?![A-Za-z])((?:(?!%\\}).)*?)%\\}([\\s\\S]*?)\\{%\\s*end${name}\\s*%\\}`,
+    "g",
+  );
   return src.replace(re, (_m, args, body) => fn(String(args).trim(), String(body)));
 }
 
+/**
+ * 代码块和行内代码里的内容要原样保留（演示标签语法的文章会在代码里写 `{% gallery %}`），
+ * 处理前先换成占位符，最后再还原。
+ */
+function protectCode(input: string): { text: string; restore: (s: string) => string } {
+  const saved: string[] = [];
+  const hold = (m: string) => `\uE000${saved.push(m) - 1}\uE000`;
+  const text = input
+    .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\1[ \t]*$/gm, hold)
+    .replace(/`[^`\n]+`/g, hold);
+  return { text, restore: (s) => s.replace(/\uE000(\d+)\uE000/g, (_m, i) => saved[Number(i)]!) };
+}
+
 export function hexoToMdx(input: string): string {
+  const code = protectCode(input);
+  return code.restore(transform(code.text));
+}
+
+function transform(input: string): string {
   let s = input;
 
   // ---- tabs (contains <!-- tab X --> … <!-- endtab? --> markers) ----
@@ -118,18 +141,18 @@ export function hexoToMdx(input: string): string {
 
   // ---- self-closing tags ----
   // btn: {% btn 'url',text,icon,variant %}
-  s = s.replace(/\{%\s*btn\s+([^%]*?)\s*%\}/g, (_m, a) => {
+  s = s.replace(/\{%\s*btn\s+((?:(?!%\}).)*?)\s*%\}/g, (_m, a) => {
     const [url = "", text = "", icon = "", variant = ""] = splitArgs(a);
     return `<Btn url="${attr(resolveImg(url))}" text="${attr(text)}" icon="${attr(icon)}" variant="${attr(variant)}" />`;
   });
   // dplayer: {% dplayer "url=..." "pic=..." ... %}
-  s = s.replace(/\{%\s*dplayer\s+([^%]*?)\s*%\}/g, (_m, a) => {
+  s = s.replace(/\{%\s*dplayer\s+((?:(?!%\}).)*?)\s*%\}/g, (_m, a) => {
     const url = /url=([^"'\s]+)/.exec(a)?.[1] ?? "";
     const pic = /pic=([^"'\s]+)/.exec(a)?.[1] ?? "";
     return `\n\n<DPlayer url="${attr(url)}" pic="${attr(resolveImg(pic))}" />\n\n`;
   });
   // galleryGroup: {% galleryGroup 'name' 'desc' 'url' cover %}
-  s = s.replace(/\{%\s*galleryGroup\s+([^%]*?)\s*%\}/g, (_m, a) => {
+  s = s.replace(/\{%\s*galleryGroup\s+((?:(?!%\}).)*?)\s*%\}/g, (_m, a) => {
     const m = a.match(/'([^']*)'\s+'([^']*)'\s+'?([^\s']*)'?\s+(\S+)/);
     if (!m) return "";
     return `<GalleryGroup name="${attr(m[1])}" desc="${attr(m[2])}" url="${attr(m[3])}" cover="${attr(resolveImg(m[4]))}" />`;
@@ -142,7 +165,9 @@ export function hexoToMdx(input: string): string {
   });
 
   // Any leftover unknown {% tag %} → strip (avoid breaking MDX)
-  s = s.replace(/\{%[^%]*%\}/g, "");
+  s = s.replace(/\{%[\s\S]*?%\}/g, "");
+  // 剩下的 HTML 注释（不成对的 tab 标记等）MDX 不认，直接去掉
+  s = s.replace(/<!--[\s\S]*?-->/g, "");
 
   // ---- harden remaining raw HTML so MDX doesn't choke ----
   s = s.replace(/\bclass=/g, "className=");

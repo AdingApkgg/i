@@ -3,6 +3,7 @@ import {
   Activity,
   Camera,
   Disc3,
+  FileText,
   Film,
   Gamepad2,
   Images,
@@ -86,10 +87,11 @@ export function DashShell({ userName, children }: { userName: string; children: 
             item(
               `/dash/${k}`,
               ADMIN_FIELDS[k]?.label ?? k,
-              pathname === `/dash/${k}`,
+              pathname === `/dash/${k}` || pathname.startsWith(`/dash/${k}/`),
               DOMAIN_ICONS[k] ?? PenLine,
             ),
           )}
+          {item("/dash/pages", "整页", pathname.startsWith("/dash/pages"), FileText)}
           {item("/dash/settings", "设置", pathname === "/dash/settings", Settings)}
         </nav>
         <div className="mt-6 border-t border-border px-3 pt-4">

@@ -18,11 +18,15 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+/** 富文本正文：Tiptap / ProseMirror 文档 JSON（schema 见 apps/web/src/lib/content） */
+export type RichDocJson = { type: "doc"; content?: unknown[] };
 
 const ts = (name: string) => timestamp(name, { precision: 3, mode: "date" });
 
@@ -123,7 +127,9 @@ export const post = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     excerpt: text("excerpt"),
-    contentMd: text("contentMd").notNull(),
+    // 旧 Hexo Markdown，迁移到 content 后只作备份，确认无误后删除
+    contentMd: text("contentMd"),
+    content: jsonb("content").$type<RichDocJson>(),
     coverUrl: text("coverUrl"),
     // 可空数组（沿用 Prisma 建的列）。默认值放应用层：drizzle-kit 0.31 内省数组默认值有 bug
     // （`ARRAY[]::text[]` / `'{}'` 都会被判为有差异），放库里会导致每次 push 都重设一遍
@@ -315,7 +321,9 @@ export const photo = pgTable(
 export const page = pgTable("Page", {
   id: text("id").primaryKey(), // "music" | "movie" | ...
   title: text("title").notNull(),
-  contentMd: text("contentMd").notNull(),
+  // 旧 Hexo Markdown，迁移到 content 后只作备份，确认无误后删除
+  contentMd: text("contentMd"),
+  content: jsonb("content").$type<RichDocJson>(),
   updatedAt: updatedAt(),
 });
 

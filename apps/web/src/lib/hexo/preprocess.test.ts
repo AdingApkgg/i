@@ -80,3 +80,24 @@ describe("hexoToMdx", () => {
     );
   });
 });
+
+describe("hexoToMdx 边界情况", () => {
+  it("代码块里的标签语法原样保留", () => {
+    const src = "```md\n{% note info %}\n示例\n{% endnote %}\n```";
+    expect(hexoToMdx(src)).toBe(src);
+  });
+
+  it("gallery 不会吞掉 galleryGroup", () => {
+    const out = hexoToMdx(
+      "{% galleryGroup 'a' 'b' '/x' https://x/c.png %}\n\n{% gallery %}\n![](https://x/1.png)\n{% endgallery %}",
+    );
+    expect(out).toContain("<GalleryGroup");
+    expect(out).toContain("<Gallery>");
+  });
+
+  it("参数里带 % 也能识别", () => {
+    expect(hexoToMdx("{% hideToggle 卡在 45%,red %}\n内容\n{% endhideToggle %}")).toContain(
+      '<HideToggle title="卡在 45%"',
+    );
+  });
+});
