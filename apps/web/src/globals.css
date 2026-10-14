@@ -95,3 +95,31 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+/* 路由切换进度条（components/nav-progress.tsx）：忙时延迟 150ms 出现并缓慢推进到 92%，
+   完成时撤掉动画、瞬间补满再淡出。只动 transform / opacity，不触发重排。 */
+.nav-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  height: 2px;
+  background-color: var(--primary);
+  transform-origin: left;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease 100ms;
+}
+.nav-progress.is-busy {
+  opacity: 1;
+  transition: opacity 150ms ease 150ms;
+  animation: nav-progress 8s cubic-bezier(0.1, 0.7, 0.2, 1) 150ms both;
+}
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}

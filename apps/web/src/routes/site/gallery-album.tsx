@@ -55,6 +55,7 @@ export default function AlbumPage({ loaderData }: Route.ComponentProps) {
     <>
       <div className="mb-2">
         <Link
+          prefetch="intent"
           to="/gallery"
           className="group inline-flex items-center gap-1 text-xs text-muted-foreground transition hover:text-primary"
         >

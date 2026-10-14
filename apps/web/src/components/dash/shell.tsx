@@ -50,6 +50,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
 
   const item = (href: string, label: string, active: boolean, Icon: LucideIcon) => (
     <Link
+      prefetch="intent"
       key={href}
       to={href}
       className={cn(
@@ -76,7 +77,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
   return (
     <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
       <aside className="w-44 shrink-0">
-        <Link to="/" className="mb-4 block px-3 text-lg font-bold">
+        <Link prefetch="intent" to="/" className="mb-4 block px-3 text-lg font-bold">
           i · 后台
         </Link>
         <nav className="space-y-1">
