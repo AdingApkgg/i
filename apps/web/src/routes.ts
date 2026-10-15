@@ -30,6 +30,10 @@ export default [
     route("login", "routes/dash/login.tsx"),
     layout("routes/dash/layout.tsx", [
       index("routes/dash/home.tsx"),
+      route("blog", "routes/dash/blog.tsx"),
+      route("blog/:id", "routes/dash/blog-edit.tsx"),
+      route("pages", "routes/dash/pages.tsx"),
+      route("pages/:id", "routes/dash/page-edit.tsx"),
       route("friends", "routes/dash/friends.tsx"),
       route("gallery", "routes/dash/gallery.tsx"),
       route("maimai", "routes/dash/maimai.tsx"),

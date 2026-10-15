@@ -14,6 +14,7 @@
 - **样式**: Tailwind v4 + shadcn/Radix · 萌系粉调 + Live2D 看板娘
 - **代码风格**: Biome
 - **对象存储**: SeaweedFS(S3 网关,相册上传)· aws4fetch · sharp 缩略图(WebP,按需生成)
+- **富文本**: Tiptap 3（后台编辑器，只在后台懒加载）· 正文存 Tiptap JSON（jsonb）· 前台自写 JSON → React 渲染，lowlight 代码高亮 + KaTeX 公式在服务端预渲染
 - **测试**: Vitest(单测,PGlite)+ Playwright(浏览器端到端)
 - **部署**: Docker compose + Caddy + Cloudflare Tunnel(自托管 VPS)
 
@@ -207,6 +208,25 @@ docker compose -f compose.prod.yaml --profile legacy stop minio
 
 确认相册图片都正常后，可从 `compose.prod.yaml` 删掉 `minio` / `storage-migrate` 两个服务，
 再 `docker volume rm iv2-prod_minio` 释放空间。
+
+### 正文迁移：Hexo Markdown → 富文本（一次性）
+
+博客文章和整页（/music、/movie）的正文从 `contentMd`（Hexo Markdown）改为 `content`（Tiptap JSON，
+schema 见 `apps/web/src/lib/content/extensions.ts`）。Hexo 标签（note、tabs、hideToggle、btn、gallery、
+galleryGroup、timeline、dplayer、meting）都转成对应的自定义块，后台可视化编辑。
+迁移前前台按记录是否有 `content` 自动选择新旧渲染，部署和迁移之间不用停机。
+
+```bash
+# 在服务器上（生产栈已部署新版本、数据库迁移已加好 content 列）
+# .env 里的 DATABASE_URL 指向 compose 网络里的 db
+docker run --rm --network iv2-prod_default --env-file .env \
+  -v "$PWD":/app -v iv2-prod_prod_node_modules:/app/node_modules -w /app/apps/web \
+  oven/bun:1.4.3 bun scripts/migrate-rich-content.ts            # 演练：转换 + 校验 + 报告，不写库
+#   … migrate-rich-content.ts --write                              # 写入（已有 content 的跳过）
+```
+
+每篇都按 schema 校验，并对比转换前后的纯文本和各类块的数量；任何一篇不合法就整体不写。
+`contentMd` 原样保留作备份，确认前台都正常后再删列。
 
 ## 依赖升级
 

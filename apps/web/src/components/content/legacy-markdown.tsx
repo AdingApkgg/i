@@ -3,15 +3,15 @@ import * as runtime from "react/jsx-runtime";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { thumbProps } from "@/lib/thumb";
-import { Btn } from "./btn";
-import { DPlayer } from "./dplayer";
-import { Gallery } from "./gallery";
-import { GalleryGroup } from "./gallery-group";
-import { HideToggle } from "./hide-toggle";
-import { Meting } from "./meting";
-import { Note } from "./note";
-import { Tab, Tabs } from "./tabs";
-import { Timeline, TimelineItem } from "./timeline";
+import { Btn } from "./blocks/btn";
+import { DPlayer } from "./blocks/dplayer";
+import { Gallery } from "./blocks/gallery";
+import { GalleryGroup } from "./blocks/gallery-group";
+import { HideToggle } from "./blocks/hide-toggle";
+import { Meting } from "./blocks/meting";
+import { Note } from "./blocks/note";
+import { Tab, Tabs } from "./blocks/tabs";
+import { Timeline, TimelineItem } from "./blocks/timeline";
 
 // biome-ignore lint/suspicious/noExplicitAny: MDX component map is loosely typed
 const components: Record<string, any> = {

@@ -99,20 +99,36 @@ test.describe("后台（已登录）", () => {
     await expect(page.getByText("填一下水鱼用户名")).toBeVisible();
   });
 
-  test("博客草稿：后台列表里能看到，前台看不到", async ({ page }) => {
-    const title = `e2e 草稿 ${Date.now()}`;
+  test("博客草稿：富文本编辑器写入，后台列表里能看到，前台列表看不到、凭 slug 能预览", async ({
+    page,
+  }) => {
+    const run = Date.now();
+    const title = `e2e 草稿 ${run}`;
+    const slug = `e2e-draft-${run}`;
     await page.goto("/dash/blog");
-    await page.getByRole("button", { name: /新建/ }).click();
-    await page.getByLabel("Slug").fill(`e2e-draft-${Date.now()}`);
-    await page.getByLabel("标题").fill(title);
-    await page.getByLabel("正文").fill("草稿正文");
-    await page.getByRole("button", { name: "创建" }).click();
-    await expect(page.getByText("已保存")).toBeVisible();
-    await expect(page.getByRole("cell", { name: title })).toBeVisible();
+    await page.getByRole("link", { name: /写文章/ }).click();
+    await page.getByPlaceholder("标题").fill(title);
+    await page.getByLabel(/Slug/).fill(slug);
+    // 编辑器懒加载，等正文区域出现再输入；加粗一段验证工具栏
+    const body = page.locator(".ProseMirror");
+    await body.click();
+    await page.keyboard.type("草稿正文");
+    await page.keyboard.press("ControlOrMeta+B");
+    await page.keyboard.type("加粗");
+    await page.getByRole("button", { name: "保存", exact: true }).click();
+    await expect(page.getByText("已保存 ✿")).toBeVisible();
+    await expect(page).toHaveURL(/\/dash\/blog\/(?!new)/);
+
+    await page.goto("/dash/blog");
+    await expect(page.getByRole("link", { name: title })).toBeVisible();
 
     await page.goto("/blog");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(page.getByText(title)).toHaveCount(0);
+
+    await page.goto(`/blog/${slug}`);
+    await expect(page.locator("article strong", { hasText: "加粗" })).toBeVisible();
+    await expect(page.getByText("草稿正文")).toBeVisible();
   });
 
   test("评论：发表 → 删除", async ({ page }) => {

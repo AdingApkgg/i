@@ -22,7 +22,7 @@ export function HideToggle({
   color,
   children,
 }: {
-  title?: string;
+  title?: React.ReactNode;
   color?: string;
   children?: React.ReactNode;
 }) {

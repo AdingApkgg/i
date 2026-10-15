@@ -44,9 +44,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     fields: [
       { name: "slug", label: "Slug", type: "text", required: true, placeholder: "hello-world" },
       { name: "title", label: "标题", type: "text", required: true },
-      { name: "excerpt", label: "摘要", type: "textarea" },
-      { name: "contentMd", label: "正文 (Markdown)", type: "textarea", required: true },
-      cover,
+      // 正文、摘要、封面在独立的富文本编辑页（routes/dash/blog-edit.tsx）里编辑
       {
         name: "status",
         label: "状态",

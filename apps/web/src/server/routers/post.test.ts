@@ -26,6 +26,11 @@ const getPost = (id: string) =>
 
 const OLD_DATE = new Date("2021-05-01T08:00:00.000Z");
 
+const doc = (text: string) => ({
+  type: "doc" as const,
+  content: [{ type: "paragraph", content: [{ type: "text", text }] }],
+});
+
 /** 模拟从旧博客导入的已发布文章：带标签、带原始发布日期 */
 const seedImported = () =>
   t.db
@@ -60,9 +65,10 @@ describe("blog.list", () => {
     const rows = await call(postRouter.list, undefined, anon());
     expect(rows.map((r) => r.slug)).toEqual(["pub"]);
     expect(rows[0]).not.toHaveProperty("contentMd");
+    expect(rows[0]).not.toHaveProperty("content");
   });
 
-  it("includeDrafts：访客 / 普通用户 FORBIDDEN，管理员拿到含草稿的完整记录", async () => {
+  it("includeDrafts：访客 / 普通用户 FORBIDDEN，管理员拿到含草稿的列表（同样不带正文）", async () => {
     await seed();
     await expect(call(postRouter.list, { includeDrafts: true }, anon())).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -76,7 +82,8 @@ describe("blog.list", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     const rows = await call(postRouter.list, { includeDrafts: true }, admin());
     expect(rows.map((r) => r.slug).sort()).toEqual(["draft", "pub"]);
-    expect(rows.find((r) => r.slug === "draft")).toMatchObject({ contentMd: "正文 B" });
+    expect(rows.find((r) => r.slug === "draft")).not.toHaveProperty("content");
+    expect(rows.find((r) => r.slug === "draft")).not.toHaveProperty("contentMd");
   });
 });
 
@@ -91,7 +98,7 @@ describe("blog.update", () => {
         slug: "imported",
         title: "旧文章（修了错别字）",
         excerpt: "",
-        contentMd: "正文",
+        content: doc("正文"),
         coverUrl: "",
         status: "published",
       },
@@ -112,7 +119,7 @@ describe("blog.update", () => {
   it("草稿首次发布时写入发布时间；之后再保存不再改动", async () => {
     const draft = await call(
       postRouter.create,
-      { slug: "draft", title: "草稿", contentMd: "x" },
+      { slug: "draft", title: "草稿", content: doc("x") },
       admin(),
     );
     expect(draft).toMatchObject({ status: "draft", publishedAt: null, tags: [] });
@@ -133,6 +140,44 @@ describe("blog.update", () => {
     const p = await seedImported();
     await call(postRouter.update, { id: p.id, tags: ["新标签"] }, admin());
     expect((await getPost(p.id)).tags).toEqual(["新标签"]);
+  });
+});
+
+describe("blog 正文（富文本）", () => {
+  it("byId 只给管理员，返回完整正文", async () => {
+    const p = await call(
+      postRouter.create,
+      { slug: "a", title: "A", content: doc("你好") },
+      admin(),
+    );
+    await expect(
+      call(postRouter.byId, { id: p.id }, { context: makeContext(t.db) }),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const row = await call(postRouter.byId, { id: p.id }, admin());
+    expect(row.content).toEqual(doc("你好"));
+  });
+
+  it("不符合 schema 的正文被拒绝", async () => {
+    const bad = { type: "doc", content: [{ type: "notANode" }] };
+    await expect(
+      call(postRouter.create, { slug: "b", title: "B", content: bad as never }, admin()),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      call(
+        postRouter.create,
+        { slug: "b", title: "B", content: { type: "paragraph" } as never },
+        admin(),
+      ),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("没填摘要时从正文生成", async () => {
+    const p = await call(
+      postRouter.create,
+      { slug: "c", title: "C", content: doc("这是第一段正文"), excerpt: "" },
+      admin(),
+    );
+    expect(p.excerpt).toBe("这是第一段正文");
   });
 });
 
