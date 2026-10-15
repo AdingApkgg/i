@@ -14,6 +14,7 @@ import {
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate } from "react-router";
 import { toast } from "sonner";
+import { ContentExportMenu } from "@/components/dash/content-export";
 import { pickImages, uploadImage } from "@/components/editor/upload";
 import { emptyDoc, type RichDoc } from "@/lib/content/types";
 import { client } from "@/lib/orpc/client";
@@ -248,7 +249,7 @@ function PostEditor({ post }: { post: Post | null }) {
   return (
     <div className="-mt-2">
       {/* 顶栏 */}
-      <div className="sticky top-0 z-30 -mx-4 mb-4 flex items-center gap-2 border-b border-border bg-background/90 px-4 py-2 backdrop-blur">
+      <div className="sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-2 border-b border-border bg-background/90 px-4 py-2 backdrop-blur">
         <Link
           prefetch="intent"
           to="/dash/blog"
@@ -273,7 +274,8 @@ function PostEditor({ post }: { post: Post | null }) {
                 ? `已保存 ${savedAt.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`
                 : ""}
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+          {post && <ContentExportMenu kind="post" id={post.id} disabled={dirty || saving} />}
           {post && (
             <Button variant="ghost" size="sm" asChild>
               <a href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">

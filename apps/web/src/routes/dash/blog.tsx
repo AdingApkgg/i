@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { ContentBackupButton } from "@/components/dash/content-export";
 import { formatDate } from "@/lib/format";
 import { client } from "@/lib/orpc/client";
 import { seo } from "@/lib/seo";
@@ -38,13 +39,16 @@ export default function DashBlog() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">博客</h1>
-        <Button asChild>
-          <Link prefetch="intent" to="/dash/blog/new">
-            <Plus className="size-4" /> 写文章
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ContentBackupButton />
+          <Button asChild>
+            <Link prefetch="intent" to="/dash/blog/new">
+              <Plus className="size-4" /> 写文章
+            </Link>
+          </Button>
+        </div>
       </div>
       <Card className="mt-4 overflow-hidden">
         {isLoading ? (
