@@ -13,6 +13,8 @@ import { Providers } from "@/components/providers";
 import { seo } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import type { Route } from "./+types/root";
+import "@vidstack/react/player/styles/default/theme.css";
+import "@vidstack/react/player/styles/default/layouts/video.css";
 import "./globals.css";
 
 export const links: Route.LinksFunction = () => [

@@ -50,6 +50,7 @@
     "@tiptap/starter-kit": "3.32.0",
     "@tiptap/suggestion": "3.32.0",
     "@tiptap/y-tiptap": "^3.0.10",
+    "@vidstack/react": "1.15.7",
     "aws4fetch": "1.0.20",
     "better-auth": "^1.6.2",
     "class-variance-authority": "^0.7.1",

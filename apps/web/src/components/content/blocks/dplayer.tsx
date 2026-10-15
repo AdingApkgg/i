@@ -1,127 +1,76 @@
 import { cn } from "@i/ui";
-import { ExternalLink, Play } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { isHLSProvider, MediaPlayer, MediaProvider, Poster } from "@vidstack/react";
+import { DefaultVideoLayout, defaultLayoutIcons } from "@vidstack/react/player/layouts/default";
+import { ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { videoTranslations } from "@/components/player/video-translations";
 
-/**
- * 懒加载 HLS (.m3u8) 视频播放器。
- * 先展示封面 + 播放按钮，点击后才挂载 <video> 并接入 hls.js（封面淡出交叉过渡）。
- */
+/** 保留旧标签名；媒体生命周期、HLS 和所有视频控制统一交给 Vidstack。 */
 export function DPlayer({ url, pic }: { url: string; pic?: string }) {
-  const [playing, setPlaying] = useState(false);
+  return <VideoPlayer key={url} url={url} pic={pic} />;
+}
+
+function VideoPlayer({ url, pic }: { url: string; pic?: string }) {
+  // Vidstack 的交互布局依赖 DOM；SSR 和首次水合先保留等尺寸封面。
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [failed, setFailed] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  useEffect(() => {
-    if (!playing) return;
-    const video = videoRef.current;
-    if (!video) return;
-
-    let hls: { destroy: () => void } | null = null;
-    let cancelled = false;
-
-    const attach = async () => {
-      try {
-        if (url.endsWith(".m3u8")) {
-          const { default: Hls } = await import("hls.js");
-          if (cancelled) return;
-          if (Hls.isSupported()) {
-            const instance = new Hls();
-            hls = instance;
-            instance.on(Hls.Events.ERROR, (_e, data) => {
-              if (data?.fatal) setFailed(true);
-            });
-            instance.loadSource(url);
-            instance.attachMedia(video);
-            return;
-          }
-        }
-        // 原生 HLS(Safari/iOS)或普通视频源
-        video.src = url;
-      } catch {
-        if (!cancelled) setFailed(true);
-      }
-    };
-
-    void attach();
-
-    return () => {
-      cancelled = true;
-      if (hls) {
-        try {
-          hls.destroy();
-        } catch {
-          /* noop */
-        }
-      }
-    };
-  }, [playing, url]);
-
+  const [attempt, setAttempt] = useState(0);
   const frame =
-    "relative aspect-video w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-soft";
-
-  if (failed) {
-    return (
-      <div className={cn(frame, "flex flex-col items-center justify-center gap-2 text-center")}>
-        <p className="text-sm text-muted-foreground">视频加载失败</p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-pill bg-card px-4 py-1.5 text-sm text-primary"
-        >
-          <ExternalLink className="size-3.5" /> 在新窗口打开
-        </a>
-      </div>
-    );
-  }
-
+    "relative aspect-video w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-black";
   return (
-    <div className={cn(frame, playing && "bg-black")}>
-      {playing && (
-        <motion.video
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          ref={videoRef}
-          controls
-          autoPlay
-          playsInline
+    <section aria-label="视频播放器" className={cn(frame, "my-5")}>
+      {failed ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-soft text-center">
+          <p className="text-sm text-muted-foreground">视频加载失败</p>
+          <div className="flex items-center gap-3 text-sm text-primary">
+            <button
+              type="button"
+              className="rounded-pill bg-card px-4 py-1.5"
+              onClick={() => {
+                setAttempt((n) => n + 1);
+                setFailed(false);
+              }}
+            >
+              重试
+            </button>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5"
+            >
+              <ExternalLink className="size-3.5" /> 在新窗口打开
+            </a>
+          </div>
+        </div>
+      ) : !mounted ? (
+        pic ? (
+          <img src={pic} alt="视频封面" className="size-full object-cover" />
+        ) : null
+      ) : (
+        <MediaPlayer
+          key={attempt}
+          title="视频"
+          src={/\.m3u8(?:[?#]|$)/i.test(url) ? { src: url, type: "application/x-mpegurl" } : url}
           poster={pic}
+          viewType="video"
+          load={attempt > 0 ? "eager" : "play"}
+          preload="none"
+          autoPlay={attempt > 0}
+          playsInline
+          onProviderChange={(provider) => {
+            if (isHLSProvider(provider)) provider.library = () => import("hls.js");
+          }}
           onError={() => setFailed(true)}
-          className="absolute inset-0 h-full w-full"
+          className="h-full w-full"
         >
-          <track kind="captions" />
-        </motion.video>
+          <MediaProvider>
+            <Poster className="vds-poster" alt="视频封面" />
+          </MediaProvider>
+          <DefaultVideoLayout icons={defaultLayoutIcons} translations={videoTranslations} />
+        </MediaPlayer>
       )}
-      <AnimatePresence>
-        {!playing && (
-          <motion.button
-            key="poster"
-            type="button"
-            onClick={() => setPlaying(true)}
-            aria-label="播放视频"
-            exit={{ opacity: 0, scale: 1.03 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="group absolute inset-0 block cursor-pointer"
-          >
-            {pic ? (
-              <img
-                src={pic}
-                alt="视频封面"
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <div className="h-full w-full bg-soft" />
-            )}
-            <span className="absolute inset-0 flex items-center justify-center bg-black/25 transition-colors group-hover:bg-black/35">
-              <span className="flex h-16 w-16 items-center justify-center rounded-pill bg-card/90 text-primary shadow-lg backdrop-blur transition-transform group-hover:scale-110">
-                <Play aria-hidden className="ml-1 h-7 w-7 fill-current" />
-              </span>
-            </span>
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </div>
+    </section>
   );
 }

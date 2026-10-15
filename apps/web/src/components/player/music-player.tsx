@@ -1,5 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  isAudioProvider,
+  MediaPlayer,
+  type MediaPlayerInstance,
+  MediaProvider,
+  MuteButton,
+  PlayButton,
+  Time,
+  TimeSlider,
+  VolumeSlider,
+} from "@vidstack/react";
+import {
   ListMusic,
   Music2,
   Pause,
@@ -14,7 +25,7 @@ import {
  * 全站左下角音乐播放器 — 自写实现（不再用 APlayer），设计参考 adx-dl：
  * motion 驱动、音频响应视觉（低频光晕 + EQ 条，CORS 不允许时静默降级）、
  * 迷你旋转唱片 ↔ 展开面板（进度/音量/队列）。
- * 状态在 stores/player.ts（zustand）：这里负责 <audio> 元素、可视化和界面；
+ * 状态在 stores/player.ts（zustand）：这里负责 Vidstack 实例、可视化和界面；
  * 文章里的选播行直接调用 usePlayerStore 的 play() 换队列。
  */
 import {
@@ -27,14 +38,12 @@ import {
   useReducedMotion,
   useTransform,
 } from "motion/react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchMeting, type MetingSong } from "@/lib/meting";
 import { useCurrentSong, usePlayerStore } from "@/stores/player";
 
 /** 旧站左下角全局歌单 (netease). */
 const DEFAULT_PLAYLIST = "8932390";
-
-const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 // fftSize 256 → 128 bins；粗略对数分带（同 adx-dl）。
 const EQ_BANDS: ReadonlyArray<readonly [number, number]> = [
@@ -50,21 +59,40 @@ const LOW_BINS = 8;
 const setPlayer = usePlayerStore.setState;
 
 export function MusicPlayer() {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    void Promise.resolve(usePlayerStore.persist.rehydrate()).then(() => setReady(true));
+  }, []);
+  // 先恢复偏好再挂载 Vidstack，避免初始音量事件覆盖尚未读取的偏好。
+  return ready ? <MusicPlayerReady /> : null;
+}
+
+function MusicPlayerReady() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<MediaPlayerInstance | null>(null);
+  const intent = useRef(false);
+  const appliedLoad = useRef(0);
+  const previousSource = useRef<string | undefined>(undefined);
+  const errorHandled = useRef(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(false);
   const current = useCurrentSong();
   const volume = usePlayerStore((s) => s.volume);
+  const muted = usePlayerStore((s) => s.muted);
   const load = usePlayerStore((s) => s.load);
+  const autoPlay = appliedLoad.current === load.seq ? intent.current : load.autoplay;
   const initQueue = usePlayerStore((s) => s.initQueue);
   const next = usePlayerStore((s) => s.next);
 
-  // 读回上次的音量；登记 <audio> 给 store 的 toggle / seek 用
   useEffect(() => {
-    void usePlayerStore.persist.rehydrate();
-    setPlayer({ audio: audioRef.current });
     return () => {
-      setPlayer({ audio: null, playing: false });
+      setPlayer({ playing: false });
     };
   }, []);
+  const source = useMemo(
+    () => ({ src: current?.url ?? "", type: "audio/mpeg" as const }),
+    [current?.url],
+  );
 
   // ---- 默认歌单（随机顺序，不自动播放；元数据不会变，永不过期）----
   const { data: playlist } = useQuery({
@@ -76,18 +104,23 @@ export function MusicPlayer() {
     if (playlist) initQueue(playlist);
   }, [playlist, initQueue]);
 
-  // ---- 换歌：src 已随本次渲染更新，load 后按需播放 ----
+  // 新源由 Vidstack 自动加载；同 URL 重播也必须回到开头。
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || load.seq === 0) return;
-    audio.load();
-    if (load.autoplay) void audio.play().catch(() => setPlayer({ playing: false }));
-  }, [load]);
-
-  useEffect(() => {
-    const a = audioRef.current;
-    if (a) a.volume = volume;
-  }, [volume]);
+    setFailed(false);
+    errorHandled.current = false;
+    intent.current = load.autoplay;
+    appliedLoad.current = load.seq;
+    const player = playerRef.current;
+    const sameSource = previousSource.current === source.src;
+    previousSource.current = source.src;
+    if (!player || !load.seq) return;
+    // 新源由 Vidstack 归零；在 seekable 尚为空时主动 seek 会被误判为结束。
+    if (sameSource && player.state.canPlay) {
+      player.currentTime = 0;
+      player.paused = !load.autoplay;
+    } else if (!load.autoplay) player.paused = true;
+    if (load.autoplay) player.startLoading();
+  }, [load, source]);
 
   // ---- 音频响应视觉（adx-dl 式防御：CORS 不通则永久降级，绝不弄哑播放）----
   const reduced = useReducedMotion();
@@ -150,7 +183,7 @@ export function MusicPlayer() {
     try {
       ctx = new AudioContext();
       const head = await fetch(src, { method: "HEAD", mode: "cors" });
-      if (!head.ok) throw new Error("no cors");
+      if (!head.ok || audioRef.current !== audio || deadRef.current) throw new Error("no cors");
       const source = ctx.createMediaElementSource(audio);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
@@ -168,58 +201,94 @@ export function MusicPlayer() {
     }
   }, [reduced, startLoop]);
 
-  // Media Session 元数据（锁屏/系统媒体控制）
-  useEffect(() => {
-    if (!current || !("mediaSession" in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: current.name,
-      artist: current.artist,
-      artwork: current.pic ? [{ src: current.pic, sizes: "300x300" }] : [],
-    });
-  }, [current]);
+  const clearAnalyser = useCallback(() => {
+    stopLoop();
+    void audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    audioRef.current = null;
+    setAnalyserReady(false);
+  }, [stopLoop]);
+  useEffect(() => () => clearAnalyser(), [clearAnalyser]);
+
+  const handleError = useCallback(() => {
+    if (errorHandled.current) return;
+    errorHandled.current = true;
+    setPlayer({ playing: false });
+    if (corsMode) {
+      deadRef.current = true;
+      clearAnalyser();
+      setCorsMode(undefined);
+      setAttempt((n) => n + 1);
+    } else setFailed(true);
+  }, [corsMode, clearAnalyser]);
 
   return (
-    <>
-      {/* biome-ignore lint/a11y/useMediaCaption: music playback */}
-      <audio
-        ref={audioRef}
-        src={current?.url}
-        preload="none"
-        crossOrigin={corsMode}
-        onPlay={() => {
-          setPlayer({ playing: true });
-          void wireAnalyser();
-        }}
-        onPause={() => {
-          setPlayer({ playing: false });
-          stopLoop();
-        }}
-        onEnded={next}
-        onTimeUpdate={(e) => setPlayer({ time: e.currentTarget.currentTime })}
-        onDurationChange={(e) => setPlayer({ duration: e.currentTarget.duration || 0 })}
-        onError={() => {
-          // CORS 媒体请求被拒：退回普通请求（放弃可视化），播放不受影响。
-          if (audioRef.current?.crossOrigin === "anonymous" && !analyserRef.current) {
-            deadRef.current = true;
-            setCorsMode(undefined);
-            const resume = usePlayerStore.getState().playing;
-            requestAnimationFrame(() => {
-              const a = audioRef.current;
-              if (!a) return;
-              a.load();
-              if (resume) void a.play().catch(() => setPlayer({ playing: false }));
-            });
-          }
+    <MediaPlayer
+      key={`${corsMode ?? "no-cors"}-${attempt}`}
+      ref={playerRef}
+      aria-label="音乐播放器"
+      src={source}
+      title={current?.name ?? "音乐"}
+      artist={current?.artist}
+      artwork={current?.pic ? [{ src: current.pic }] : []}
+      viewType="audio"
+      streamType="on-demand"
+      load={attempt > 0 ? "eager" : "play"}
+      preload="auto"
+      volume={volume}
+      muted={muted}
+      autoPlay={autoPlay}
+      crossOrigin={corsMode}
+      onProviderChange={() => clearAnalyser()}
+      onProviderSetup={(provider) => {
+        errorHandled.current = false;
+        if (isAudioProvider(provider)) audioRef.current = provider.audio;
+      }}
+      onMediaPlayRequest={() => {
+        intent.current = true;
+      }}
+      onMediaPauseRequest={() => {
+        intent.current = false;
+      }}
+      onPlay={() => {
+        setPlayer({ playing: true });
+        void wireAnalyser();
+      }}
+      onPause={() => {
+        setPlayer({ playing: false });
+        stopLoop();
+      }}
+      onEnded={next}
+      onVolumeChange={({ volume, muted }) => setPlayer({ volume, muted })}
+      onError={handleError}
+      className="music-player"
+    >
+      {/* source 的网络错误不冒泡，需要捕获后再切换干净的 provider。 */}
+      <MediaProvider className="hidden" mediaProps={{ onErrorCapture: handleError }} />
+      <PlayerDock
+        visuals={{
+          analyserReady,
+          glowOpacity,
+          glowScale,
+          bars,
+          failed,
+          retry: () => {
+            setFailed(false);
+            intent.current = true;
+            setAttempt((n) => n + 1);
+          },
         }}
       />
-      <PlayerDock visuals={{ analyserReady, glowOpacity, glowScale, bars }} />
-    </>
+    </MediaPlayer>
   );
 }
 
 // ---------------- UI ----------------
 
 interface Visuals {
+  failed: boolean;
+  retry: () => void;
   analyserReady: boolean;
   glowOpacity: MotionValue<number>;
   glowScale: MotionValue<number>;
@@ -273,65 +342,60 @@ function Cover({ song, size, visuals }: { song: MetingSong; size: number; visual
 
 function MiniDisc({ song, visuals }: { song: MetingSong; visuals: Visuals }) {
   const playing = usePlayerStore((s) => s.playing);
-  const { expand, toggle } = usePlayerStore.getState();
+  const expand = usePlayerStore((s) => s.expand);
   return (
-    <motion.button
-      type="button"
-      onClick={expand}
-      title={`${song.name} — ${song.artist}`}
+    <motion.div
       initial={{ opacity: 0, scale: 0.6 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.6 }}
       transition={{ type: "spring", stiffness: 400, damping: 26 }}
-      className="group relative block"
+      className="relative"
     >
-      <Cover song={song} size={52} visuals={visuals} />
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: 嵌在外层按钮内（button 不能套 button），键盘走展开面板的播放键 */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: 同上 */}
-      <span
+      <button
+        type="button"
+        onClick={expand}
+        title={`${song.name} — ${song.artist}`}
+        aria-label="展开音乐播放器"
+        className="block"
+      >
+        <Cover song={song} size={52} visuals={visuals} />
+      </button>
+      <PlayButton
+        aria-label={playing ? "暂停" : "播放"}
         className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggle();
-        }}
       >
         {playing ? (
           <Pause className="size-3 fill-current" />
         ) : (
           <Play className="size-3 fill-current" />
         )}
-      </span>
-    </motion.button>
+      </PlayButton>
+    </motion.div>
   );
 }
 
 /** 进度条单独订阅 time，播放中每秒几次的更新只重绘这一小块 */
 function Progress() {
-  const time = usePlayerStore((s) => s.time);
-  const duration = usePlayerStore((s) => s.duration);
-  const seek = usePlayerStore((s) => s.seek);
   return (
     <div className="mt-3 flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
-      <span>{fmt(time)}</span>
-      <input
-        type="range"
-        min={0}
-        max={duration || 0}
-        step={1}
-        value={Math.min(time, duration || 0)}
-        onChange={(e) => seek(Number(e.target.value))}
-        className="h-1 flex-1 cursor-pointer accent-[var(--primary)]"
-      />
-      <span>{duration ? fmt(duration) : "-:--"}</span>
+      <Time type="current" />
+      <TimeSlider.Root aria-label="播放进度" className="music-slider flex-1">
+        <TimeSlider.Track className="music-slider-track">
+          <TimeSlider.Progress className="music-slider-buffer" />
+          <TimeSlider.TrackFill className="music-slider-fill" />
+        </TimeSlider.Track>
+        <TimeSlider.Thumb className="music-slider-thumb" />
+      </TimeSlider.Root>
+      <Time type="duration" />
     </div>
   );
 }
 
 function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }) {
   const playing = usePlayerStore((s) => s.playing);
-  const volume = usePlayerStore((s) => s.volume);
+  const muted = usePlayerStore((s) => s.muted || s.volume === 0);
   const showQueue = usePlayerStore((s) => s.showQueue);
-  const { collapse, toggle, next, prev, setVolume, toggleQueue } = usePlayerStore.getState();
+  const { collapse, next, prev, toggleQueue } = usePlayerStore.getState();
   return (
     <motion.div
       initial={{ opacity: 0, y: 16, scale: 0.92 }}
@@ -362,6 +426,7 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
         <button
           type="button"
           onClick={collapse}
+          aria-label="收起音乐播放器"
           className="grid size-6 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
         >
           <X className="size-3.5" />
@@ -369,6 +434,14 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
       </div>
 
       <Progress />
+      {visuals.failed && (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          音乐加载失败，
+          <button type="button" className="text-primary" onClick={visuals.retry}>
+            重试
+          </button>
+        </p>
+      )}
 
       {/* controls */}
       <div className="mt-2 flex items-center justify-between">
@@ -376,9 +449,8 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
           <IconBtn onClick={prev} label="上一首">
             <SkipBack className="size-4 fill-current" />
           </IconBtn>
-          <button
-            type="button"
-            onClick={toggle}
+          <PlayButton
+            aria-label={playing ? "暂停" : "播放"}
             className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm transition hover:brightness-105 active:scale-95"
           >
             {playing ? (
@@ -386,24 +458,25 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
             ) : (
               <Play className="size-4 fill-current" />
             )}
-          </button>
+          </PlayButton>
           <IconBtn onClick={next} label="下一首">
             <SkipForward className="size-4 fill-current" />
           </IconBtn>
         </div>
         <div className="flex items-center gap-1.5">
-          <IconBtn onClick={() => setVolume(volume > 0 ? 0 : 0.3)} label="静音">
-            {volume > 0 ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-          </IconBtn>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="h-1 w-14 cursor-pointer accent-[var(--primary)]"
-          />
+          <MuteButton
+            aria-label={muted ? "取消静音" : "静音"}
+            className="grid size-7 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+          >
+            <Volume2 className="size-4 [[data-muted]_&]:hidden" />
+            <VolumeX className="hidden size-4 [[data-muted]_&]:block" />
+          </MuteButton>
+          <VolumeSlider.Root aria-label="音量" className="music-slider w-14">
+            <VolumeSlider.Track className="music-slider-track">
+              <VolumeSlider.TrackFill className="music-slider-fill" />
+            </VolumeSlider.Track>
+            <VolumeSlider.Thumb className="music-slider-thumb" />
+          </VolumeSlider.Root>
           <IconBtn onClick={toggleQueue} label="播放列表" active={showQueue}>
             <ListMusic className="size-4" />
           </IconBtn>
