@@ -10,6 +10,7 @@
  *    `updatedAt` 没有库级默认（同 Prisma @updatedAt），由 $defaultFn/$onUpdate 在应用层写
  *  - 业务表主键是应用层生成的 cuid（同 Prisma @default(cuid())）；auth 表由 better-auth 生成
  */
+
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
 import {
@@ -24,6 +25,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { BangumiMetadata, BangumiState } from "./bangumi-types";
 
 /** 富文本正文：Tiptap / ProseMirror 文档 JSON（schema 见 apps/web/src/lib/content） */
 export type RichDocJson = { type: "doc"; content?: unknown[] };
@@ -509,3 +511,45 @@ export type MonitorCheck = typeof monitorCheck.$inferSelect;
 export type MaimaiConfig = typeof maimaiConfig.$inferSelect;
 export type MaimaiProfile = typeof maimaiProfile.$inferSelect;
 export type MaimaiRecord = typeof maimaiRecord.$inferSelect;
+
+// ==================== Bangumi 单账号追番同步 ====================
+
+export const bangumiAccount = pgTable("BangumiAccount", {
+  id: text("id").primaryKey(),
+  userId: integer("userId"),
+  username: text("username").notNull().default(""),
+  initialized: boolean("initialized").notNull().default(false),
+  autoSync: boolean("autoSync").notNull().default(false),
+  activeRunId: text("activeRunId"),
+  activeSince: ts("activeSince"),
+  lastAttemptAt: ts("lastAttemptAt"),
+  lastSyncedAt: ts("lastSyncedAt"),
+  lastError: text("lastError"),
+  updatedAt: updatedAt(),
+});
+export const bangumiEntry = pgTable("BangumiEntry", {
+  subjectId: integer("subjectId").primaryKey(),
+  metadata: jsonb("metadata").$type<BangumiMetadata>().notNull(),
+  state: jsonb("state").$type<BangumiState>().notNull(),
+  baseline: jsonb("baseline").$type<BangumiState>(),
+  lastRemote: jsonb("lastRemote").$type<BangumiState>(),
+  revision: integer("revision").notNull().default(0),
+  syncStatus: text("syncStatus").notNull().default("pending"),
+  syncError: text("syncError"),
+  conflicts: jsonb("conflicts").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  writeUncertain: boolean("writeUncertain").notNull().default(false),
+  paused: boolean("paused").notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+export const bangumiRun = pgTable("BangumiRun", {
+  id: id(),
+  kind: text("kind").notNull(),
+  status: text("status").notNull().default("running"),
+  progress: text("progress").notNull().default("准备连接 Bangumi"),
+  data: jsonb("data").$type<unknown>(),
+  error: text("error"),
+  createdAt: createdAt(),
+  expiresAt: ts("expiresAt").notNull(),
+  finishedAt: ts("finishedAt"),
+});

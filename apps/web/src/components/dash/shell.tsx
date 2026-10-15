@@ -28,6 +28,7 @@ const DOMAIN_ICONS: Record<string, LucideIcon> = {
   blog: PenLine,
   music: Music,
   maimai: Disc3,
+  anime: Film,
   movie: Film,
   vn: Gamepad2,
   touhou: Sparkles,
@@ -86,7 +87,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
           {ADMIN_ORDER.map((k) =>
             item(
               `/dash/${k}`,
-              ADMIN_FIELDS[k]?.label ?? k,
+              ADMIN_FIELDS[k]?.label ?? (k === "anime" ? "番剧" : k),
               pathname === `/dash/${k}` || pathname.startsWith(`/dash/${k}/`),
               DOMAIN_ICONS[k] ?? PenLine,
             ),

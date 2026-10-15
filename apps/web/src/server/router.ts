@@ -1,4 +1,5 @@
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
+import { bangumiRouter } from "./routers/bangumi";
 import { commentRouter } from "./routers/comment";
 import {
   albumsRouter,
@@ -18,6 +19,7 @@ import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
 
 export const router = {
+  bangumi: bangumiRouter,
   health: healthRouter,
   blog: postRouter,
   music: musicRouter,
