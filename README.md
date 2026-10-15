@@ -228,6 +228,19 @@ docker run --rm --network iv2-prod_default --env-file .env \
 每篇都按 schema 校验，并对比转换前后的纯文本和各类块的数量；任何一篇不合法就整体不写。
 `contentMd` 原样保留作备份，确认前台都正常后再删列。
 
+### 正文备份与导出
+
+- 后台「博客」「整页」列表的 **全部正文备份（JSON）** 下载全部文章（含草稿）和整页。
+- 已保存文章、整页的编辑页提供 **导出 → JSON 备份 / HTML 导出**；有未保存改动时先保存。
+- JSON 使用 `i-content-backup` 格式，`version: 1`，包含站点地址、导出时间及完整的 `posts` / `pages`
+  记录，保留 Tiptap JSON、标题、Slug、状态、标签、时间和旧 Markdown。它是内容备份，不包括账号、
+  评论及媒体文件，也不替代数据库/对象存储备份；当前不提供自动导入恢复界面。
+- HTML 是带基础样式的独立文件，所有标签页内容都会展开保留，折叠块使用原生 HTML，代码高亮和
+  公式不依赖站点 JavaScript。图片和视频使用在线绝对地址，网易云音乐保留平台链接，其他音乐平台
+  提供回原站播放的链接，外部嵌入保留来源链接，未打包媒体。
+- 下载接口 `/api/content-export/backup.json`、`/api/content-export/post/<id>.json|html`、
+  `/api/content-export/page/<id>.json|html` 仅管理员可用，响应为 `private, no-store`。
+
 ## 依赖升级
 
 Renovate（`.github/renovate.json5`）有新正式版就提升级 PR，需要先在 GitHub 上安装 [Renovate App](https://github.com/apps/renovate) 并授权本仓库：

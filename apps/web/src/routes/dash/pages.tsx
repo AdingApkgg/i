@@ -2,6 +2,7 @@ import { Card } from "@i/ui";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Pencil } from "lucide-react";
 import { Link } from "react-router";
+import { ContentBackupButton } from "@/components/dash/content-export";
 import { formatDate } from "@/lib/format";
 import { client } from "@/lib/orpc/client";
 import { seo } from "@/lib/seo";
@@ -18,7 +19,10 @@ export default function DashPages() {
   });
   return (
     <div>
-      <h1 className="text-2xl font-bold">整页</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">整页</h1>
+        <ContentBackupButton />
+      </div>
       <p className="mt-1 text-sm text-muted-foreground">前台 /music、/movie 这类整页的正文</p>
       <Card className="mt-4 overflow-hidden">
         {isLoading ? (

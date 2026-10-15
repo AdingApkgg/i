@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, LoaderCircle, Save } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useBlocker } from "react-router";
 import { toast } from "sonner";
+import { ContentExportMenu } from "@/components/dash/content-export";
 import type { RichDoc } from "@/lib/content/types";
 import { emptyDoc } from "@/lib/content/types";
 import { client } from "@/lib/orpc/client";
@@ -94,7 +95,7 @@ function PageEditor({ page }: { page: Page }) {
 
   return (
     <div className="-mt-2">
-      <div className="sticky top-0 z-30 -mx-4 mb-4 flex items-center gap-2 border-b border-border bg-background/90 px-4 py-2 backdrop-blur">
+      <div className="sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-2 border-b border-border bg-background/90 px-4 py-2 backdrop-blur">
         <Link
           prefetch="intent"
           to="/dash/pages"
@@ -105,7 +106,8 @@ function PageEditor({ page }: { page: Page }) {
         <span className="text-xs text-muted-foreground">
           {saving ? "保存中…" : dirty ? "有未保存的改动" : ""}
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+          <ContentExportMenu kind="page" id={page.id} disabled={dirty || saving} />
           <Button variant="ghost" size="sm" asChild>
             <a href={`/${page.id}`} target="_blank" rel="noreferrer">
               <ExternalLink className="size-3.5" /> 查看

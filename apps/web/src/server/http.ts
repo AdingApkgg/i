@@ -21,12 +21,15 @@ import { isAdminRole } from "@/lib/roles";
 import { StorageError, storage } from "@/lib/s3";
 import { isThumbWidth } from "@/lib/thumb";
 import { CACHE } from "./cache";
+import { contentExportRoutes } from "./content-export";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
 import { createContext } from "./orpc";
 import { router } from "./router";
 import { deleteThumbs, getThumb } from "./thumbs";
 
 export const http = new Hono();
+
+http.route("/api/content-export", contentExportRoutes());
 
 // ---------------- oRPC ----------------
 
