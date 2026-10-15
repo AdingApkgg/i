@@ -55,6 +55,8 @@ function legacyVolume(): { volume: number } | null {
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => {
+      // 只接受最近一次选播或队列切歌，避免慢请求打断后续选择。
+      let selection = 0;
       /** 换到某首：通知播放器组件换源或重播 */
       const loadAt = (index: number, autoplay: boolean, extra: Partial<PlayerState> = {}) =>
         set((s) => ({
@@ -78,16 +80,22 @@ export const usePlayerStore = create<PlayerState>()(
           if (songs.length && get().queue.length === 0) set({ queue: shuffle(songs) });
         },
         play: async (server, type, id) => {
+          const request = ++selection;
           try {
             const songs = await fetchMeting(server, type, id);
-            if (songs.length) loadAt(0, true, { queue: songs, expanded: true });
+            if (request === selection && songs.length) {
+              loadAt(0, true, { queue: songs, expanded: true });
+            }
           } catch {
             /* 拉不到就保持当前播放 */
           }
         },
         switchTo: (i, autoplay = true) => {
           const n = get().queue.length;
-          if (n) loadAt(((i % n) + n) % n, autoplay);
+          if (n) {
+            selection++;
+            loadAt(((i % n) + n) % n, autoplay);
+          }
         },
         next: () => get().switchTo(get().index + 1),
         prev: () => get().switchTo(get().index - 1),

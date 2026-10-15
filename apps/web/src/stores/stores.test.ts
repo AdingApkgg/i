@@ -23,6 +23,14 @@ afterEach(() => vi.unstubAllGlobals());
 
 const song = (name: string) => ({ name, artist: "a", url: `https://x/${name}.mp3`, pic: "" });
 
+function deferredResponse() {
+  let resolve!: (response: Response) => void;
+  const promise = new Promise<Response>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 describe("看板娘偏好", () => {
   it("从旧版散落的 key 迁移过来，之后写新 key", async () => {
     localStorage.setItem("waifu.hidden", "1");
@@ -88,6 +96,63 @@ describe("播放器", () => {
     );
     await s().play("netease", "playlist", "456");
     expect(s().queue.map((x) => x.name)).toEqual(["p1", "p2"]);
+  });
+
+  it("连续选播时，较早请求晚返回也不能覆盖最后选择的歌单", async () => {
+    const first = deferredResponse();
+    const second = deferredResponse();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise),
+    );
+    const { usePlayerStore } = await import("./player");
+    const s = usePlayerStore.getState;
+    const older = s().play("netease", "playlist", "first");
+    const latest = s().play("netease", "playlist", "second");
+    second.resolve(Response.json([song("latest")]));
+    await latest;
+    const acceptedLoad = s().load;
+    first.resolve(Response.json([song("stale")]));
+    await older;
+    expect(s().queue).toEqual([song("latest")]);
+    expect(s().load).toEqual(acceptedLoad);
+  });
+
+  it("最后选播失败时保留当前播放，不接受之前仍未完成的选播", async () => {
+    const first = deferredResponse();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockReturnValueOnce(first.promise)
+        .mockResolvedValueOnce(new Response(null, { status: 500 })),
+    );
+    const { usePlayerStore } = await import("./player");
+    const s = usePlayerStore.getState;
+    s().initQueue([song("current")]);
+    const older = s().play("netease", "playlist", "first");
+    await s().play("netease", "playlist", "second");
+    first.resolve(Response.json([song("stale")]));
+    await older;
+    expect(s().queue).toEqual([song("current")]);
+    expect(s().load.seq).toBe(0);
+  });
+
+  it("等待选播歌单时手动切歌，旧请求不能打断当前选择", async () => {
+    const pending = deferredResponse();
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(pending.promise));
+    const { usePlayerStore } = await import("./player");
+    const s = usePlayerStore.getState;
+    s().initQueue([song("a"), song("b")]);
+    const queue = s().queue;
+    const older = s().play("netease", "playlist", "pending");
+    s().switchTo(1);
+    const acceptedLoad = s().load;
+    pending.resolve(Response.json([song("stale")]));
+    await older;
+    expect(s().queue).toEqual(queue);
+    expect(s().index).toBe(1);
+    expect(s().load).toEqual(acceptedLoad);
   });
 
   it("音量持久化，旧版的音量 key 会迁移", async () => {
