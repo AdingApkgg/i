@@ -278,6 +278,7 @@ export const ADMIN_ORDER = [
   "gallery",
   "albums",
   "music",
+  "anime",
   "movie",
   "vn",
   "maimai",

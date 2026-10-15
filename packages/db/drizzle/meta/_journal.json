@@ -15,6 +15,20 @@
       "when": 1791983054846,
       "tag": "0001_rich_content",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792093956641,
+      "tag": "0002_youthful_mysterio",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792095501666,
+      "tag": "0003_slim_speed",
+      "breakpoints": true
     }
   ]
 }

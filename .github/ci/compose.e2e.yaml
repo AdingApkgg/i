@@ -4,3 +4,13 @@ services:
   db:
     ports:
       - "127.0.0.1:5432:5432"
+  # 测试替身仅由 CI override 注入，不打入镜像，不改变生产 API 地址。
+  web:
+    environment:
+      BANGUMI_ACCESS_TOKEN: e2e-bangumi-token
+      BANGUMI_TEST_MODE: "1"
+      NODE_OPTIONS: --import /app/apps/web/test/bangumi-preload.mjs
+    volumes:
+      - ./apps/web/test/bangumi-preload.mjs:/app/apps/web/test/bangumi-preload.mjs:ro
+    ports:
+      - "127.0.0.1:3413:3413"

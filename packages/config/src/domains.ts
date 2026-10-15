@@ -29,6 +29,7 @@ export const DOMAINS: DomainSpec[] = [
     admin: true,
     hint: "maimaiDX 成绩",
   },
+  { key: "anime", label: "番剧", path: "/anime", inNav: true, admin: true, hint: "Bangumi 追番" },
   { key: "movie", label: "影视", path: "/movie", inNav: true, admin: true, hint: "在看 / 看过" },
   { key: "vn", label: "视觉小说", path: "/vn", inNav: true, admin: true, hint: "Galgame 记录" },
   { key: "touhou", label: "东方", path: "/touhou", inNav: true, admin: true, hint: "东方 Project" },
