@@ -5,6 +5,64 @@
 @source "./";
 @source "../../../packages/ui/src";
 
+/* Vidstack 自定义音乐控制；默认视频布局使用官方样式。 */
+.music-player {
+  display: contents;
+}
+.music-slider {
+  position: relative;
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.music-slider-track {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--border);
+}
+.music-slider-fill,
+.music-slider-buffer {
+  position: absolute;
+  height: 100%;
+  border-radius: inherit;
+}
+.music-slider-fill {
+  width: var(--slider-fill);
+  background: var(--primary);
+}
+.music-slider-buffer {
+  width: var(--slider-progress);
+  background: var(--muted-foreground);
+  opacity: 0.25;
+}
+.music-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: var(--slider-fill);
+  height: 10px;
+  width: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--primary);
+}
+.music-slider[data-focus] .music-slider-track {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.music-slider[data-disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
+[data-media-player][data-view-type="video"] {
+  --media-brand: var(--primary);
+  --media-focus-ring-color: var(--ring);
+}
+
 /* ==================== moe / 樱粉 theme ==================== */
 /* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
 :root {

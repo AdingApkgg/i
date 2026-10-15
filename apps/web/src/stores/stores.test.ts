@@ -96,6 +96,6 @@ describe("播放器", () => {
     await usePlayerStore.persist.rehydrate();
     expect(usePlayerStore.getState().volume).toBe(0.8);
     usePlayerStore.getState().setVolume(0.5);
-    expect(JSON.parse(localStorage.getItem("i.player")!).state).toEqual({ volume: 0.5 });
+    expect(JSON.parse(localStorage.getItem("i.player")!).state).toEqual({ volume: 0.5, muted: false });
   });
 });
