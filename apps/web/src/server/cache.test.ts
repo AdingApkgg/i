@@ -20,6 +20,16 @@ app.get(
   () => new Response("{}", { headers: { "content-type": "application/json" } }),
 );
 app.get("/dash/*", () => html());
+app.get(
+  "/api/content-export/backup.json",
+  () =>
+    new Response("{}", {
+      headers: {
+        "cache-control": "public, max-age=3600, no-transform",
+        "cdn-cache-control": "max-age=3600",
+      },
+    }),
+);
 app.get("/blog.data", () => new Response("", { headers: { "content-type": "text/x-script" } }));
 app.get("/login-cookie", () => {
   const r = html();
@@ -90,5 +100,12 @@ describe("缓存策略", () => {
 
   it("只读响应头（Response.redirect）也能改写，不会抛错", async () => {
     expect(await get("/gone")).toMatchObject({ status: 301, cc: "private, no-store" });
+  });
+
+  it("下载接口强制私有且清除 CDN 缓存，同时保留 no-transform", async () => {
+    expect(await get("/api/content-export/backup.json")).toMatchObject({
+      cc: "private, no-store, no-transform",
+      cdn: null,
+    });
   });
 });

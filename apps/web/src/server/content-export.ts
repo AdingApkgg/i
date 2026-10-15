@@ -9,7 +9,7 @@ import { siteUrl } from "@/lib/site-url";
 export function contentExportRoutes(database = db) {
   const app = new Hono();
   app.use("*", async (c, next) => {
-    c.header("Cache-Control", "private, no-store");
+    c.header("Cache-Control", "private, no-store, no-transform");
     c.header("X-Content-Type-Options", "nosniff");
     const session = await auth.api.getSession({ headers: c.req.raw.headers }).catch(() => null);
     if (!session?.user) return c.json({ error: "请先登录" }, 401);
@@ -19,9 +19,11 @@ export function contentExportRoutes(database = db) {
   const attachment = (body: string, name: string, format: "json" | "html") =>
     new Response(body, {
       headers: {
-        "Content-Type": `${format === "json" ? "application/json" : "text/html"}; charset=utf-8`,
+        // HTML 是供保存的附件；避免 CDN 按网页注入脚本或混淆正文里的邮箱。
+        "Content-Type":
+          format === "json" ? "application/json; charset=utf-8" : "application/octet-stream",
         "Content-Disposition": `attachment; filename="content.${format}"; filename*=UTF-8''${encodeURIComponent(name)}`,
-        "Cache-Control": "private, no-store",
+        "Cache-Control": "private, no-store, no-transform",
         "X-Content-Type-Options": "nosniff",
       },
     });
