@@ -51,7 +51,7 @@
         "@tiptap/starter-kit": "3.32.0",
         "@tiptap/suggestion": "3.32.0",
         "@tiptap/y-tiptap": "^3.0.10",
-        "@vidstack/react": "^1.15.7",
+        "@vidstack/react": "1.15.7",
         "aws4fetch": "1.0.20",
         "better-auth": "^1.6.2",
         "class-variance-authority": "^0.7.1",
@@ -155,6 +155,9 @@
         "react-dom": "^19",
       },
     },
+  },
+  "patchedDependencies": {
+    "@vidstack/react@1.15.7": "patches/@vidstack%2Freact@1.15.7.patch",
   },
   "packages": {
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
