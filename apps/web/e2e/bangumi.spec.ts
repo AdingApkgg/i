@@ -182,8 +182,16 @@ test.describe("Bangumi 双向同步", () => {
         .toBe("synced");
       await idle();
       await expect(page.getByRole("form", { name: "编辑番剧" })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: "编辑 测试新增番剧" })).toBeEnabled();
-      await page.getByRole("button", { name: "编辑 测试新增番剧" }).click();
+      await expect(
+        page.getByRole("button", {
+          name: "编辑 测试新增番剧：一个很长很长且需要在手机上编辑的番剧标题",
+        }),
+      ).toBeEnabled();
+      await page
+        .getByRole("button", {
+          name: "编辑 测试新增番剧：一个很长很长且需要在手机上编辑的番剧标题",
+        })
+        .click();
       await editor.getByRole("textbox", { name: "短评", exact: true }).fill("新增后编辑不丢失");
       await editor.getByRole("button", { name: "保存追番记录" }).click();
       await expect
@@ -195,6 +203,21 @@ test.describe("Bangumi 双向同步", () => {
         )
         .toBe("新增后编辑不丢失");
       await idle();
+      // 真实长标题不能让窄屏后台或编辑按钮横向溢出。
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page
+        .getByRole("button", {
+          name: "编辑 测试新增番剧：一个很长很长且需要在手机上编辑的番剧标题",
+        })
+        .click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await editor.getByRole("button", { name: "取消编辑" }).click();
+      await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto("/anime");
       await expect(page.getByText("失败后仍保留的短评")).toBeVisible();
       await page.screenshot({ path: testInfo.outputPath("bangumi-public.png"), fullPage: true });

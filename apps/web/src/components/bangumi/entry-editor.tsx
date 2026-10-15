@@ -117,7 +117,7 @@ export function EntryEditor({
               ))}
             </div>
           </fieldset>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button disabled={busy} type="submit">
               {busy ? "保存中…" : "保存追番记录"}
             </Button>

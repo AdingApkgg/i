@@ -290,10 +290,11 @@ export default function AnimeAdmin() {
                   </div>
                   <Button
                     variant="soft"
+                    aria-label={`编辑 ${entry.metadata.nameCn || entry.metadata.name}`}
                     disabled={busy || active}
                     onClick={() => setEditing(entry)}
                   >
-                    编辑 {entry.metadata.nameCn || entry.metadata.name}
+                    编辑
                   </Button>
                 </div>
               </CardBody>
