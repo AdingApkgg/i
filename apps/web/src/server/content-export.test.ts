@@ -1,6 +1,8 @@
 import { page, post } from "@i/db/schema";
+import { Hono } from "hono";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestDb } from "../../test/db";
+import { cachePolicy } from "./cache";
 import { contentExportRoutes } from "./content-export";
 
 vi.mock("@i/db", async () => (await import("../../test/mock-db")).dbModule());
@@ -16,7 +18,7 @@ beforeEach(async () => {
   await t.reset();
   getSession.mockResolvedValue({ user: { role: "admin" } });
 });
-const app = () => contentExportRoutes(t.db);
+const app = () => new Hono().use("*", cachePolicy).route("/", contentExportRoutes(t.db));
 const doc = {
   type: "doc" as const,
   content: [{ type: "paragraph", content: [{ type: "text", text: "测试正文" }] }],
