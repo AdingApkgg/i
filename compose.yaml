@@ -78,6 +78,11 @@ services:
       - path: .env
         required: false
     environment:
+      BANGUMI_ACCESS_TOKEN: ${BANGUMI_ACCESS_TOKEN-}
+      NODE_USE_ENV_PROXY: ${NODE_USE_ENV_PROXY:-0}
+      HTTP_PROXY: ${HTTP_PROXY-}
+      HTTPS_PROXY: ${HTTPS_PROXY-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,db,redis,seaweedfs}
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}

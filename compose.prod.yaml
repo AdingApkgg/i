@@ -138,6 +138,11 @@ services:
       # 仍然认；都没设时退回 BETTER_AUTH_URL（同一个 origin）。
       SITE_URL: ${SITE_URL-}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL-}
+      BANGUMI_ACCESS_TOKEN: ${BANGUMI_ACCESS_TOKEN-}
+      NODE_USE_ENV_PROXY: ${NODE_USE_ENV_PROXY:-0}
+      HTTP_PROXY: ${HTTP_PROXY-}
+      HTTPS_PROXY: ${HTTPS_PROXY-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,db,redis,seaweedfs}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET-}
       # 友链邮件通知 + 反链检测（SMTP_HOST 留空则不发邮件）

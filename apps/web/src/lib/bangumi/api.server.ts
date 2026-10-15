@@ -55,6 +55,7 @@ export class BangumiClient {
   private wait: (ms: number) => Promise<void>;
   private identity: Promise<{ id: number; username: string; nickname?: string }> | undefined;
   private signal: AbortSignal;
+  private metadataCache = new Map<number, Promise<AnimeMetadata>>();
   constructor(
     private token: string,
     options: Options = {},
@@ -158,7 +159,15 @@ export class BangumiClient {
     });
     return this.identity;
   }
-  async subject(id: number): Promise<AnimeMetadata> {
+  subject(id: number): Promise<AnimeMetadata> {
+    let pending = this.metadataCache.get(id);
+    if (!pending) {
+      pending = this.readSubject(id);
+      this.metadataCache.set(id, pending);
+    }
+    return pending;
+  }
+  private async readSubject(id: number): Promise<AnimeMetadata> {
     const parsed = subjectSchema.safeParse(await this.request(`/v0/subjects/${id}`));
     if (!parsed.success || parsed.data.id !== id)
       throw new BangumiError("该条目不是可读取的动画，或资料格式异常");
@@ -191,7 +200,7 @@ export class BangumiClient {
     const parsed = collection.safeParse(raw);
     if (!parsed.success) throw new BangumiError("Bangumi 收藏资料格式异常");
     const c = parsed.data,
-      metadata = await this.subject(c.subject_id);
+      metadata = structuredClone(await this.subject(c.subject_id));
     const states = await this.pages(`/v0/users/-/collections/${c.subject_id}/episodes`);
     const episodes: Record<string, number> = Object.fromEntries(
       metadata.episodes.map((e) => [e.id, 0]),
@@ -215,7 +224,9 @@ export class BangumiClient {
       state: { type: c.type, rate: c.rate, comment: c.comment ?? "", private: c.private, episodes },
     };
   }
-  async snapshot(): Promise<RemoteEntry[]> {
+  async snapshot(
+    onProgress?: (done: number, total: number) => Promise<void>,
+  ): Promise<RemoteEntry[]> {
     const who = await this.me(),
       raw = await this.pages(
         `/v0/users/${encodeURIComponent(who.username)}/collections?subject_type=2`,
@@ -224,8 +235,20 @@ export class BangumiClient {
     if (parsed.some((row) => !row.success)) throw new BangumiError("Bangumi 收藏列表格式异常");
     const ids = parsed.map((row) => (row.success ? row.data.subject_id : 0));
     if (new Set(ids).size !== ids.length) throw new BangumiError("Bangumi 收藏重复，请重新演练");
-    const result: RemoteEntry[] = [];
-    for (const row of raw) result.push(await this.fromCollection(row));
+    const result: RemoteEntry[] = new Array(raw.length);
+    let cursor = 0,
+      done = 0;
+    await onProgress?.(0, raw.length);
+    // 四个只读扫描链有界并发；写入仍逐条串行，429 按上游提示退避。
+    await Promise.all(
+      Array.from({ length: Math.min(4, raw.length) }, async () => {
+        while (cursor < raw.length) {
+          const index = cursor++;
+          result[index] = await this.fromCollection(raw[index]);
+          await onProgress?.(++done, raw.length);
+        }
+      }),
+    );
     return result;
   }
   async entry(id: number): Promise<RemoteEntry | null> {

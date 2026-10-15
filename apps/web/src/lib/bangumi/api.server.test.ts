@@ -171,3 +171,39 @@ describe("Bangumi API 边界", () => {
     await expect(client.snapshot()).rejects.toThrow(/分页/);
   });
 });
+
+describe("大收藏的确认扫描成本", () => {
+  it("600部收藏的扫描与逐部复核不重复下载元数据，固定等待总量低于单任务时限", async () => {
+    let waited = 0;
+    const ids = Array.from({ length: 600 }, (_, i) => i + 1);
+    const api = new BangumiClient("test", {
+      wait: async (ms) => {
+        waited += ms;
+      },
+      fetch: async (input) => {
+        const u = new URL(String(input)),
+          id = Number(u.pathname.split("/").at(-1));
+        if (u.pathname === "/v0/me") return Response.json({ id: 1, username: "large" });
+        if (u.pathname === "/v0/users/large/collections") {
+          const offset = Number(u.searchParams.get("offset"));
+          return Response.json({
+            total: 600,
+            offset,
+            limit: 100,
+            data: ids
+              .slice(offset, offset + 100)
+              .map((subject_id) => ({ subject_id, subject_type: 2, ...state })),
+          });
+        }
+        if (u.pathname.startsWith("/v0/subjects/"))
+          return Response.json({ id, type: 2, name: "Test", name_cn: "测试", eps: 0 });
+        if (u.pathname.endsWith("/episodes"))
+          return Response.json({ total: 0, offset: 0, limit: 100, data: [] });
+        return Response.json({ subject_id: id, subject_type: 2, ...state });
+      },
+    });
+    await api.snapshot();
+    for (const id of ids) await api.entry(id);
+    expect(waited).toBeLessThan(15 * 60 * 1000);
+  });
+});

@@ -3,6 +3,7 @@
  * 其余请求交给 React Router 渲染页面。开发（Vite）与生产共用这一个入口。
  */
 import { createHonoServer } from "react-router-hono-server/node";
+import { startBangumiScheduler } from "./server/bangumi/scheduler";
 import { cachePolicy } from "./server/cache";
 import { startFriendCheckScheduler } from "./server/friend-check";
 import { http } from "./server/http";
@@ -13,6 +14,7 @@ import { startMonitorScheduler } from "./server/monitor-scheduler";
 const g = globalThis as unknown as { __schedulersStarted?: boolean };
 if (!g.__schedulersStarted && process.env.DISABLE_SCHEDULERS !== "1") {
   g.__schedulersStarted = true;
+  startBangumiScheduler();
   startMonitorScheduler();
   startFriendCheckScheduler();
 }

@@ -16,9 +16,22 @@ export function mergeCollection(
   local: CollectionState | null,
   remote: CollectionState | null,
   choices: Choices = {},
+  uncertain = false,
 ) {
   const conflicts: string[] = [];
   const missingRemote = !!base && !!local && !remote;
+  if (uncertain) {
+    if (!choices.write)
+      return { merged: local, conflicts: ["write"], push: false, pull: false, missingRemote };
+    const merged = choices.write === "local" ? local : remote;
+    return {
+      merged,
+      conflicts,
+      push: !!merged && !sameState(merged, remote),
+      pull: !sameState(merged, local),
+      missingRemote,
+    };
+  }
   if (missingRemote) {
     if (!choices.collection)
       return { merged: local, conflicts: ["collection"], push: false, pull: false, missingRemote };
