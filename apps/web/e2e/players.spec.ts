@@ -91,6 +91,9 @@ test("音乐：主动选播、进度音量控制、切歌和客户端跨页不�
   await expect
     .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
     .toBeGreaterThan(0.2);
+  await expect
+    .poll(() => page.evaluate(() => navigator.mediaSession.metadata?.title))
+    .toBe("第一首");
   await player.getByRole("button", { name: "暂停", exact: true }).click();
   await expect(audio).toHaveJSProperty("paused", true);
   const slider = player.getByRole("slider", { name: "播放进度" });
@@ -140,7 +143,7 @@ test("视频：点击前不加载，标准控制可播放 MP4 和带参数 HLS�
       .poll(() => player.locator("video").evaluate((el: HTMLVideoElement) => el.currentTime))
       .toBeGreaterThan(0.2);
     await player.hover();
-    await player.getByRole("button", { name: "播放视频", exact: true }).click();
+    await player.getByRole("button", { name: "暂停", exact: true }).click();
     await expect(player.locator("video")).toHaveJSProperty("paused", true);
   }
   const failed = videos.nth(2);
@@ -155,6 +158,47 @@ test("视频：点击前不加载，标准控制可播放 MP4 和带参数 HLS�
   await expect
     .poll(() => failed.locator("video").evaluate((el: HTMLVideoElement) => el.currentTime))
     .toBeGreaterThan(0.2);
+});
+
+test("系统媒体控制仅由实际播放的音乐接管，视频播放后释放", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+    const handlers: Record<string, boolean> = {};
+    Object.assign(window, { musicMediaHandlers: handlers });
+    navigator.mediaSession.setActionHandler = (action, handler) => {
+      handlers[action] = handler !== null;
+      original(action, handler);
+    };
+  });
+  await page.goto(`/blog/${slug}`);
+  await expect(page.locator(".music-player audio")).toHaveAttribute("src", /tone.wav/);
+  expect(await page.evaluate(() => navigator.mediaSession.metadata)).toBeNull();
+  await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.mediaSession.metadata?.title))
+    .toBe("第一首");
+  const video = page.getByRole("region", { name: "视频播放器" }).first();
+  await video.getByRole("button", { name: "播放视频", exact: true }).click();
+  await expect
+    .poll(() => video.locator("video").evaluate((el: HTMLVideoElement) => el.currentTime))
+    .toBeGreaterThan(0.2);
+  await expect.poll(() => page.evaluate(() => navigator.mediaSession.metadata)).toBeNull();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.values(
+          (window as unknown as { musicMediaHandlers: Record<string, boolean> }).musicMediaHandlers,
+        ).some(Boolean),
+      ),
+    )
+    .toBe(false);
+  // 暂停后重新播放音乐，应重新获得系统媒体键。
+  const music = page.locator(".music-player");
+  await music.getByRole("button", { name: "暂停", exact: true }).click();
+  await music.getByRole("button", { name: "播放", exact: true }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.mediaSession.metadata?.title))
+    .toBe("第一首");
 });
 
 test("音乐：恢复音量偏好，静音后刷新保持静音", async ({ page }) => {
@@ -237,21 +281,141 @@ test("单曲结束后循环同一个 URL，从头继续播放", async ({ page })
   await expect(audio).toHaveJSProperty("paused", false);
 });
 
-test("暂停后发生媒体错误，降级恢复不擅自开始播放", async ({ page }) => {
+for (const keyboard of ["mouse", "Space", "Enter"] as const)
+  test(`${keyboard === "mouse" ? "鼠标" : `键盘 ${keyboard}`}暂停后发生媒体错误，降级恢复不擅自开始播放`, async ({
+    page,
+  }) => {
+    await page.goto(`/blog/${slug}`);
+    await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+    const player = page.locator(".music-player");
+    const audio = player.locator("audio");
+    await expect
+      .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
+      .toBeGreaterThan(0.2);
+    await audio.evaluate((el) => {
+      // 让错误先于 React 的 pause 处理到达，稳定复现暂停意图的竞态。
+      document.addEventListener("pause", () => el.dispatchEvent(new Event("error")), {
+        once: true,
+        capture: true,
+      });
+    });
+    const pause = player.getByRole("button", { name: "暂停", exact: true });
+    if (keyboard !== "mouse") {
+      await pause.focus();
+      await pause.press(keyboard);
+    } else await pause.click();
+    await expect(audio).toHaveJSProperty("paused", true);
+    await expect(audio).toHaveJSProperty("crossOrigin", null);
+    await expect(audio).toHaveJSProperty("readyState", 4);
+    await expect(audio).toHaveJSProperty("paused", true);
+    await player.getByRole("button", { name: "播放", exact: true }).click();
+    await expect
+      .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
+      .toBeGreaterThan(0.2);
+  });
+
+test("歌单选曲定位当前项；歌词随播放滚动并支持点击跳转", async ({ page }, testInfo) => {
+  await page.route("https://api.injahow.cn/meting/**", (route) =>
+    route.fulfill({
+      json: songs.map((song, index) => ({ ...song, lrc: `/__media/lyrics-${index}.lrc` })),
+    }),
+  );
+  await page.route("**/__media/lyrics-*.lrc", (route) =>
+    route.fulfill({
+      body: Array.from(
+        { length: 24 },
+        (_, i) => `[00:${String(i).padStart(2, "0")}.00]第 ${i} 行歌词`,
+      ).join("\n"),
+      contentType: "text/plain",
+    }),
+  );
+  await page.goto(`/blog/${slug}`);
+  await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+  const player = page.locator(".music-player"),
+    audio = player.locator("audio");
+  await player.getByRole("button", { name: "播放列表", exact: true }).click();
+  const queue = player.getByRole("region", { name: "当前歌单" });
+  await queue.getByRole("button", { name: /第二首/ }).click();
+  await expect(queue.locator('[aria-current="true"]')).toContainText("第二首");
+  await player.getByRole("button", { name: "歌词", exact: true }).click();
+  const lyrics = player.getByRole("region", { name: "歌词", exact: true });
+  await expect(lyrics.getByRole("button", { name: "第 9 行歌词", exact: true })).toBeVisible();
+  await lyrics.getByRole("button", { name: "第 9 行歌词", exact: true }).click();
+  await expect
+    .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
+    .toBeGreaterThan(8.9);
+  await expect(lyrics.locator('[aria-current="true"]')).toHaveText("第 9 行歌词");
+  const line = lyrics.locator('[aria-current="true"]');
+  const view = lyrics.locator("[data-lyric-scroll]");
+  await expect
+    .poll(async () => {
+      const row = await line.boundingBox(),
+        area = await view.boundingBox();
+      return !!row && !!area && row.y >= area.y && row.y + row.height <= area.y + area.height;
+    })
+    .toBe(true);
+  await view.hover();
+  await page.mouse.wheel(0, -250);
+  await expect(lyrics.getByRole("button", { name: "回到当前歌词" })).toBeVisible();
+  await lyrics.getByRole("button", { name: "回到当前歌词" }).click();
+  await expect(lyrics.getByRole("button", { name: "回到当前歌词" })).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const row = await line.boundingBox(),
+        area = await view.boundingBox();
+      return !!row && !!area && row.y >= area.y && row.y + row.height <= area.y + area.height;
+    })
+    .toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("music-lyrics.png") });
+});
+
+test("切歌后慢歌词响应不覆盖新歌，无歌词不影响播放", async ({ page }) => {
+  await page.route("https://api.injahow.cn/meting/**", (route) =>
+    route.fulfill({
+      json: [
+        { ...songs[0], lrc: "/__media/slow.lrc" },
+        { ...songs[1], lrc: "[00:00]新歌歌词" },
+      ],
+    }),
+  );
+  await page.route("**/__media/slow.lrc", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await route.fulfill({ body: "[00:00]旧歌歌词" }).catch(() => {});
+  });
   await page.goto(`/blog/${slug}`);
   await page.getByRole("button", { name: "播放歌单", exact: true }).click();
   const player = page.locator(".music-player");
-  const audio = player.locator("audio");
-  await expect
-    .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
-    .toBeGreaterThan(0.2);
-  await player.getByRole("button", { name: "暂停", exact: true }).click();
-  await audio.evaluate((el) => el.dispatchEvent(new Event("error")));
-  await expect(audio).toHaveJSProperty("crossOrigin", null);
-  await expect(audio).toHaveJSProperty("readyState", 4);
-  await expect(audio).toHaveJSProperty("paused", true);
-  await player.getByRole("button", { name: "播放", exact: true }).click();
-  await expect
-    .poll(() => audio.evaluate((el: HTMLAudioElement) => el.currentTime))
-    .toBeGreaterThan(0.2);
+  await player.getByRole("button", { name: "歌词", exact: true }).click();
+  await player.getByRole("button", { name: "下一首" }).click();
+  await expect(player.getByRole("region", { name: "歌词", exact: true })).toContainText("新歌歌词");
+  await page.waitForTimeout(800);
+  await expect(player.getByRole("region", { name: "歌词", exact: true })).not.toContainText(
+    "旧歌歌词",
+  );
+  await expect(player.locator("audio")).toHaveJSProperty("paused", false);
+});
+
+test("歌词失败可重试，纯文本与无歌词都有可读状态", async ({ page }) => {
+  await page.route("https://api.injahow.cn/meting/**", (route) =>
+    route.fulfill({
+      json: [{ ...songs[0], lrc: "/__media/retry.lrc" }, songs[1]],
+    }),
+  );
+  let attempts = 0;
+  await page.route("**/__media/retry.lrc", (route) =>
+    ++attempts === 1
+      ? route.fulfill({ status: 503 })
+      : route.fulfill({ body: "没有时间戳的歌词\n依然可以阅读", contentType: "text/plain" }),
+  );
+  await page.goto(`/blog/${slug}`);
+  await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+  const player = page.locator(".music-player");
+  await player.getByRole("button", { name: "歌词", exact: true }).click();
+  const lyrics = player.getByRole("region", { name: "歌词", exact: true });
+  await expect(lyrics).toContainText("歌词加载失败");
+  await lyrics.getByRole("button", { name: "重试" }).click();
+  await expect(lyrics).toContainText("没有时间戳的歌词");
+  await player.getByRole("button", { name: "下一首" }).click();
+  await expect(lyrics).toContainText("暂无歌词");
+  await expect(player.locator("audio")).toHaveJSProperty("paused", false);
 });

@@ -15,6 +15,7 @@
 - **代码风格**: Biome
 - **对象存储**: SeaweedFS(S3 网关,相册上传)· aws4fetch · sharp 缩略图(WebP,按需生成)
 - **富文本**: Tiptap 3（后台编辑器，只在后台懒加载）· 正文存 Tiptap JSON（jsonb）· 前台自写 JSON → React 渲染，lowlight 代码高亮 + KaTeX 公式在服务端预渲染
+- **音视频**: Video.js 10 · 自定义悬浮音乐播放器、当前歌单与 LRC 滚动歌词 · 文章视频使用标准皮肤（MP4 / HLS）
 - **测试**: Vitest(单测,PGlite)+ Playwright(浏览器端到端)
 - **部署**: Docker compose + Caddy + Cloudflare Tunnel(自托管 VPS)
 
@@ -82,6 +83,16 @@ bun run db:migrate && bun run db:seed && bun run build && bun run test:e2e
 CI（`.github/workflows/ci.yml`）每次推送并行跑两个任务：
 lint → 迁移文件检查 → typecheck → test → build；以及 e2e（用 `compose.prod.yaml` 构建并启动完整的生产栈，
 Playwright 经 Caddy 访问，和线上部署走同一条路径）。
+
+## 音乐与视频
+
+桌面左下角唱片展开后可独立打开「歌单」与「歌词」。歌单支持点击选曲并定位当前项；
+歌词首次打开时才加载，按播放进度高亮和滚动，点击某句可跳播。手动浏览后点「回到当前歌词」恢复跟随。
+支持 Meting 的 `lrc` 地址、内联 LRC 和纯文本歌词；无歌词或加载失败会显示提示并可重试。
+音量和静音偏好会保存，客户端跨页继续播放。手机维持隐藏悬浮音乐的布局。
+
+文章视频点击后才加载媒体，MP4 和带查询参数的 HLS 使用 Video.js 标准视频界面。
+旧内容中的 DPlayer 节点仍可读取，第三方 iframe 保持其原站播放器。此次升级不涉及数据库迁移。
 
 ## 数据库
 

@@ -17,7 +17,6 @@ FROM node:24-slim AS deps
 COPY --from=oven/bun:1.4.3 /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 COPY package.json bun.lock ./
-COPY patches/ patches/
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/ui/package.json packages/ui/

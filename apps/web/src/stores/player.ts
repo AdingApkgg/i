@@ -1,7 +1,7 @@
 /**
  * 全站音乐播放器的状态（zustand）。
  * 任何组件都能直接换歌单（usePlayerStore.getState().play / 选择器），不需要 Provider；
- * Vidstack 实例与可视化由 components/player/music-player.tsx 负责，这里只管状态和指令。
+ * Video.js 实例与可视化由 components/player/music-player.tsx 负责，这里只管状态和指令。
  * 音量持久化到 localStorage。
  */
 import { create } from "zustand";
@@ -17,6 +17,7 @@ interface PlayerState {
   playing: boolean;
   expanded: boolean;
   showQueue: boolean;
+  showLyrics: boolean;
   volume: number;
   muted: boolean;
   /** 每次换歌递增，包含重复播放同一首歌的情况。 */
@@ -33,6 +34,7 @@ interface PlayerState {
   expand: () => void;
   collapse: () => void;
   toggleQueue: () => void;
+  toggleLyrics: () => void;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -53,6 +55,8 @@ function legacyVolume(): { volume: number } | null {
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => {
+      // 只接受最近一次选播或队列切歌，避免慢请求打断后续选择。
+      let selection = 0;
       /** 换到某首：通知播放器组件换源或重播 */
       const loadAt = (index: number, autoplay: boolean, extra: Partial<PlayerState> = {}) =>
         set((s) => ({
@@ -67,6 +71,7 @@ export const usePlayerStore = create<PlayerState>()(
         playing: false,
         expanded: false,
         showQueue: false,
+        showLyrics: false,
         volume: DEFAULT_VOLUME,
         muted: false,
         load: { seq: 0, autoplay: false },
@@ -75,23 +80,30 @@ export const usePlayerStore = create<PlayerState>()(
           if (songs.length && get().queue.length === 0) set({ queue: shuffle(songs) });
         },
         play: async (server, type, id) => {
+          const request = ++selection;
           try {
             const songs = await fetchMeting(server, type, id);
-            if (songs.length) loadAt(0, true, { queue: songs, expanded: true });
+            if (request === selection && songs.length) {
+              loadAt(0, true, { queue: songs, expanded: true });
+            }
           } catch {
             /* 拉不到就保持当前播放 */
           }
         },
         switchTo: (i, autoplay = true) => {
           const n = get().queue.length;
-          if (n) loadAt(((i % n) + n) % n, autoplay);
+          if (n) {
+            selection++;
+            loadAt(((i % n) + n) % n, autoplay);
+          }
         },
         next: () => get().switchTo(get().index + 1),
         prev: () => get().switchTo(get().index - 1),
         setVolume: (volume) => set({ volume }),
         expand: () => set({ expanded: true }),
-        collapse: () => set({ expanded: false, showQueue: false }),
+        collapse: () => set({ expanded: false, showQueue: false, showLyrics: false }),
         toggleQueue: () => set((s) => ({ showQueue: !s.showQueue })),
+        toggleLyrics: () => set((s) => ({ showLyrics: !s.showLyrics })),
       };
     },
     {
