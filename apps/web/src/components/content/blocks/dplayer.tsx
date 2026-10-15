@@ -1,19 +1,19 @@
 import { cn } from "@i/ui";
-import { isHLSProvider, MediaPlayer, MediaProvider, Poster } from "@vidstack/react";
-import { DefaultVideoLayout, defaultLayoutIcons } from "@vidstack/react/player/layouts/default";
-import { ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
-import { videoTranslations } from "@/components/player/video-translations";
+import { I18nProvider } from "@videojs/react";
+import zhCN from "@videojs/react/i18n/locales/zh-CN";
+import { HlsJsVideo } from "@videojs/react/media/hlsjs-video";
+import { VideoPlayer as MediaPlayer, Video, VideoSkin } from "@videojs/react/video";
+import { ExternalLink, Play } from "lucide-react";
+import { useState } from "react";
 
-/** 保留旧标签名；媒体生命周期、HLS 和所有视频控制统一交给 Vidstack。 */
+/** 保留旧富文本标签；视频和 HLS 均使用 Video.js 10。 */
 export function DPlayer({ url, pic }: { url: string; pic?: string }) {
   return <VideoPlayer key={url} url={url} pic={pic} />;
 }
 
 function VideoPlayer({ url, pic }: { url: string; pic?: string }) {
-  // Vidstack 的交互布局依赖 DOM；SSR 和首次水合先保留等尺寸封面。
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // 点击前不挂载媒体：HLS 引擎也不能提前请求 manifest。
+  const [started, setStarted] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const frame =
@@ -44,32 +44,44 @@ function VideoPlayer({ url, pic }: { url: string; pic?: string }) {
             </a>
           </div>
         </div>
-      ) : !mounted ? (
-        pic ? (
-          <img src={pic} alt="视频封面" className="size-full object-cover" />
-        ) : null
-      ) : (
-        <MediaPlayer
-          key={attempt}
-          title="视频"
-          src={/\.m3u8(?:[?#]|$)/i.test(url) ? { src: url, type: "application/x-mpegurl" } : url}
-          poster={pic}
-          viewType="video"
-          load={attempt > 0 ? "eager" : "play"}
-          preload="none"
-          autoPlay={attempt > 0}
-          playsInline
-          onProviderChange={(provider) => {
-            if (isHLSProvider(provider)) provider.library = () => import("hls.js");
-          }}
-          onError={() => setFailed(true)}
-          className="h-full w-full"
+      ) : !started ? (
+        <button
+          type="button"
+          aria-label="播放视频"
+          className="relative grid size-full place-items-center"
+          onClick={() => setStarted(true)}
         >
-          <MediaProvider>
-            <Poster className="vds-poster" alt="视频封面" />
-          </MediaProvider>
-          <DefaultVideoLayout icons={defaultLayoutIcons} translations={videoTranslations} />
-        </MediaPlayer>
+          {pic && (
+            <img src={pic} alt="视频封面" className="absolute inset-0 size-full object-cover" />
+          )}
+          <span className="relative grid size-14 place-items-center rounded-full bg-black/55 text-white">
+            <Play className="size-7 fill-current" />
+          </span>
+        </button>
+      ) : (
+        <I18nProvider locale="zh-CN" translations={zhCN}>
+          <MediaPlayer key={attempt} title="视频" poster={pic}>
+            <VideoSkin className="article-video h-full w-full">
+              {/\.m3u8(?:[?#]|$)/i.test(url) ? (
+                <HlsJsVideo
+                  src={url}
+                  autoPlay
+                  playsInline
+                  preload="none"
+                  onError={() => setFailed(true)}
+                />
+              ) : (
+                <Video
+                  src={url}
+                  autoPlay
+                  playsInline
+                  preload="none"
+                  onError={() => setFailed(true)}
+                />
+              )}
+            </VideoSkin>
+          </MediaPlayer>
+        </I18nProvider>
       )}
     </section>
   );

@@ -1,6 +1,6 @@
 # Video.js 10 音视频与歌词 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 全面替换 Vidstack，保留悬浮音乐外观，完成歌单和滚动歌词。
 
@@ -34,11 +34,11 @@
 - Produces `parseLyrics(text: string): { lines: { time: number; text: string }[]; text: string[] }`, `activeLyricIndex(lines, time): number`, `loadLyrics(source: string, signal?: AbortSignal): Promise<ParsedLyrics>`。
 - `lines` 按秒排序、相同时间合并文本；`text` 为无时间戳正文；未开始时索引 -1。
 
-- [ ] Step 1: 写测试覆盖多时间标签、1/2/3 位小数、正负 offset、相同时间翻译合并、元信息/空文档/纯文本、跳播前后高亮索引。
-- [ ] Step 2: 在 localhost-1 跑 `bunx vitest run src/lib/lyrics.test.ts`，确认因缺少实现失败。
-- [ ] Step 3: 实现解析、索引与内联/HTTP(S) 加载，限制远程协议，传递 AbortSignal。
-- [ ] Step 4: 相同命令通过。Expected: 全部歌词数据用例通过。
-- [ ] Step 5: 提交歌词数据与测试。
+- [x] Step 1: 写测试覆盖多时间标签、1/2/3 位小数、正负 offset、相同时间翻译合并、元信息/空文档/纯文本、跳播前后高亮索引。
+- [x] Step 2: 在 localhost-1 跑 `bunx vitest run src/lib/lyrics.test.ts`，确认因缺少实现失败。
+- [x] Step 3: 实现解析、索引与内联/HTTP(S) 加载，限制远程协议，传递 AbortSignal。
+- [x] Step 4: 相同命令通过。Expected: 全部歌词数据用例通过。
+- [x] Step 5: 提交歌词数据与测试。
 
 ### Task 2: 音视频迁移、队列与歌词交互
 
@@ -46,9 +46,9 @@
 
 **Interfaces:** Consumes Task 1 parser / loader；组件在 AudioPlayer 上下文用音频预设 `usePlayer` 订阅时间并执行定位。Zustand 增加歌词面板开关，不持久化歌词或时间。
 
-- [ ] Step 1: 扩充浏览器用例：歌单点击后当前项高亮；歌词自动滚动、点击跳转、手动浏览与恢复跟随；慢请求切歌、无歌词/纯文本/失败重试。先在旧版本运行新场景并确认缺失歌词入口导致失败。
-- [ ] Step 2: 远程安装 @videojs/react 10.1.0，接入 AudioPlayer / Audio 与标准视频皮肤，保留现有 7 项播放契约。移除全部 Vidstack 生产依赖与兼容文件。
-- [ ] Step 3: 实现歌词面板、歌单定位与无障碍属性；动态值由 Video.js 驱动，保留 CORS 可视化降级和跨页播放器实例。
-- [ ] Step 4: 远程 `bun run lint && bun run typecheck && bun run test && bun run build`。Expected: 全部通过。
-- [ ] Step 5: 启动现有远程开发栈的生产构建，运行完整 `bun run test:e2e`。Expected: 全部通过；截取桌面歌词/歌单、手机视频、真实 Meting 播放证据。
+- [x] Step 1: 扩充浏览器用例：歌单点击后当前项高亮；歌词自动滚动、点击跳转、手动浏览与恢复跟随；慢请求切歌、无歌词/纯文本/失败重试。先在旧版本运行新场景并确认缺失歌词入口导致失败。
+- [x] Step 2: 远程安装 @videojs/react 10.1.0，接入 AudioPlayer / Audio 与标准视频皮肤，保留现有 7 项播放契约。移除全部 Vidstack 生产依赖与兼容文件。
+- [x] Step 3: 实现歌词面板、歌单定位与无障碍属性；动态值由 Video.js 驱动，保留 CORS 可视化降级和跨页播放器实例。
+- [x] Step 4: 远程 `bun run lint && bun run typecheck && bun run test && bun run build`。Expected: 全部通过。
+- [x] Step 5: 启动远程开发栈的生产构建，运行完整播放器 E2E；完整站点 E2E 在 CI 的独立 Docker 生产栈运行。现有开发库包含真实内容副本，不覆盖为 CI seed。截取桌面歌词/歌单、手机视频，并单独验证真实 Meting 音源和歌词。
 - [ ] Step 6: 独立审查整分支，解决实质问题，提交 PR 并等待 CI。Expected: 完整 CI 通过；说明验证范围及第三方资源限制。

@@ -1,7 +1,7 @@
 /**
  * 全站音乐播放器的状态（zustand）。
  * 任何组件都能直接换歌单（usePlayerStore.getState().play / 选择器），不需要 Provider；
- * Vidstack 实例与可视化由 components/player/music-player.tsx 负责，这里只管状态和指令。
+ * Video.js 实例与可视化由 components/player/music-player.tsx 负责，这里只管状态和指令。
  * 音量持久化到 localStorage。
  */
 import { create } from "zustand";
@@ -17,6 +17,7 @@ interface PlayerState {
   playing: boolean;
   expanded: boolean;
   showQueue: boolean;
+  showLyrics: boolean;
   volume: number;
   muted: boolean;
   /** 每次换歌递增，包含重复播放同一首歌的情况。 */
@@ -33,6 +34,7 @@ interface PlayerState {
   expand: () => void;
   collapse: () => void;
   toggleQueue: () => void;
+  toggleLyrics: () => void;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -67,6 +69,7 @@ export const usePlayerStore = create<PlayerState>()(
         playing: false,
         expanded: false,
         showQueue: false,
+        showLyrics: false,
         volume: DEFAULT_VOLUME,
         muted: false,
         load: { seq: 0, autoplay: false },
@@ -90,8 +93,9 @@ export const usePlayerStore = create<PlayerState>()(
         prev: () => get().switchTo(get().index - 1),
         setVolume: (volume) => set({ volume }),
         expand: () => set({ expanded: true }),
-        collapse: () => set({ expanded: false, showQueue: false }),
+        collapse: () => set({ expanded: false, showQueue: false, showLyrics: false }),
         toggleQueue: () => set((s) => ({ showQueue: !s.showQueue })),
+        toggleLyrics: () => set((s) => ({ showLyrics: !s.showLyrics })),
       };
     },
     {

@@ -5,7 +5,7 @@
 @source "./";
 @source "../../../packages/ui/src";
 
-/* Vidstack 自定义音乐控制；默认视频布局使用官方样式。 */
+/* Video.js 自定义音乐控制；默认视频布局使用官方样式。 */
 .music-player {
   display: contents;
 }
@@ -32,25 +32,25 @@
   border-radius: inherit;
 }
 .music-slider-fill {
-  width: var(--slider-fill);
+  width: var(--media-slider-fill);
   background: var(--primary);
 }
 .music-slider-buffer {
-  width: var(--slider-progress);
+  width: var(--media-slider-buffer);
   background: var(--muted-foreground);
   opacity: 0.25;
 }
 .music-slider-thumb {
   position: absolute;
   top: 50%;
-  left: var(--slider-fill);
+  left: var(--media-slider-fill);
   height: 10px;
   width: 10px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: var(--primary);
 }
-.music-slider[data-focus] .music-slider-track {
+.music-slider[data-interactive] .music-slider-track {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
@@ -58,7 +58,7 @@
   cursor: default;
   opacity: 0.5;
 }
-[data-media-player][data-view-type="video"] {
+.article-video {
   --media-brand: var(--primary);
   --media-focus-ring-color: var(--ring);
 }
