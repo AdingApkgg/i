@@ -23,10 +23,12 @@ test.describe("Bangumi 双向同步", () => {
     await db.connect();
     const fixture = process.env.BANGUMI_FIXTURE_URL!;
     const control = async (path: string, data?: unknown) => {
+      // 控制调用之间有较长 UI/上游等待；不复用已被 Node 空闲超时关闭的连接。
+      const headers = { Connection: "close" };
       const response =
         data === undefined
-          ? await request.get(`${fixture}${path}`)
-          : await request.post(`${fixture}${path}`, { data });
+          ? await request.get(`${fixture}${path}`, { headers })
+          : await request.post(`${fixture}${path}`, { data, headers });
       expect(response.ok()).toBe(true);
       return response.json();
     };
