@@ -5,7 +5,7 @@ import { ADMIN_STATE, expect, test } from "./fixtures";
 test("匿名用户不能下载正文备份", async ({ request }) => {
   const response = await request.get("/api/content-export/backup.json");
   expect(response.status()).toBe(401);
-  expect(response.headers()["cache-control"]).toBe("private, no-store");
+  expect(response.headers()["cache-control"]).toBe("private, no-store, no-transform");
 });
 
 test.describe("正文导出（管理员）", () => {

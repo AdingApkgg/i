@@ -29,7 +29,7 @@ describe("管理员内容下载", () => {
       for (const path of ["/backup.json", "/post/id.json", "/post/id.html", "/page/music.html"]) {
         const response = await app().request(path);
         expect(response.status).toBe(session ? 403 : 401);
-        expect(response.headers.get("cache-control")).toBe("private, no-store");
+        expect(response.headers.get("cache-control")).toBe("private, no-store, no-transform");
       }
     }
   });
@@ -41,7 +41,7 @@ describe("管理员内容下载", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(response.headers.get("content-disposition")).toMatch(/^attachment;/);
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("cache-control")).toBe("private, no-store, no-transform");
     expect(await response.json()).toMatchObject({
       posts: [{ slug: "draft", status: "draft", content: doc }],
       pages: [{ id: "music", content: doc }],
@@ -60,7 +60,9 @@ describe("管理员内容下载", () => {
     expect(backup.posts[0].id).toBe("a");
     expect(backup.pages).toEqual([]);
     const html = await app().request("/page/music.html");
-    expect(html.headers.get("content-type")).toContain("text/html");
+    expect(html.headers.get("content-type")).toBe("application/octet-stream");
+    expect(html.headers.get("cache-control")).toBe("private, no-store, no-transform");
+    expect(html.headers.get("content-disposition")).toContain("page-music.html");
     expect(await html.text()).toContain("测试正文");
   });
 
