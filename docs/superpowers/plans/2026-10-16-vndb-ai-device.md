@@ -1,6 +1,6 @@
 # VNDB、简介翻译与设备编辑 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 完成 VNDB 预览导入、可配置 AI 简介翻译和设备图文编辑。
 
@@ -31,10 +31,10 @@
 
 **Interfaces:** `searchVndb(query: string): Promise<VndbNovel[]>`; `vndb.search({query})` administrator only. `VnTools` fills form fields `vndbId`, `released`, `vndbRating`, `descriptionOriginal`, `descriptionZh`, title/brand/cover/link without personal fields. Public VN list shows metadata and expandable original.
 
-- [ ] Write tests for normalization, candidate choice, malformed response, upstream failures, access control, duplicate IDs and preserving personal fields.
-- [ ] Run targeted Vitest remotely and observe RED.
-- [ ] Implement bounded, paced, cached VNDB reads and draft-only import UI; generate additive migration remotely.
-- [ ] Run targeted tests GREEN, remote typecheck, commit.
+- [x] Write tests for normalization, candidate choice, malformed response, upstream failures, access control, duplicate IDs and preserving personal fields.
+- [x] Run targeted Vitest remotely and observe RED.
+- [x] Implement bounded, paced, cached VNDB reads and draft-only import UI; generate additive migration remotely.
+- [x] Run targeted tests GREEN, remote typecheck, commit.
 
 ### Task 2: 私有 AI 配置与简介翻译
 
@@ -42,9 +42,9 @@
 
 **Interfaces:** `translation.settings()` returns `{baseUrl,model,enabled,hasKey}`; `saveSettings({baseUrl,model,enabled,apiKey?,clearKey?})`; `test()` returns success; `preview({text})` returns `{text,model}`. All administrator only. `translateText(config,text)` uses HTTPS chat/completions, 30 second timeout and bounded text response.
 
-- [ ] Write tests asserting encrypted storage, access denial, blank retain/explicit clear, endpoint change needs replacement, invalid config, safe upstream errors, preview never mutates content.
-- [ ] Run remote RED, implement configuration/adapter and translation preview with original snapshot check, run GREEN.
-- [ ] Verify pending preview cancellation and source changes in browser; commit.
+- [x] Write tests asserting encrypted storage, access denial, blank retain/explicit clear, endpoint change needs replacement, invalid config, safe upstream errors, preview never mutates content.
+- [x] Run remote RED, implement configuration/adapter and translation preview with original snapshot check, run GREEN.
+- [x] Verify pending preview cancellation and source changes in browser; commit.
 
 ### Task 3: 设备编辑和交付验收
 
@@ -52,7 +52,7 @@
 
 **Interfaces:** Device CRUD adds optional `imageUrl`; image uses existing upload API; `spec` is textarea. Public cards display all saved device information.
 
-- [ ] Write regression for image/multiline/date/note roundtrip; remote RED then implement and GREEN.
-- [ ] Remote full lint, typecheck, unit suite, build; run focused browser tests for configuration, VN import/translation mocks, device and 390/1440 widths.
-- [ ] Fresh independent whole-branch code review; fix significant findings with RED→GREEN regressions.
+- [x] Write regression for image/multiline/date/note roundtrip; remote RED then implement and GREEN.
+- [x] Remote full lint, typecheck, unit suite, build; run focused browser tests for configuration, VN import/translation mocks, device and 390/1440 widths.
+- [x] Fresh independent whole-branch code review; fix significant findings with RED→GREEN regressions.
 - [ ] Commit verified changes, create and attach PR. State real-provider verification pending user configuration; no merge/deployment.

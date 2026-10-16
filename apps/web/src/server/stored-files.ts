@@ -8,6 +8,7 @@
 import {
   album,
   comment,
+  device,
   friend,
   moment,
   movie,
@@ -42,6 +43,7 @@ const REFERENCES: [PgTable, AnyColumn][] = [
   [track, track.coverUrl],
   [movie, movie.coverUrl],
   [vn, vn.coverUrl],
+  [device, device.imageUrl],
   [touhou, touhou.coverUrl],
   [friend, friend.avatarUrl],
   [user, user.image],

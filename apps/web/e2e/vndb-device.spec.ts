@@ -127,6 +127,78 @@ test.describe("VNDB、翻译配置与设备", () => {
     await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
   });
 
+  test("图片上传未结束时不能保存或取消，完成后再提交", async ({ page }) => {
+    const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#efb4c2" } })
+      .png()
+      .toBuffer();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/api/gallery/upload", async (route) => {
+      await pending;
+      await route.fulfill({ json: { imageUrl: "https://example.com/delayed.png" } });
+    });
+    try {
+      await page.goto("/dash/device");
+      await page.getByRole("button", { name: /新建/ }).click();
+      await page.getByLabel("名称").fill("Pending upload");
+      await page
+        .locator('input[type="file"]')
+        .setInputFiles({ name: "device.png", mimeType: "image/png", buffer: png });
+      await expect(page.getByRole("button", { name: "上传中…" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "创建", exact: true })).toBeDisabled({
+        timeout: 1500,
+      });
+      await expect(page.getByRole("button", { name: "取消", exact: true })).toBeDisabled();
+      release();
+      await expect(page.getByPlaceholder("https://… 或上传图片")).toHaveValue(
+        "https://example.com/delayed.png",
+      );
+      await expect(page.getByRole("button", { name: "创建", exact: true })).toBeEnabled();
+      await page.getByRole("button", { name: "取消", exact: true }).click();
+      await page.getByRole("button", { name: /新建/ }).click();
+      await expect(page.getByPlaceholder("https://… 或上传图片")).toHaveValue("");
+    } finally {
+      release();
+    }
+  });
+
+  test("离开编辑页会中止上传，迟到图片不会进入另一份草稿", async ({ page }) => {
+    const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#efb4c2" } })
+      .png()
+      .toBuffer();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route("**/api/gallery/upload", async (route) => {
+      await pending;
+      await route.fulfill({ json: { imageUrl: "https://example.com/stale.png" } }).catch(() => {});
+    });
+    try {
+      await page.goto("/dash/device");
+      await page.getByRole("button", { name: /新建/ }).click();
+      const canceled = page.waitForEvent("requestfailed", {
+        predicate: (r) => r.url().endsWith("/api/gallery/upload"),
+      });
+      await page
+        .locator('input[type="file"]')
+        .setInputFiles({ name: "device.png", mimeType: "image/png", buffer: png });
+      await expect(page.getByRole("button", { name: "上传中…" })).toBeVisible();
+      await page.getByRole("link", { name: "仪表盘", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "仪表盘", exact: true })).toBeVisible();
+      await canceled;
+      await page.getByRole("link", { name: "设备", exact: true }).click();
+      await page.getByRole("button", { name: /新建/ }).click();
+      release();
+      await expect(page.getByPlaceholder("https://… 或上传图片")).toHaveValue("");
+      await expect(page.getByRole("button", { name: "创建", exact: true })).toBeEnabled();
+    } finally {
+      release();
+    }
+  });
+
   test("设备图片上传后能保存并在前台加载", async ({ page, request }) => {
     const name = `e2e 上传设备 ${Date.now()}`;
     const png = await sharp({
