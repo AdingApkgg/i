@@ -20,11 +20,11 @@ import { renderOgImage } from "@/lib/og";
 import { isAdminRole } from "@/lib/roles";
 import { StorageError, storage } from "@/lib/s3";
 import { isThumbWidth } from "@/lib/thumb";
-import { CACHE } from "./cache";
 import { contentExportRoutes } from "./content-export";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
 import { createContext } from "./orpc";
 import { router } from "./router";
+import { storedFileResponse } from "./stored-file-response";
 import { deleteThumbs, getThumb } from "./thumbs";
 
 export const http = new Hono();
@@ -125,23 +125,14 @@ http.get("/api/gallery/files/:key", async (c) => {
   try {
     const t = w === undefined ? null : await getThumb(key, Number(w));
     if (t) return t;
-    obj = await storage.get(key);
+    obj = await storage.get(key, c.req.header("range"));
   } catch (e) {
     if (e instanceof StorageError && e.status === 400) return c.text("not found", 404);
     console.error("[gallery] read failed:", e);
     return c.text("storage error", 502);
   }
   if (!obj) return c.text("not found", 404);
-  // 流式转发，不在内存里攒整张图；key 带 uuid，内容不变，可长期缓存
-  return new Response(obj.body, {
-    headers: {
-      "content-type": obj.headers.get("content-type") ?? "application/octet-stream",
-      ...(obj.headers.get("content-length")
-        ? { "content-length": obj.headers.get("content-length")! }
-        : {}),
-      ...CACHE.immutable,
-    },
-  });
+  return storedFileResponse(obj);
 });
 
 // ---------------- 订阅 / 抓取 ----------------

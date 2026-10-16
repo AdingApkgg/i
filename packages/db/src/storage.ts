@@ -92,10 +92,11 @@ export function createStorage(cfg: StorageConfig) {
       );
     },
 
-    /** 不存在返回 null；其余错误抛出。返回的 Response.body 可直接流式转发 */
-    async get(key: string): Promise<Response | null> {
-      const res = await aws.fetch(url(key));
+    /** 不存在返回 null；保留分段读取及 416 响应，其余错误抛出。 */
+    async get(key: string, range?: string): Promise<Response | null> {
+      const res = await aws.fetch(url(key), range ? { headers: { range } } : undefined);
       if (res.status === 404) return null;
+      if (range && res.status === 416) return res;
       return expectOk(res, `get ${key}`);
     },
 
