@@ -227,6 +227,11 @@ export const vn = pgTable(
     id: id(),
     title: text("title").notNull(),
     brand: text("brand"),
+    vndbId: text("vndbId"),
+    released: text("released"),
+    vndbRating: doublePrecision("vndbRating"),
+    descriptionOriginal: text("descriptionOriginal"),
+    descriptionZh: text("descriptionZh"),
     status: text("status").notNull().default("在玩"), // 在玩 | 通关 | 想玩 | 搁置
     rating: integer("rating"),
     playHours: integer("playHours"),
@@ -237,7 +242,10 @@ export const vn = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("Vn_status_createdAt_idx").on(t.status, t.createdAt)],
+  (t) => [
+    index("Vn_status_createdAt_idx").on(t.status, t.createdAt),
+    uniqueIndex("Vn_vndbId_key").on(t.vndbId),
+  ],
 );
 
 export const touhou = pgTable(
@@ -265,6 +273,7 @@ export const device = pgTable(
     name: text("name").notNull(),
     category: text("category"), // 手机 / 电脑…
     spec: text("spec"),
+    imageUrl: text("imageUrl"),
     status: text("status").notNull().default("在用"), // 在用 | 退役 | 想要
     acquired: text("acquired"), // 入手日期（自由文本）
     link: text("link"),
@@ -552,4 +561,14 @@ export const bangumiRun = pgTable("BangumiRun", {
   createdAt: createdAt(),
   expiresAt: ts("expiresAt").notNull(),
   finishedAt: ts("finishedAt"),
+});
+
+// 私有服务配置：不得通过公共 CRUD 暴露；密钥使用服务端认证 secret 加密。
+export const aiTranslation = pgTable("AiTranslation", {
+  id: text("id").primaryKey(),
+  baseUrl: text("baseUrl").notNull(),
+  model: text("model").notNull(),
+  encryptedApiKey: text("encryptedApiKey"),
+  enabled: boolean("enabled").notNull().default(false),
+  updatedAt: updatedAt(),
 });

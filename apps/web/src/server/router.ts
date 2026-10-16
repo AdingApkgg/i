@@ -17,6 +17,8 @@ import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
 import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
+import { translationRouter } from "./routers/translation";
+import { vndbRouter } from "./routers/vndb";
 
 export const router = {
   bangumi: bangumiRouter,
@@ -25,6 +27,8 @@ export const router = {
   music: musicRouter,
   movie: movieRouter,
   vn: vnRouter,
+  vndb: vndbRouter,
+  translation: translationRouter,
   touhou: touhouRouter,
   device: deviceRouter,
   gallery: galleryRouter,

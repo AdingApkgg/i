@@ -25,7 +25,13 @@ type Row = Record<string, unknown> & { id: string };
 export const inputCls =
   "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
-export function DomainAdmin({ domainKey }: { domainKey: string }) {
+export function DomainAdmin({
+  domainKey,
+  editorExtra,
+}: {
+  domainKey: string;
+  editorExtra?: ReactNode;
+}) {
   // The [domain] page already 404s unknown keys, so these are present.
   const spec = ADMIN_FIELDS[domainKey]!;
   // 按 domainKey 动态取路由（类型化的 client 只认字面量 key），这里收窄成通用 CRUD 形状
@@ -113,6 +119,7 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
               <FormProvider {...form}>
                 <form noValidate onSubmit={save}>
                   <CardBody className="space-y-4">
+                    {editorExtra}
                     <div className="grid gap-4 sm:grid-cols-2">
                       {spec.fields.map((f) => (
                         <Field key={f.name} field={f} />
@@ -270,6 +277,7 @@ export function Field({ field }: { field: FieldSpec }) {
           id={id}
           placeholder={field.placeholder}
           rows={5}
+          readOnly={field.readOnly}
           aria-invalid={invalid}
           {...register(field.name)}
           className={cn(inputCls, "resize-y")}
@@ -288,6 +296,7 @@ export function Field({ field }: { field: FieldSpec }) {
           id={id}
           type={field.type === "number" ? "number" : "text"}
           step={field.type === "number" ? "any" : undefined}
+          readOnly={field.readOnly}
           placeholder={field.placeholder}
           aria-invalid={invalid}
           {...register(field.name)}
