@@ -126,10 +126,70 @@ describe("AI private configuration", () => {
           model: "nvidia/riva-translate-4b-instruct-v2",
           apiKey: "test-key",
         },
-        "An unusually long story. ".repeat(200),
+        "An unusually long story. ".repeat(120),
         fetcher,
       ),
     ).rejects.toMatchObject({ message: "译文被模型截断，请调整模型后重试" });
     expect(requests).toBe(2);
+  });
+
+  it("translates two Riva paragraphs concurrently and restores their source order", async () => {
+    let activeRequests = 0;
+    let peakRequests = 0;
+    let requestIndex = 0;
+    const fetcher: typeof fetch = async () => {
+      const index = requestIndex++;
+      activeRequests++;
+      peakRequests = Math.max(peakRequests, activeRequests);
+      await new Promise((resolve) => setTimeout(resolve, index === 0 ? 20 : 1));
+      activeRequests--;
+      return Response.json({
+        choices: [{ message: { content: `段落${index + 1}` }, finish_reason: "stop" }],
+      });
+    };
+    const result = await translateText(
+      {
+        baseUrl: "https://integrate.api.nvidia.com/v1",
+        model: "nvidia/riva-translate-4b-instruct-v2",
+        apiKey: "test-key",
+      },
+      "First paragraph.\n\nSecond paragraph.\n\nThird paragraph.",
+      fetcher,
+    );
+    expect(peakRequests).toBe(2);
+    expect(result).toBe("段落1\n\n段落2\n\n段落3");
+  });
+
+  it("reserves the process-wide request limit and releases it after Riva completes", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const response = () =>
+      Response.json({ choices: [{ message: { content: "译文" }, finish_reason: "stop" }] });
+    const pending = translateText(
+      {
+        baseUrl: "https://integrate.api.nvidia.com/v1",
+        model: "nvidia/riva-translate-4b-instruct-v2",
+        apiKey: "test-key",
+      },
+      "First paragraph.\n\nSecond paragraph.",
+      async () => {
+        await gate;
+        return response();
+      },
+    );
+    const generic = { baseUrl: "https://ai.example/v1", model: "generic", apiKey: "test-key" };
+    const fetcher = vi.fn<typeof fetch>(async () => response());
+    try {
+      await expect(translateText(generic, "text", fetcher)).rejects.toMatchObject({
+        code: "TOO_MANY_REQUESTS",
+      });
+      expect(fetcher).not.toHaveBeenCalled();
+    } finally {
+      release();
+      await pending;
+    }
+    expect(await translateText(generic, "text", fetcher)).toBe("译文");
   });
 });
