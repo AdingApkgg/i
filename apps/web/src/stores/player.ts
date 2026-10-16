@@ -86,8 +86,9 @@ export const usePlayerStore = create<PlayerState>()(
             if (request === selection && songs.length) {
               loadAt(0, true, { queue: songs, expanded: true });
             }
-          } catch {
-            /* 拉不到就保持当前播放 */
+          } catch (error) {
+            // 保留当前队列，由发起选播的界面显示错误；过期请求不打断后续选择。
+            if (request === selection) throw error;
           }
         },
         switchTo: (i, autoplay = true) => {

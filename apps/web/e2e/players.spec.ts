@@ -24,6 +24,8 @@ test.beforeAll(async () => {
           type: "doc",
           content: [
             { type: "music", attrs: { server: "netease", type: "playlist", mid: "e2e" } },
+            { type: "music", attrs: { server: "netease", type: "album", mid: "e2e-album" } },
+            { type: "music", attrs: { server: "netease", type: "artist", mid: "e2e-artist" } },
             ...["sample.mp4", "stream.m3u8?token=e2e", "missing.mp4"].map((src) => ({
               type: "video",
               attrs: { src: media(src) },
@@ -418,4 +420,70 @@ test("歌词失败可重试，纯文本与无歌词都有可读状态", async ({
   await player.getByRole("button", { name: "下一首" }).click();
   await expect(lyrics).toContainText("暂无歌词");
   await expect(player.locator("audio")).toHaveJSProperty("paused", false);
+});
+
+test("专辑、艺术家和单曲回退兼容维护者接口字段，并可实际播放", async ({ page }) => {
+  await page.route("https://api.injahow.cn/meting/**", (route) => route.fulfill({ json: [] }));
+  await page.route("https://api.i-meto.com/meting/api**", (route) =>
+    route.fulfill({
+      json: [
+        {
+          title: "兼容歌曲",
+          author: "接口歌手",
+          url: songs[0]!.url,
+          pic: "",
+          lrc: "[00:00]兼容歌词",
+        },
+      ],
+    }),
+  );
+  await page.goto(`/blog/${slug}`);
+  const player = page.locator(".music-player");
+  for (const label of ["播放专辑", "播放艺术家", "播放歌单"]) {
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await expect(player).toContainText("兼容歌曲");
+    await expect
+      .poll(() => player.locator("audio").evaluate((a: HTMLAudioElement) => a.currentTime))
+      .toBeGreaterThan(0.3);
+  }
+  await player.getByRole("button", { name: "歌词", exact: true }).click();
+  await expect(player.getByRole("region", { name: "歌词", exact: true })).toContainText("兼容歌词");
+});
+
+test("音源失败保留队列并显示重试与原平台入口，元数据失败给出提示", async ({ page }, testInfo) => {
+  await page.route("https://api.injahow.cn/meting/**", (route) =>
+    route.fulfill({
+      json: [
+        {
+          name: "失效音源",
+          artist: "测试",
+          url: "/__media/unavailable.mp3?id=123",
+          pic: "",
+        },
+      ],
+    }),
+  );
+  await page.route("**/__media/unavailable.mp3**", (route) =>
+    route.fulfill({ body: "not audio", contentType: "text/html" }),
+  );
+  await page.goto(`/blog/${slug}`);
+  await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+  const player = page.locator(".music-player");
+  await expect(player.getByRole("status")).toContainText("音源暂不可用");
+  await expect(player.getByRole("button", { name: "重试", exact: true })).toBeVisible();
+  await expect(player.getByRole("link", { name: "前往原平台" })).toHaveAttribute(
+    "href",
+    "https://music.163.com/#/song?id=123",
+  );
+  await expect(player).toContainText("失效音源");
+  await page.screenshot({ path: testInfo.outputPath("music-unavailable.png") });
+  await page.route("https://api.injahow.cn/meting/**", (route) => route.fulfill({ status: 503 }));
+  await page.route("https://api.i-meto.com/meting/api**", (route) =>
+    route.fulfill({ status: 503 }),
+  );
+  await page.getByRole("button", { name: "播放歌单", exact: true }).click();
+  await expect(
+    page.getByText("音乐信息暂时不可用，请稍后重试或前往原平台", { exact: true }),
+  ).toBeVisible();
+  await expect(player).toContainText("失效音源");
 });

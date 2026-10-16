@@ -1,5 +1,5 @@
 /**
- * meting 歌曲元数据 → react-query 永不过期缓存。
+ * meting 歌曲元数据 → react-query 短期缓存。
  * 同一首歌出现在多个 SongRow / 全局播放器里时只请求一次。
  */
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ export function useMetingSong(server: string, mid: string, enabled: boolean) {
     queryKey: metingKey(server, "song", mid),
     queryFn: () => fetchMeting(server, "song", mid),
     enabled: enabled && Boolean(mid),
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
   const song = data?.[0] ?? null;

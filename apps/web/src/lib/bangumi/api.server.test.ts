@@ -207,3 +207,35 @@ describe("大收藏的确认扫描成本", () => {
     expect(waited).toBeLessThan(15 * 60 * 1000);
   });
 });
+
+describe("Bangumi 响应读取重试", () => {
+  it("响应头已到但正文网络中断时重新读取，不能误报数据损坏", async () => {
+    let calls = 0;
+    const client = new BangumiClient("private-token", {
+      wait: async () => {},
+      fetch: async () => {
+        if (++calls === 1)
+          return new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.error(new DOMException("body timed out", "TimeoutError"));
+              },
+            }),
+          );
+        return Response.json({ id: 7, username: "owner" });
+      },
+    });
+    expect((await client.me()).id).toBe(7);
+    expect(calls).toBe(2);
+  });
+  it("重复断连后错误包含失败方法和接口，不泄露原异常与 token", async () => {
+    const client = new BangumiClient("private-token", {
+      wait: async () => {},
+      fetch: async () => {
+        throw new TypeError("secret private-token");
+      },
+    });
+    await expect(client.me()).rejects.toThrow(/GET \/v0\/me/);
+    await expect(client.me()).rejects.not.toThrow(/private-token/);
+  });
+});
