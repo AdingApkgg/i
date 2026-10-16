@@ -15,6 +15,8 @@ import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
+  date,
   doublePrecision,
   foreignKey,
   index,
@@ -572,3 +574,15 @@ export const aiTranslation = pgTable("AiTranslation", {
   enabled: boolean("enabled").notNull().default(false),
   updatedAt: updatedAt(),
 });
+
+// 按用户要求公开的每日记录；写入仅管理员，日期唯一。
+export const masturbationDay = pgTable(
+  "MasturbationDay",
+  {
+    date: date("date", { mode: "string" }).primaryKey(),
+    count: integer("count").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check("MasturbationDay_count_check", sql`${t.count} > 0 AND ${t.count} <= 1000`)],
+);

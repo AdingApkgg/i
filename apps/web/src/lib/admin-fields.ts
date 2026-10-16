@@ -196,6 +196,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       sortOrder,
     ],
   },
+  masturbation: { key: "masturbation", label: "自慰记录", fields: [], columns: [] },
   // 相册照片走专属管理页 app/dash/(admin)/gallery（网格多选/批量上传/移动图集），
   // fields 供该页的编辑表单复用（图集下拉在页内单独渲染）。
   gallery: {
@@ -296,6 +297,7 @@ export const ADMIN_ORDER = [
   "maimai",
   "touhou",
   "device",
+  "masturbation",
   "friends",
   "monitor",
 ];
