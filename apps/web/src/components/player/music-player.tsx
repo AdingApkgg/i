@@ -100,11 +100,11 @@ function MusicPlayerReady() {
   }, []);
   const source = current?.url;
 
-  // ---- 默认歌单（随机顺序，不自动播放；元数据不会变，永不过期）----
+  // ---- 默认歌单（随机顺序，不自动播放；定期刷新避免长期保留旧链接）----
   const { data: playlist } = useQuery({
     queryKey: ["meting", "netease", "playlist", DEFAULT_PLAYLIST],
     queryFn: () => fetchMeting("netease", "playlist", DEFAULT_PLAYLIST),
-    staleTime: Number.POSITIVE_INFINITY,
+    staleTime: 5 * 60 * 1000,
   });
   useEffect(() => {
     if (playlist) initQueue(playlist);
@@ -528,10 +528,24 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
       <Progress />
       {visuals.failed && (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
-          音乐加载失败，
+          音源暂不可用，
           <button type="button" className="text-primary" onClick={visuals.retry}>
             重试
           </button>
+          {song.sourceUrl && (
+            <>
+              {" "}
+              ·{" "}
+              <a
+                href={song.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary"
+              >
+                前往原平台
+              </a>
+            </>
+          )}
         </p>
       )}
 

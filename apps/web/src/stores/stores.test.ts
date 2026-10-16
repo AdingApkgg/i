@@ -94,7 +94,7 @@ describe("播放器", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 500 })),
     );
-    await s().play("netease", "playlist", "456");
+    await expect(s().play("netease", "playlist", "456")).rejects.toThrow();
     expect(s().queue.map((x) => x.name)).toEqual(["p1", "p2"]);
   });
 
@@ -131,7 +131,7 @@ describe("播放器", () => {
     const s = usePlayerStore.getState;
     s().initQueue([song("current")]);
     const older = s().play("netease", "playlist", "first");
-    await s().play("netease", "playlist", "second");
+    await expect(s().play("netease", "playlist", "second")).rejects.toThrow();
     first.resolve(Response.json([song("stale")]));
     await older;
     expect(s().queue).toEqual([song("current")]);

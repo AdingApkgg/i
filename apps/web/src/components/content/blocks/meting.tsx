@@ -8,6 +8,7 @@
 import { Music2, Play } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useMetingSong } from "@/lib/use-meting";
 import { usePlayerStore } from "@/stores/player";
 
@@ -27,19 +28,23 @@ export function Meting({
   mid?: string;
 }) {
   const play = usePlayerStore((s) => s.play);
+  const select = () =>
+    void play(server, type, mid).catch(() => {
+      toast.error("音乐信息暂时不可用，请稍后重试或前往原平台");
+    });
   if (type !== "song") {
     const label = TYPE_LABEL[type] ?? type;
     return (
       <button
         type="button"
-        onClick={() => void play(server, type, mid)}
+        onClick={select}
         className="my-1 inline-flex items-center gap-1.5 rounded-pill bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition hover:brightness-105 active:translate-y-px"
       >
         <Play className="size-3.5 fill-current" /> 播放{label}
       </button>
     );
   }
-  return <SongRow server={server} mid={mid} onPlay={() => void play(server, "song", mid)} />;
+  return <SongRow server={server} mid={mid} onPlay={select} />;
 }
 
 function SongRow({ server, mid, onPlay }: { server: string; mid: string; onPlay: () => void }) {

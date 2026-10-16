@@ -75,10 +75,14 @@ export class BangumiClient {
     body?: unknown,
     missing = false,
   ): Promise<unknown> {
+    const endpoint = `${method} ${path.split("?")[0]!.replace(/\/users\/[^/]+/, "/users/{user}")}`;
+    const networkError = () =>
+      new BangumiError(`Bangumi 请求超时或网络异常（${endpoint}），请稍后重试`);
     for (let attempt = 0; attempt < 3; attempt++) {
       this.signal.throwIfAborted();
       if (attempt === 0) await this.wait(250);
       let response: Response;
+      let data: unknown;
       try {
         response = await this.fetcher(`https://api.bgm.tv${path}`, {
           method,
@@ -88,15 +92,28 @@ export class BangumiClient {
             ...(body === undefined ? {} : { "Content-Type": "application/json" }),
           },
           body: body === undefined ? undefined : JSON.stringify(body),
-          signal: AbortSignal.any([this.signal, AbortSignal.timeout(10000)]),
+          signal: AbortSignal.any([this.signal, AbortSignal.timeout(20000)]),
           redirect: "error",
         });
-      } catch {
+        // fetch 在收到响应头时就完成；正文仍可能超时或断连，必须纳入同一重试边界。
+        if (response.ok && response.status !== 204) {
+          try {
+            data = await response.json();
+          } catch (error) {
+            if (error instanceof SyntaxError)
+              throw new BangumiError(`Bangumi 返回了无法解析的数据（${endpoint}）`);
+            throw error;
+          }
+        } else {
+          await response.body?.cancel().catch(() => {});
+        }
+      } catch (error) {
+        if (error instanceof BangumiError) throw error;
         if (attempt < 2 && !this.signal.aborted) {
           await this.wait(1000 * 2 ** attempt);
           continue;
         }
-        throw new BangumiError("Bangumi 请求超时或网络异常，请稍后重试");
+        throw networkError();
       }
       if (missing && response.status === 404) return null;
       if ((response.status === 429 || response.status >= 500) && attempt < 2) {
@@ -118,11 +135,7 @@ export class BangumiClient {
           response.status,
         );
       if (response.status === 204) return null;
-      try {
-        return await response.json();
-      } catch {
-        throw new BangumiError("Bangumi 返回了无法解析的数据");
-      }
+      return data;
     }
     throw new BangumiError("Bangumi 请求失败");
   }
