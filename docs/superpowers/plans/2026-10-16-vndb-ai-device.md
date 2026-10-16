@@ -55,4 +55,6 @@
 - [x] Write regression for image/multiline/date/note roundtrip; remote RED then implement and GREEN.
 - [x] Remote full lint, typecheck, unit suite, build; run focused browser tests for configuration, VN import/translation mocks, device and 390/1440 widths.
 - [x] Fresh independent whole-branch code review; fix significant findings with RED→GREEN regressions.
-- [ ] Commit verified changes, create and attach PR. State real-provider verification pending user configuration; no merge/deployment.
+- [x] Commit verified changes, create and attach PR. State real-provider verification pending user configuration; no merge/deployment.
+
+Delivery: https://github.com/AdingApkgg/i/pull/44 (not merged; no production deployment). Remote acceptance: lint/typecheck/build, 210 unit tests and 6 feature browser tests passed.
