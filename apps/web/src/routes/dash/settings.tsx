@@ -4,6 +4,7 @@ import { KeyRound, LoaderCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { TranslationSettings } from "@/components/dash/translation-settings";
 import { FieldError } from "@/components/field-error";
 import { authClient } from "@/lib/auth-client";
 import { reportAuthError } from "@/lib/form";
@@ -41,7 +42,7 @@ export default function SettingsPage() {
   });
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-2xl">
       <h1 className="text-2xl font-bold">设置</h1>
       <Card className="mt-4">
         <CardBody className="space-y-3">
@@ -80,6 +81,7 @@ export default function SettingsPage() {
           </form>
         </CardBody>
       </Card>
+      <TranslationSettings />
     </div>
   );
 }

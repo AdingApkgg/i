@@ -3,7 +3,17 @@ import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode, useId, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { FieldError } from "@/components/field-error";
@@ -22,10 +32,18 @@ import { thumb } from "@/lib/thumb";
 
 type Row = Record<string, unknown> & { id: string };
 
+const ImageUploadContext = createContext<(token: symbol, busy: boolean) => void>(() => {});
+
 export const inputCls =
   "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
-export function DomainAdmin({ domainKey }: { domainKey: string }) {
+export function DomainAdmin({
+  domainKey,
+  editorExtra,
+}: {
+  domainKey: string;
+  editorExtra?: ReactNode;
+}) {
   // The [domain] page already 404s unknown keys, so these are present.
   const spec = ADMIN_FIELDS[domainKey]!;
   // 按 domainKey 动态取路由（类型化的 client 只认字面量 key），这里收窄成通用 CRUD 形状
@@ -55,6 +73,16 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
     defaultValues: emptyForm(spec.fields),
   });
   const saving = form.formState.isSubmitting;
+  const [uploads, setUploads] = useState<Set<symbol>>(() => new Set());
+  const trackUpload = useCallback((token: symbol, busy: boolean) => {
+    setUploads((current) => {
+      const next = new Set(current);
+      if (busy) next.add(token);
+      else next.delete(token);
+      return next;
+    });
+  }, []);
+  const uploading = uploads.size > 0;
 
   function startEdit(target: Row | "new") {
     form.reset(target === "new" ? emptyForm(spec.fields) : rowToForm(spec.fields, target));
@@ -62,6 +90,10 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
   }
 
   const save = form.handleSubmit(async (values) => {
+    if (uploading) {
+      toast.error("请等待图片上传完成后保存");
+      return;
+    }
     try {
       const body = toBody(spec.fields, values);
       if (editing === "new") await api.create(body);
@@ -110,31 +142,41 @@ export function DomainAdmin({ domainKey }: { domainKey: string }) {
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
             <Card className="mt-4">
-              <FormProvider {...form}>
-                <form noValidate onSubmit={save}>
-                  <CardBody className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {spec.fields.map((f) => (
-                        <Field key={f.name} field={f} />
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={saving}>
-                        {saving && <LoaderCircle className="size-4 animate-spin" />}
-                        {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => setEditing(null)}
-                        disabled={saving}
-                      >
-                        取消
-                      </Button>
-                    </div>
-                  </CardBody>
-                </form>
-              </FormProvider>
+              <ImageUploadContext value={trackUpload}>
+                <FormProvider {...form}>
+                  <form noValidate onSubmit={save}>
+                    <CardBody className="space-y-4">
+                      <fieldset disabled={saving || uploading} className="space-y-4">
+                        {editorExtra}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {spec.fields.map((f) => (
+                            <Field key={f.name} field={f} />
+                          ))}
+                        </div>
+                      </fieldset>
+                      {uploading && (
+                        <p role="status" className="text-sm text-muted-foreground">
+                          图片上传中，完成后可保存或取消。
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button type="submit" disabled={saving || uploading}>
+                          {saving && <LoaderCircle className="size-4 animate-spin" />}
+                          {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setEditing(null)}
+                          disabled={saving || uploading}
+                        >
+                          取消
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </form>
+                </FormProvider>
+              </ImageUploadContext>
             </Card>
           </motion.div>
         ) : (
@@ -223,7 +265,7 @@ export function Field({ field }: { field: FieldSpec }) {
   const {
     register,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useFormContext<FormValues>();
   const error = errors[field.name]?.message;
   const invalid = error ? true : undefined;
@@ -256,6 +298,7 @@ export function Field({ field }: { field: FieldSpec }) {
             onBlur={f.onBlur}
             placeholder={field.placeholder}
             error={error}
+            disabled={isSubmitting}
           />
         )}
       />
@@ -270,6 +313,7 @@ export function Field({ field }: { field: FieldSpec }) {
           id={id}
           placeholder={field.placeholder}
           rows={5}
+          readOnly={field.readOnly}
           aria-invalid={invalid}
           {...register(field.name)}
           className={cn(inputCls, "resize-y")}
@@ -288,6 +332,7 @@ export function Field({ field }: { field: FieldSpec }) {
           id={id}
           type={field.type === "number" ? "number" : "text"}
           step={field.type === "number" ? "any" : undefined}
+          readOnly={field.readOnly}
           placeholder={field.placeholder}
           aria-invalid={invalid}
           {...register(field.name)}
@@ -306,6 +351,7 @@ function ImageField({
   onBlur,
   placeholder,
   error,
+  disabled,
 }: {
   label: ReactNode;
   value: string;
@@ -313,13 +359,28 @@ function ImageField({
   onBlur: () => void;
   placeholder?: string;
   error?: string;
+  disabled: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const trackUpload = useContext(ImageUploadContext);
+  const token = useRef(Symbol("image-upload"));
+  const request = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      request.current?.abort();
+      request.current = null;
+      trackUpload(token.current, false);
+    },
+    [trackUpload],
+  );
 
   async function pick(file: File | undefined) {
-    if (!file) return;
+    if (!file || disabled || request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
     setUploading(true);
+    trackUpload(token.current, true);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -327,16 +388,22 @@ function ImageField({
         method: "POST",
         body: fd,
         credentials: "include",
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(60000)]),
       });
       if (!res.ok) throw new Error();
       const { imageUrl } = (await res.json()) as { imageUrl: string };
+      if (request.current !== controller || controller.signal.aborted) return;
       onChange(imageUrl);
       toast.success("上传成功 ✿");
     } catch {
-      toast.error("上传失败");
+      if (request.current === controller && !controller.signal.aborted) toast.error("上传失败");
     } finally {
-      setUploading(false);
-      if (ref.current) ref.current.value = "";
+      if (request.current === controller) {
+        request.current = null;
+        trackUpload(token.current, false);
+        setUploading(false);
+        if (ref.current) ref.current.value = "";
+      }
     }
   }
 
@@ -358,6 +425,7 @@ function ImageField({
         <div className="min-w-0 flex-1 space-y-2">
           <input
             value={value}
+            disabled={disabled || uploading}
             onChange={(e) => onChange(e.target.value)}
             onBlur={onBlur}
             placeholder={placeholder}
@@ -368,6 +436,7 @@ function ImageField({
           <input
             ref={ref}
             type="file"
+            disabled={disabled || uploading}
             accept="image/*"
             className="hidden"
             onChange={(e) => void pick(e.target.files?.[0])}
@@ -377,7 +446,7 @@ function ImageField({
             variant="ghost"
             size="sm"
             onClick={() => ref.current?.click()}
-            disabled={uploading}
+            disabled={disabled || uploading}
           >
             {uploading ? (
               <LoaderCircle className="size-3.5 animate-spin" />
