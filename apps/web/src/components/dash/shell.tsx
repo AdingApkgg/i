@@ -1,6 +1,7 @@
 import { cn } from "@i/ui";
 import {
   Activity,
+  CalendarDays,
   Camera,
   Disc3,
   FileText,
@@ -33,6 +34,7 @@ const DOMAIN_ICONS: Record<string, LucideIcon> = {
   vn: Gamepad2,
   touhou: Sparkles,
   device: Laptop,
+  masturbation: CalendarDays,
   gallery: Camera,
   albums: Images,
   moments: MessageCircle,

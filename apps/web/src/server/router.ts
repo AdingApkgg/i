@@ -10,6 +10,7 @@ import {
   touhouRouter,
   vnRouter,
 } from "./routers/content";
+import { dailyRecordRouter } from "./routers/daily-record";
 import { friendsRouter } from "./routers/friends";
 import { galleryRouter } from "./routers/gallery";
 import { healthRouter } from "./routers/health";
@@ -22,6 +23,7 @@ import { vndbRouter } from "./routers/vndb";
 
 export const router = {
   bangumi: bangumiRouter,
+  dailyRecord: dailyRecordRouter,
   health: healthRouter,
   blog: postRouter,
   music: musicRouter,

@@ -9,6 +9,7 @@ const PAGES = [
   "/vn",
   "/touhou",
   "/device",
+  "/masturbation",
   "/gallery",
   "/gallery/旅行记录",
   "/moments",
