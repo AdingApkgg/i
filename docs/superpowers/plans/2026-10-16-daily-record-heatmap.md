@@ -27,15 +27,15 @@
 **Files:** `packages/db/src/schema.ts`, `packages/db/drizzle/*`, `apps/web/src/lib/daily-record.ts`, `apps/web/src/server/routers/daily-record.ts`, tests and router registration.
 **Interfaces:** `todayInShanghai(now?:Date):string`, `buildYearHeatmap(year,days,today)`; `dailyRecord.year({year}) → {year,today,days:[{date,count}]}`; `save({date,count})`, `increment({date})`. Count integer 0..1000; increment atomic.
 
-- [ ] Write and remotely run failing behavior tests: leap days, future/invalid dates, yearly boundaries, permission, overwrite/delete, atomic increments.
-- [ ] Implement date helpers, table and router; generate migration remotely; tests GREEN.
+- [x] Write and remotely run failing behavior tests: leap days, future/invalid dates, yearly boundaries, permission, overwrite/delete, atomic increments.
+- [x] Implement date helpers, table and router; generate migration remotely; tests GREEN.
 
 ### Task 2: 公开页面、后台编辑和日历
 
 **Files:** public/dash routes, calendar/shared UI, route and domain registries, feature Playwright tests, README.
 **Interfaces:** `/masturbation?year=YYYY` public; `/dash/masturbation` admin. Annual totals/day count/max, green 0/1/2/3/4+ scale, selectable days, year navigation. Editor date/count/save/clear/+1.
 
-- [ ] Add browser regression for public visibility, edit/backfill/update/clear and mobile calendar containment.
-- [ ] Implement responsive calendar and forms, use text dates and explicit today to avoid hydration drift.
-- [ ] Remote lint/typecheck/unit/build, focused browser acceptance, independent whole-branch review; fix material findings.
+- [x] Add browser regression for public visibility, edit/backfill/update/clear and mobile calendar containment.
+- [x] Implement responsive calendar and forms, use text dates and explicit today to avoid hydration drift.
+- [x] Remote lint/typecheck/unit/build, focused browser acceptance, independent whole-branch review; fix material findings.
 - [ ] Commit, create/attach PR, await CI and report no production rollout of new page.

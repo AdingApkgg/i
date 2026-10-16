@@ -1,7 +1,6 @@
 import { Button, Card, CardBody, cn } from "@i/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useNavigation } from "react-router";
 import { toast } from "sonner";
 import { buildYearHeatmap, dailyDateSchema } from "@/lib/daily-record";
 import { client } from "@/lib/orpc/client";
@@ -31,28 +30,35 @@ export function DailyJournal({
   const [selected, setSelected] = useState(
     initialDate ?? (today.startsWith(`${year}-`) ? today : `${year}-12-31`),
   );
-  const query = useQuery({
-    queryKey: ["daily-record", year],
-    queryFn: () => client.dailyRecord.year({ year }),
-    initialData: initial,
-    refetchOnWindowFocus: false,
-  });
-  const calendar = buildYearHeatmap(year, query.data.days, today);
-  const selectedCount = query.data.days.find((d) => d.date === selected)?.count ?? 0;
-  const qc = useQueryClient();
+  const [days, setDays] = useState(initial.days);
+  const calendar = buildYearHeatmap(year, days, today);
+  const selectedCount = days.find((d) => d.date === selected)?.count ?? 0;
   const navigate = useNavigate();
+  const navigation = useNavigation();
   const [busy, setBusy] = useState(false);
+  const unavailable = busy || navigation.state !== "idle" || Number(selected.slice(0, 4)) !== year;
+  function selectDate(date: string) {
+    setSelected(date);
+    if (
+      dailyDateSchema.safeParse(date).success &&
+      date <= today &&
+      Number(date.slice(0, 4)) !== year
+    ) {
+      navigate(`?year=${date.slice(0, 4)}&date=${date}`);
+    }
+  }
   async function save(count?: number) {
-    if (busy || !dailyDateSchema.safeParse(selected).success || selected > today) return;
+    if (unavailable || !dailyDateSchema.safeParse(selected).success || selected > today) return;
     setBusy(true);
     try {
       const result =
         count == null
           ? await client.dailyRecord.increment({ date: selected })
           : await client.dailyRecord.save({ date: selected, count });
-      await qc.invalidateQueries({ queryKey: ["daily-record", Number(result.date.slice(0, 4))] });
-      if (Number(result.date.slice(0, 4)) !== year)
-        navigate(`?year=${result.date.slice(0, 4)}&date=${result.date}`);
+      setDays((previous) => [
+        ...previous.filter((day) => day.date !== result.date),
+        ...(result.count > 0 ? [result] : []),
+      ]);
       toast.success(count === 0 ? "已清除当天记录" : "已保存次数");
     } catch (e) {
       toast.error(orpcErrText(e, "保存失败"));
@@ -63,7 +69,7 @@ export function DailyJournal({
   return (
     <div className="min-w-0 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {year > 1970 ? (
             <Link
               to={`?year=${year - 1}`}
@@ -82,7 +88,7 @@ export function DailyJournal({
               ←
             </button>
           )}
-          <h2 className="text-lg font-semibold">{year} 年</h2>
+          <h2 className="whitespace-nowrap text-lg font-semibold">{year} 年</h2>
           {year < Number(today.slice(0, 4)) && (
             <Link
               to={`?year=${year + 1}`}
@@ -99,7 +105,10 @@ export function DailyJournal({
           </Link>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div
+        className="grid gap-3"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 100px), 1fr))" }}
+      >
         {[
           ["全年合计", `${calendar.total} 次`],
           ["记录天数", `${calendar.activeDays} 天`],
@@ -163,7 +172,7 @@ export function DailyJournal({
                           title={`${day.date}：${day.count} 次`}
                           aria-label={`${day.date}：${day.count} 次`}
                           aria-pressed={selected === day.date}
-                          disabled={busy}
+                          disabled={busy || navigation.state !== "idle"}
                           onClick={() => setSelected(day.date)}
                           className={cn(
                             "size-[13px] rounded-[3px] outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -197,14 +206,6 @@ export function DailyJournal({
           )}
         </CardBody>
       </Card>
-      {query.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          刷新记录失败，
-          <button type="button" className="underline" onClick={() => void query.refetch()}>
-            重试
-          </button>
-        </p>
-      )}
       {editable && (
         <Card>
           <CardBody className="space-y-4">
@@ -213,26 +214,23 @@ export function DailyJournal({
               日期按北京时间。保存会更新当天总次数，填 0 可清除记录。
             </p>
             <div className="flex flex-wrap items-end gap-3">
-              <label className="space-y-1 text-sm">
+              <label className="min-w-0 max-w-full space-y-1 text-sm">
                 <span className="block">日期</span>
                 <input
                   type="date"
                   min="1970-01-01"
                   max={today}
                   value={selected}
-                  disabled={busy}
-                  onChange={(e) => setSelected(e.target.value)}
-                  className={input}
+                  disabled={busy || navigation.state !== "idle"}
+                  onChange={(e) => selectDate(e.target.value)}
+                  className={`${input} min-w-0 max-w-full`}
                 />
               </label>
               <CountEditor
                 key={`${selected}:${selectedCount}`}
                 saved={selectedCount}
                 disabled={
-                  busy ||
-                  query.isError ||
-                  !dailyDateSchema.safeParse(selected).success ||
-                  selected > today
+                  unavailable || !dailyDateSchema.safeParse(selected).success || selected > today
                 }
                 onSave={(count) => void save(count)}
                 onIncrement={() => void save()}
