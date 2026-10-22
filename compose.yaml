@@ -64,7 +64,7 @@ services:
       start_period: 60s
 
   web:
-    image: oven/bun:1.4.3
+    image: oven/bun:1.4.4
     working_dir: /app
     # First boot installs deps into the shared volume, applies DB migrations,
     # seeds sample data, then runs the React Router dev server.

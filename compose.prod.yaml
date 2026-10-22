@@ -83,7 +83,7 @@ services:
 
   storage-migrate:
     profiles: [legacy]
-    image: oven/bun:1.4.3
+    image: oven/bun:1.4.4
     working_dir: /app
     command: bash -lc 'bun install --frozen-lockfile && bun packages/db/scripts/migrate-storage.ts'
     environment:
@@ -105,7 +105,7 @@ services:
   # One-shot DB migration. Uses a plain bun image (no app build) — installs deps,
   # applies pending SQL migrations from packages/db/drizzle (no-op when up to date), then exits.
   migrate:
-    image: oven/bun:1.4.3
+    image: oven/bun:1.4.4
     working_dir: /app
     command: >
       bash -lc '
