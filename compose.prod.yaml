@@ -49,7 +49,7 @@ services:
   # 先把凭据写成 s3.json，再交给镜像自带入口（修正 /data 属主、降权到 seaweed 用户）。
   # 卷大小显式设 1GB（二进制默认 30GB，磁盘不大时新桶会分不到卷、上传报 500）。
   seaweedfs:
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.50
     environment:
       <<: *storage-env
     entrypoint: ["/bin/sh", "-c"]
