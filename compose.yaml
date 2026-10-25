@@ -42,7 +42,7 @@ services:
   # 对象存储：SeaweedFS（S3 网关 :8333）。凭据写成 s3.json 后交给镜像自带入口。
   # 卷大小显式设 1GB（二进制默认 30GB，磁盘不大时新桶会分不到卷、上传报 500）。
   seaweedfs:
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.50
     environment:
       S3_ACCESS_KEY: ${SEAWEEDFS_ACCESS_KEY:-seaweed}
       S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-seaweed12345}
