@@ -73,7 +73,7 @@
     "react-hook-form": "7.91.0",
     "react-markdown": "^10.1.0",
     "react-router": "8.5.0",
-    "react-router-hono-server": "4.1.4",
+    "react-router-hono-server": "4.1.5",
     "remark-gfm": "^4.0.1",
     "satori": "0.52.0",
     "sharp": "0.35.5",
