@@ -74,7 +74,7 @@
         "react-hook-form": "7.91.0",
         "react-markdown": "^10.1.0",
         "react-router": "8.5.0",
-        "react-router-hono-server": "4.1.4",
+        "react-router-hono-server": "4.1.5",
         "remark-gfm": "^4.0.1",
         "satori": "0.52.0",
         "sharp": "0.35.5",
@@ -297,7 +297,7 @@
 
     "@fontsource/noto-sans": ["@fontsource/noto-sans@5.3.0", "", {}, "sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw=="],
 
-    "@hono/node-server": ["@hono/node-server@2.1.1", "", { "peerDependencies": { "hono": "^4" } }, "sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg=="],
+    "@hono/node-server": ["@hono/node-server@2.1.5", "", { "peerDependencies": { "hono": "^4 || ^5.0.0-0" } }, "sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q=="],
 
     "@hono/vite-dev-server": ["@hono/vite-dev-server@0.26.1", "", { "dependencies": { "@hono/node-server": "^1.19.11", "minimatch": "^9.0.3" }, "peerDependencies": { "hono": "*", "miniflare": "*", "wrangler": "*" }, "optionalPeers": ["miniflare", "wrangler"] }, "sha512-OlcWoXjNogKiJhVwV/ftMK87UcsJmIBfmImSdI4e8to/ZdwNHrW9ddKw2OGHjXI5/uS2RaZr+2y+l8T9VFbCmw=="],
 
@@ -1325,7 +1325,7 @@
 
     "react-router": ["react-router@8.5.0", "", { "dependencies": { "@remix-run/route-pattern": "^0.22.1", "cookie-es": "^3.1.1" }, "peerDependencies": { "@types/react": ">=19.2.0", "@types/react-dom": ">=19.2.0", "react": ">=19.2.7", "react-dom": ">=19.2.7" }, "optionalPeers": ["@types/react", "@types/react-dom", "react-dom"] }, "sha512-9nEd/deifcTJIIcUaNIyQGkyXD0D6QVB9XD2O5GgHpP3xu3U5RXm87YQ8++Wn8JQWgMBM/5+PjWPM/7n7O7WHA=="],
 
-    "react-router-hono-server": ["react-router-hono-server@4.1.4", "", { "dependencies": { "@drizzle-team/brocli": "0.12.1", "@hono/node-server": "2.1.1", "@hono/vite-dev-server": "0.26.1" }, "peerDependencies": { "@react-router/dev": "^8.3.0", "@types/ws": "^8.18.1", "hono": "^4.13.7", "react": "^19.3.0", "react-dom": "^19.3.0", "react-router": "^8.3.1", "vite": ">=8.3.0", "ws": "^8.21.3" }, "optionalPeers": ["@types/ws", "ws"], "bin": { "react-router-hono-server": "dist/cli.js" } }, "sha512-bcNhtz+WNttffpPHjUSxHicD8etGEX6nkgai4MhdbpIT6CsS8e30ei5m1UZ+MqtbgM0l3o32m6Y3fAXt/I7pXw=="],
+    "react-router-hono-server": ["react-router-hono-server@4.1.5", "", { "dependencies": { "@drizzle-team/brocli": "0.12.1", "@hono/node-server": "2.1.5", "@hono/vite-dev-server": "0.26.1" }, "peerDependencies": { "@react-router/dev": "^8.3.0", "@types/ws": "^8.18.1", "hono": "^4.13.7", "react": "^19.3.0", "react-dom": "^19.3.0", "react-router": "^8.3.1", "vite": ">=8.3.0", "ws": "^8.21.3" }, "optionalPeers": ["@types/ws", "ws"], "bin": { "react-router-hono-server": "dist/cli.js" } }, "sha512-/qNctkS0pasHoxAMqx/x2NEmKrAVzpNrQuDzfytt/V5AQ1hJfbKKpgBd3Pt7WxD7l648+Ue/cU6BwHmnNs8Uag=="],
 
     "react-style-singleton": ["react-style-singleton@2.2.3", "", { "dependencies": { "get-nonce": "^1.0.0", "tslib": "^2.0.0" }, "peerDependencies": { "@types/react": "*", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ=="],
 
