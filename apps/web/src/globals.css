@@ -66,6 +66,8 @@
 /* ==================== moe / 樱粉 theme ==================== */
 /* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
 :root {
+  /* 底栏、正文留白和悬浮组件共用高度，包含 iPhone 底部安全区。 */
+  --site-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
   color-scheme: light dark;
   --background: oklch(0.995 0.006 350);
   --foreground: oklch(0.25 0.02 340);

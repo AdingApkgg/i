@@ -7,13 +7,13 @@ import { SiteHeader } from "@/components/public/site-header";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/layout";
 
-/** 前台外壳：顶栏 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
+/** 前台外壳：响应式导航 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
 function Chrome({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-56">
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-    </>
+    </div>
   );
 }
 

@@ -390,7 +390,7 @@ function PlayerDock({ visuals }: { visuals: Visuals }) {
   const expanded = usePlayerStore((s) => s.expanded);
   if (!current) return null;
   return (
-    <div className="fixed bottom-4 left-4 z-40 hidden md:block">
+    <div className="fixed bottom-[calc(var(--site-nav-height)+1rem)] left-4 z-40 hidden md:block lg:bottom-4 lg:left-60">
       <AnimatePresence mode="wait" initial={false}>
         {expanded ? (
           <ExpandedPanel key="panel" song={current} visuals={visuals} />

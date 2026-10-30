@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { TocItem } from "@/lib/content/types";
 
 /**
- * 文章目录：只在超宽屏（xl）显示，贴在正文右侧并跟随滚动；当前阅读到的标题高亮。
+ * 文章目录：只在超宽屏（2xl）显示，贴在正文右侧并跟随滚动；当前阅读到的标题高亮。
  * 标题少于 3 个时不显示。
  */
 export function Toc({ items }: { items: TocItem[] }) {
@@ -29,7 +29,7 @@ export function Toc({ items }: { items: TocItem[] }) {
   if (items.length < 3) return null;
   const minLevel = Math.min(...items.map((i) => i.level));
   return (
-    <aside className="absolute top-0 left-full ml-10 hidden h-full w-44 xl:block">
+    <aside className="absolute top-0 left-full ml-10 hidden h-full w-44 2xl:block">
       <nav className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto text-sm">
         <div className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">目录</div>
         <ul className="space-y-1.5 border-l border-border">
