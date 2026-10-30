@@ -11,13 +11,13 @@ type BtnProps = {
   variant?: string;
 };
 
-/** 颜色词 → 类名。pink 走主题 token,其余用 Tailwind 默认色板。 */
+/** 颜色词 → 类名。历史 pink 保留为主色别名，实际跟随前台主题。 */
 const COLOR: Record<string, string> = {
   pink: "bg-primary text-primary-foreground hover:opacity-90",
   primary: "bg-primary text-primary-foreground hover:opacity-90",
   blue: "bg-sky-500 text-white hover:bg-sky-600",
   green: "bg-emerald-500 text-white hover:bg-emerald-600",
-  red: "bg-rose-500 text-white hover:bg-rose-600",
+  red: "bg-red-600 text-white hover:bg-red-700",
   purple: "bg-violet-500 text-white hover:bg-violet-600",
   yellow: "bg-amber-400 text-neutral-900 hover:bg-amber-500",
   gray: "bg-soft text-accent-foreground hover:brightness-95",

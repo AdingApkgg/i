@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./asuna.css";
 
 /* Scan the app + the shared ui package for class names. */
 @source "./";
@@ -63,7 +64,7 @@
   --media-focus-ring-color: var(--ring);
 }
 
-/* ==================== moe / 樱粉 theme ==================== */
+/* 后台保留原有 moe 主题；公开前台由 asuna.css 的 .sao-site 条件覆盖。 */
 /* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
 :root {
   /* 底栏、正文留白和悬浮组件共用高度，包含 iPhone 底部安全区。 */

@@ -9,10 +9,19 @@ import type { Route } from "./+types/layout";
 
 /** 前台外壳：响应式导航 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
 function Chrome({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
   return (
     <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-56">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main
+        className={
+          pathname === "/"
+            ? "mx-auto max-w-7xl px-4 py-5 lg:px-8 lg:py-6"
+            : "mx-auto max-w-5xl px-4 py-8"
+        }
+      >
+        {children}
+      </main>
     </div>
   );
 }

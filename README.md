@@ -11,8 +11,8 @@
 - **服务端**: Hono(react-router-hono-server)· oRPC + @tanstack/react-query
 - **数据**: Drizzle ORM(node-postgres)+ Postgres + Redis
 - **认证**: better-auth(管理员 + 访客账号)
-- **样式**: Tailwind v4 + shadcn/Radix · 萌系粉调 + Live2D 看板娘
-- **动效**: Motion（状态 / 布局 / 手势）+ GSAP（首页时间轴 / 滚动编排）+ Anime.js（SVG / 兴趣地图），[分工与验证](docs/animation.md)
+- **样式**: Tailwind v4 + shadcn/Radix · Asuna 红白前台 / 冷调深色模式 + Live2D 看板娘，[设计说明](docs/asuna-design.md)
+- **动效**: Motion（状态 / 布局 / 手势）+ GSAP（首页时间轴 / 滚动编排）+ Anime.js（SVG / 切角菜单），[分工与验证](docs/animation.md)
 - **代码风格**: Biome
 - **对象存储**: SeaweedFS(S3 网关,相册上传)· aws4fetch · sharp 缩略图(WebP,按需生成)
 - **富文本**: Tiptap 3（后台编辑器，只在后台懒加载）· 正文存 Tiptap JSON（jsonb）· 前台自写 JSON → React 渲染，lowlight 代码高亮 + KaTeX 公式在服务端预渲染
