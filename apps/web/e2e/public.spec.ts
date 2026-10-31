@@ -41,7 +41,7 @@ test("不存在的页面：404、保留站点外壳、noindex", async ({ page })
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
 });
 
-test("顶栏导航走客户端路由，不整页刷新", async ({ page }) => {
+test("主导航走客户端路由，不整页刷新", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => {
