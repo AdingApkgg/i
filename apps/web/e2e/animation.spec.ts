@@ -1,25 +1,38 @@
 import pg from "pg";
 import { expect, test } from "./fixtures";
+import { navigateMain } from "./navigation-helpers";
 
 // 删除共享高亮或让它跟错活动项，应由真实几何位置断言捕获。
 for (const width of [390, 1440]) {
   test(`主导航高亮跟随活动栏目，切页后落在链接内部（${width}px）`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/blog");
-    const nav = page.locator("header nav");
-    await nav.getByRole("link", { name: "音乐", exact: true }).click();
+    const nav = page.getByRole("navigation", { name: "主导航" });
+    await navigateMain(page, "音乐", "收藏");
     await expect(page).toHaveURL("/music");
-    const current = nav.locator('[aria-current="page"]');
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const current =
+      width < 1024
+        ? nav.getByRole("button", { name: "收藏", exact: true })
+        : nav.getByRole("link", { name: "音乐", exact: true });
+    if (width < 1024) await expect(current).toHaveAttribute("data-active", "true");
+    else await expect(current).toHaveAttribute("aria-current", "page");
     const highlight = current.locator("[data-nav-highlight]");
     await expect(highlight).toHaveCount(1);
     await expect
       .poll(async () => {
         const a = await current.boundingBox();
         const b = await highlight.boundingBox();
-        return a && b ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) : 999;
+        if (!a || !b || b.width <= 0 || b.height <= 0) return false;
+        return (
+          b.x >= a.x - 1 &&
+          b.y >= a.y - 1 &&
+          b.x + b.width <= a.x + a.width + 1 &&
+          b.y + b.height <= a.y + a.height + 1
+        );
       })
-      .toBeLessThan(2);
-    await expect(nav.locator("[data-nav-highlight]")).toHaveCount(1);
+      .toBe(true);
+    await expect(nav.locator("[data-nav-highlight]:visible")).toHaveCount(1);
   });
 }
 
@@ -59,7 +72,7 @@ test("首页滚动推进章节线条，离开再返回不留下重复场景", as
   await rule.scrollIntoViewIfNeeded();
   await expect.poll(scale).toBeGreaterThan(0.8);
   for (let i = 0; i < 2; i++) {
-    await page.locator("header nav").getByRole("link", { name: "博客", exact: true }).click();
+    await navigateMain(page, "博客", "日常");
     await expect(page).toHaveURL("/blog");
     await page.locator("header").getByRole("link", { name: "首页", exact: true }).click();
     await expect(page).toHaveURL("/");

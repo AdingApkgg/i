@@ -10,7 +10,7 @@ Motion、GSAP、Anime.js 同时使用，各自控制不同的元素层级；不�
 
 ## Motion：状态与交互
 
-- `components/public/site-header.tsx`：活动栏目通过同一个 `layoutId` 共享高亮；`LayoutGroup` 隔离命名，固定导航使用 `layoutRoot`，横/纵滚动导航使用 `layoutScroll`，避免滚动后高亮坐标偏移。
+- `components/public/site-header.tsx`：分组导航的活动栏目使用共享高亮；桌面链接、手机底栏、面板链接分别使用 `active-desktop` / `active-bar` / `active-panel`，防止隐藏布局与可见布局争抢同一高亮。`LayoutGroup` 隔离命名，固定导航使用 `layoutRoot`，可滚动导航使用 `layoutScroll`，避免滚动后高亮坐标偏移。
 - `components/public/photo-lightbox.tsx`：上一张/下一张带方向的位移、轻缩放和淡入。切图外层由 Motion 控制，缩放/平移手势继续控制内层，避免两个实现竞争同一个 `transform`。
 - 保留已有的页面过渡、卡片入场、音乐播放器展开/收起、歌单与歌词动画，不改媒体播放状态。
 - `routes/site/shell.tsx` 使用 `MotionConfig reducedMotion="user"`，统一关闭减少动态效果模式下的变换与布局动画。
@@ -53,6 +53,8 @@ GSAP / Anime.js 遇到 `prefers-reduced-motion: reduce` 时保留静态完整画
 
 `e2e/asuna-home.spec.ts` 额外覆盖首屏行动、照片与文章内容、320 / 390 / 768 / 1024 / 1440 / 1920px 布局、窄屏插画与行动入口不重叠、深色切换与后台主题隔离。
 `lib/og.test.ts` 通过 PNG 真实像素验证分享卡片的月白背景与绯红边框。
+`e2e/grouped-navigation.spec.ts`、`e2e/navigation.spec.ts` 验证全部栏目、深链、键盘与焦点、前进后退、断点切换、正文避让、矮屏滚动和无 JavaScript 导航。
+`e2e/navigation-motion.spec.ts` 验证手机与桌面在普通/减少动态效果偏好下连续跨组跳转，高亮唯一且留在实际目标内；原播放器与客户端路由验证改为经分组入口操作，未移除播放持续性断言。
 
 使用仓库正常的 `bun run lint`、`bun run typecheck`、`bun run test`、`bun run build`，以及生产构建上的 Playwright 验证。
 

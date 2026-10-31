@@ -1,25 +1,30 @@
 import { NAV_DOMAINS, siteConfig } from "@i/config";
-import { cn } from "@i/ui";
 import {
   BookOpen,
   CalendarDays,
   Camera,
+  ChevronDown,
+  ChevronRight,
   Clapperboard,
   Disc3,
   Gamepad2,
   Headphones,
   House,
+  Library,
   MessageCircle,
   Monitor,
   Orbit,
   Sword,
   Tv,
   Users,
+  X,
 } from "lucide-react";
 import { LayoutGroup, motion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { Dialog } from "radix-ui";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { TitleFlourish } from "./title-flourish";
+import "./grouped-navigation.css";
 
 const domainIcons = {
   blog: BookOpen,
@@ -35,90 +40,243 @@ const domainIcons = {
   moments: MessageCircle,
   friends: Users,
 };
+const sections = [
+  {
+    key: "daily",
+    label: "日常",
+    icon: BookOpen,
+    keys: ["blog", "gallery", "moments", "masturbation"],
+  },
+  { key: "collection", label: "收藏", icon: Library, keys: ["music", "anime", "movie", "vn"] },
+  { key: "interests", label: "兴趣", icon: Gamepad2, keys: ["maimai", "touhou", "device"] },
+].map((section) => ({
+  ...section,
+  domains: section.keys.map((key) => NAV_DOMAINS.find((domain) => domain.key === key)!),
+}));
+const friends = NAV_DOMAINS.find((domain) => domain.key === "friends")!;
+const isCurrent = (pathname: string, path: string) =>
+  pathname === path || (path !== "/" && pathname.startsWith(`${path}/`));
 
-/** SAO 系统菜单：宽屏左侧栏 / 窄屏可横滑底栏，保留全部栏目。 */
+/** 桌面原生折叠分组；手机同一分类打开模态面板，不删除任何栏目。 */
 export function SiteHeader() {
   const { pathname } = useLocation();
-  const navRef = useRef<HTMLElement>(null);
+  const [mobileGroup, setMobileGroup] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelId = useId();
+  const selected = sections.find((section) =>
+    section.domains.some((domain) => isCurrent(pathname, domain.path)),
+  );
+  const panelGroup = sections.find((section) => section.key === mobileGroup) ?? sections[0]!;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname 改变后 aria-current 的 DOM 才更新，需要重新定位当前栏目。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 路由改变时关闭面板；点击当前页由链接的 onClick 处理。
   useEffect(() => {
-    // 直达深层页面或浏览器前进/后退时，当前栏目也应在可见滚动区内。
-    navRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-    });
+    setMobileGroup(null);
   }, [pathname]);
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (media.matches) setMobileGroup(null);
+    };
+    media.addEventListener("change", closeOnDesktop);
+    return () => media.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   return (
     <LayoutGroup id="site-navigation">
-      <motion.header
-        layoutRoot
-        className="sao-menu fixed inset-x-0 bottom-0 z-50 h-[var(--site-nav-height)] border-t border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:inset-x-auto lg:inset-y-0 lg:left-0 lg:h-dvh lg:w-56 lg:border-t-0 lg:border-r lg:pb-0"
-      >
-        <div className="flex h-full min-h-0 items-center gap-2 px-2 lg:flex-col lg:items-stretch lg:gap-6 lg:px-4 lg:py-6">
-          <Link
-            prefetch="intent"
-            to="/"
-            aria-label="首页"
-            aria-current={pathname === "/" ? "page" : undefined}
-            className="sao-menu-brand flex min-h-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-xs font-medium text-primary focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2 lg:items-start lg:px-3 lg:text-lg lg:font-bold lg:tracking-wide"
-          >
-            <House aria-hidden className="size-5 lg:hidden" />
-            <span className="lg:hidden">首页</span>
-            <span className="hidden items-center gap-3 lg:flex">
-              <Sword aria-hidden="true" className="sao-menu-symbol size-8" strokeWidth={1} />
-              <span>
-                {siteConfig.title}
-                <span className="sao-menu-caption">日常与冒险的交汇处</span>
-              </span>
-            </span>
-          </Link>
-          <motion.nav
-            layoutScroll
-            ref={navRef}
-            aria-label="主导航"
-            className="flex min-h-0 min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain py-1 text-sm lg:flex-col lg:items-stretch lg:overflow-x-hidden lg:overflow-y-auto lg:overscroll-y-contain"
-          >
-            {NAV_DOMAINS.map((d) => {
-              const active = pathname === d.path || pathname.startsWith(`${d.path}/`);
-              const Icon = domainIcons[d.key as keyof typeof domainIcons] ?? BookOpen;
-              return (
-                <Link
-                  prefetch="intent"
-                  key={d.key}
-                  to={d.path}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "sao-menu-domain relative isolate flex min-h-11 shrink-0 items-center rounded-lg px-3 whitespace-nowrap transition-colors focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none",
-                    active
-                      ? "font-medium text-primary"
-                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-                  )}
-                >
-                  {active && (
-                    <motion.span
-                      data-nav-highlight
-                      aria-hidden="true"
-                      layoutId="active-domain"
-                      className="sao-menu-active pointer-events-none absolute inset-0 rounded-lg bg-accent"
-                      transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      <motion.header layoutRoot className="sao-menu grouped-navigation">
+        <Link to="/" prefetch="intent" className="grouped-brand" aria-label="Asuna 个人空间">
+          <Sword size={22} strokeWidth={1.2} aria-hidden="true" />
+          {siteConfig.title}
+        </Link>
+        <motion.nav layoutScroll aria-label="主导航" className="grouped-primary">
+          <div className="grouped-desktop">
+            <NavLink path="/" label="首页" icon={House} pathname={pathname} kind="desktop" />
+            {sections.map((section) => (
+              <details
+                key={`${section.key}:${pathname}`}
+                name="public-sections"
+                open={selected?.key === section.key}
+                className="grouped-section"
+              >
+                <summary>
+                  <section.icon size={16} strokeWidth={1.4} aria-hidden="true" />
+                  <span>{section.label}</span>
+                  <ChevronDown size={13} strokeWidth={1.5} aria-hidden="true" />
+                </summary>
+                <div className="grouped-children">
+                  {section.domains.map((domain) => (
+                    <NavLink
+                      key={domain.key}
+                      path={domain.path}
+                      label={domain.label}
+                      pathname={pathname}
+                      kind="desktop"
+                      child
                     />
-                  )}
-                  <Icon aria-hidden="true" strokeWidth={1.5} />
-                  <span className="relative">{d.label}</span>
-                </Link>
-              );
-            })}
-          </motion.nav>
-          <div className="sao-menu-bottom">
-            以温柔，守护日常。
-            <br />
-            <span className="text-primary">Asuna</span> 的个人空间
+                  ))}
+                </div>
+              </details>
+            ))}
+            <NavLink
+              path={friends.path}
+              label={friends.label}
+              icon={Users}
+              pathname={pathname}
+              kind="desktop"
+            />
           </div>
-        </div>
+          <div className="grouped-mobile">
+            <NavLink path="/" label="首页" icon={House} pathname={pathname} kind="bar" />
+            {sections.map((section) => (
+              <button
+                key={section.key}
+                type="button"
+                aria-label={section.label}
+                aria-haspopup="dialog"
+                aria-controls={panelId}
+                aria-expanded={mobileGroup === section.key}
+                className="grouped-bar-button"
+                data-active={selected?.key === section.key || undefined}
+                onClick={(event) => {
+                  triggerRef.current = event.currentTarget;
+                  setMobileGroup(section.key);
+                }}
+              >
+                {selected?.key === section.key && (
+                  <motion.span
+                    data-nav-highlight
+                    aria-hidden="true"
+                    layoutId="active-bar"
+                    className="grouped-bar-marker"
+                  />
+                )}
+                <section.icon size={19} strokeWidth={1.5} aria-hidden="true" />
+                <span>{section.label}</span>
+              </button>
+            ))}
+            <NavLink
+              path={friends.path}
+              label={friends.label}
+              icon={Users}
+              pathname={pathname}
+              kind="bar"
+            />
+          </div>
+        </motion.nav>
       </motion.header>
+      <Dialog.Root
+        open={mobileGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setMobileGroup(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="grouped-sheet-overlay" />
+          <Dialog.Content
+            asChild
+            id={panelId}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              triggerRef.current?.focus();
+            }}
+          >
+            <motion.div
+              className="grouped-sheet"
+              initial={{ y: 20, opacity: 0.8 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="grouped-sheet-heading">
+                <Dialog.Title>{panelGroup.label}</Dialog.Title>
+                <Dialog.Close aria-label="关闭栏目">
+                  <X size={19} strokeWidth={1.4} />
+                </Dialog.Close>
+              </div>
+              <Dialog.Description className="sr-only">
+                选择栏目后关闭面板并跳转。可按 Escape 关闭并返回底栏。
+              </Dialog.Description>
+              <fieldset className="grouped-sheet-tabs" aria-label="切换分组">
+                {sections.map((section) => (
+                  <button
+                    key={section.key}
+                    type="button"
+                    aria-pressed={mobileGroup === section.key}
+                    onClick={() => setMobileGroup(section.key)}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </fieldset>
+              <nav aria-label="栏目导航" className="grouped-sheet-links">
+                {panelGroup.domains.map((domain) => (
+                  <NavLink
+                    key={domain.key}
+                    path={domain.path}
+                    label={domain.label}
+                    icon={domainIcons[domain.key as keyof typeof domainIcons]}
+                    pathname={pathname}
+                    kind="panel"
+                    onNavigate={() => setMobileGroup(null)}
+                  />
+                ))}
+              </nav>
+            </motion.div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <noscript>
+        <nav aria-label="全部栏目" className="grouped-fallback">
+          <a href="/">首页</a>
+          {NAV_DOMAINS.map((domain) => (
+            <a key={domain.key} href={domain.path}>
+              {domain.label}
+            </a>
+          ))}
+        </nav>
+      </noscript>
     </LayoutGroup>
+  );
+}
+
+function NavLink({
+  path,
+  label,
+  icon: Icon,
+  pathname,
+  kind,
+  child = false,
+  onNavigate,
+}: {
+  path: string;
+  label: string;
+  icon?: typeof House;
+  pathname: string;
+  kind: "desktop" | "bar" | "panel";
+  child?: boolean;
+  onNavigate?: () => void;
+}) {
+  const active = isCurrent(pathname, path);
+  return (
+    <Link
+      to={path}
+      prefetch="intent"
+      aria-current={active ? "page" : undefined}
+      className={`grouped-link grouped-link--${kind}${child ? " grouped-link--child" : ""}`}
+      onClick={onNavigate}
+    >
+      {active && (
+        <motion.span
+          data-nav-highlight
+          aria-hidden="true"
+          layoutId={`active-${kind}`}
+          className={kind === "bar" ? "grouped-bar-marker" : "grouped-highlight"}
+          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+        />
+      )}
+      {Icon && <Icon size={kind === "bar" ? 19 : 16} strokeWidth={1.4} aria-hidden="true" />}
+      <span>{label}</span>
+      {kind === "panel" && <ChevronRight size={14} strokeWidth={1.3} aria-hidden="true" />}
+    </Link>
   );
 }
 

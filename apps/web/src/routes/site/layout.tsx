@@ -11,7 +11,7 @@ import type { Route } from "./+types/layout";
 function Chrome({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
-    <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-56">
+    <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-48">
       <SiteHeader />
       <main
         className={
