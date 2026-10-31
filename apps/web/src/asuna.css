@@ -1,0 +1,853 @@
+/* SAO / Asuna：前台专属变量。后台继续使用 globals.css 的原主题。 */
+:root:has(.sao-site) {
+  --background: #f6f7f9;
+  --foreground: #252b35;
+  --muted: #edf0f3;
+  --muted-foreground: #5d6672;
+  --border: #dce2e8;
+  --input: #dce2e8;
+  --ring: #b42f3c;
+  --primary: #b42f3c;
+  --primary-foreground: #ffffff;
+  --secondary: #e9edf1;
+  --secondary-foreground: #303b49;
+  --accent: #ede9e3;
+  --accent-foreground: #8f2b36;
+  --soft: #ece8e2;
+  --card: #ffffff;
+  --card-foreground: #252b35;
+  --popover: #ffffff;
+  --popover-foreground: #252b35;
+  --radius: 0.3rem;
+  --sao-crimson: #b42f3c;
+  --sao-gold: #80683d;
+  --sao-panel: #ffffff;
+  --sao-line: #c3ccd5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:has(.sao-site) {
+    --background: #101820;
+    --foreground: #edf1f4;
+    --muted: #202c37;
+    --muted-foreground: #a6b2bd;
+    --border: #33414d;
+    --input: #33414d;
+    --ring: #ed5260;
+    --primary: #ed5260;
+    --primary-foreground: #25151b;
+    --secondary: #26333e;
+    --secondary-foreground: #e1e8ee;
+    --accent: #2f3032;
+    --accent-foreground: #e6d2c2;
+    --soft: #2b2d30;
+    --card: #18232d;
+    --card-foreground: #edf1f4;
+    --popover: #18232d;
+    --popover-foreground: #edf1f4;
+    --sao-gold: #ceb788;
+    --sao-panel: #18232d;
+    --sao-line: #4d606e;
+  }
+}
+.sao-site {
+  min-height: 100dvh;
+}
+.sao-home {
+  min-width: 0;
+}
+.sao-home a:focus-visible,
+.sao-menu a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+.sao-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.25rem 0 1.25rem;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.sao-topline > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sao-topline a {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.sao-diamond {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  rotate: 45deg;
+  background: var(--primary);
+  flex-shrink: 0;
+}
+.sao-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 590px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--sao-panel);
+}
+.sao-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 72px;
+  height: 4px;
+  background: var(--primary);
+}
+.sao-hero::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 30px;
+  height: 30px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background: var(--background);
+  border-top: 1px solid var(--border);
+}
+.sao-hero-copy {
+  position: relative;
+  z-index: 2;
+  width: 59%;
+  padding: 4rem 0 5rem 3rem;
+}
+.sao-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--sao-gold);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+.sao-hero h1 {
+  margin: 1.8rem 0 1rem -0.04em;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: clamp(76px, 8vw, 132px);
+  line-height: 0.92;
+  font-weight: 400;
+  letter-spacing: -0.075em;
+}
+.sao-name-dot {
+  color: var(--primary);
+}
+.sao-hero-kana {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.7rem;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  letter-spacing: 0.18em;
+}
+.sao-hero-kana::before {
+  content: "";
+  width: 2rem;
+  height: 1px;
+  background: var(--primary);
+}
+.sao-hero-lead {
+  max-width: 25rem;
+  font-size: clamp(18px, 1.8vw, 23px);
+  line-height: 1.7;
+  letter-spacing: 0.025em;
+  font-weight: 500;
+}
+.sao-hero-note {
+  max-width: 22rem;
+  margin-top: 0.8rem;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.9;
+}
+.sao-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem;
+  margin-top: 2rem;
+}
+.sao-button {
+  display: inline-flex;
+  min-height: 46px;
+  justify-content: center;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 1.2rem;
+  border: 1px solid var(--sao-crimson);
+  background: var(--sao-crimson);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+}
+.sao-button:hover {
+  filter: brightness(1.08);
+}
+.sao-home .sao-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -5px;
+}
+.sao-text-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.sao-text-link:hover {
+  color: var(--primary);
+}
+.sao-hero-art {
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+  top: -0.5rem;
+  right: -1.5rem;
+  width: 49%;
+  height: calc(100% + 3rem);
+}
+.asuna-portrait {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.asuna-portrait-field {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.asuna-character {
+  position: absolute;
+  top: 5%;
+  right: 8%;
+  height: 118%;
+  width: auto;
+  max-width: none;
+}
+.portrait-geometry {
+  color: var(--sao-gold);
+  opacity: 0.24;
+}
+.sao-hero-ambient {
+  position: absolute;
+  z-index: -1;
+  top: -160px;
+  right: -35%;
+  width: 90%;
+  height: 900px;
+  border-left: 1px solid var(--border);
+  background: var(--muted);
+  rotate: 23deg;
+  opacity: 0.55;
+}
+.sao-hero-bottom {
+  position: absolute;
+  z-index: 2;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 45px;
+  padding: 0.7rem 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  background: var(--sao-panel);
+  font-size: 11px;
+}
+.sao-hero-bottom > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sao-world {
+  margin-top: 3.5rem;
+  scroll-margin-top: 1.5rem;
+}
+.sao-section {
+  margin-top: 3.5rem;
+  min-width: 0;
+  scroll-margin-top: 1.5rem;
+}
+.sao-section-heading {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.4rem;
+}
+.sao-section-heading h2 {
+  font-size: 21px;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.sao-section-heading p {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-top: 0.4rem;
+}
+.sao-section-heading > a {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+  font-size: 12px;
+  color: var(--primary);
+}
+.sao-section-rule {
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: var(--sao-line);
+  transform-origin: left;
+}
+.sao-world-menu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.sao-world-entry {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 90px;
+  padding: 1.2rem;
+  background: var(--card);
+}
+.sao-world-entry::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+}
+.sao-world-entry:hover {
+  background: var(--accent);
+}
+.sao-world-entry > svg {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  color: var(--sao-line);
+}
+.sao-world-entry:where(:hover, :focus-visible) > svg {
+  color: var(--primary);
+}
+.sao-world-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--primary);
+}
+.sao-world-entry strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.sao-world-entry small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.sao-world-entry > .sao-world-arrow {
+  margin-left: auto;
+  color: var(--sao-gold);
+}
+.sao-now-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.sao-now-item {
+  position: relative;
+  min-width: 0;
+}
+.sao-now-cover {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--muted);
+}
+.sao-now-cover > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sao-now-cover > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--sao-gold);
+}
+.sao-now-status {
+  position: absolute;
+  z-index: 1;
+  top: 0.8rem;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 11px;
+  border-left: 3px solid var(--primary);
+}
+.sao-now-caption {
+  position: relative;
+  z-index: 1;
+  margin: -1.2rem 0.7rem 0 0;
+  padding: 1rem 1.1rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.sao-now-caption h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+}
+.sao-now-caption p {
+  margin-top: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.sao-memory-film {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  grid-auto-rows: 170px;
+  gap: 0.8rem;
+}
+.sao-memory {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--muted);
+}
+.sao-memory:first-child {
+  grid-row: span 2;
+}
+.sao-memory img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sao-memory figcaption {
+  pointer-events: none;
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.65rem;
+  max-width: calc(100% - 1.3rem);
+  padding: 0.3rem 0.65rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+}
+.sao-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(240px, 1fr);
+  gap: 2.5rem;
+  align-items: start;
+}
+.sao-journal-list {
+  border-top: 1px solid var(--border);
+}
+.sao-journal-entry {
+  display: grid;
+  grid-template-columns: 1fr 24px;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.sao-journal-entry time {
+  display: block;
+  margin-bottom: 0.65rem;
+  color: var(--sao-gold);
+  font-size: 12px;
+}
+.sao-journal-entry h3 {
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+.sao-journal-entry p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.sao-journal-entry > svg {
+  color: var(--primary);
+}
+.sao-journal-entry:hover {
+  color: var(--primary);
+}
+.sao-moments {
+  position: relative;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--sao-line);
+}
+.sao-moment {
+  position: relative;
+  padding: 0 0 1.6rem;
+}
+.sao-moment::before {
+  content: "";
+  position: absolute;
+  left: calc(-1.25rem - 3px);
+  top: 0.5rem;
+  width: 5px;
+  height: 5px;
+  background: var(--primary);
+  rotate: 45deg;
+}
+.sao-moment p {
+  font-size: 13px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.sao-moment footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.sao-profile {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.sao-profile h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.sao-profile p {
+  margin-top: 0.6rem;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.sao-profile-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.8rem;
+  color: var(--primary);
+  font-size: 12px;
+}
+.sao-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 4rem;
+  padding: 1.2rem 0 0.4rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.sao-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 36px;
+}
+.sao-empty {
+  padding: 1.5rem 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+/* 主导航：沿用原有固定定位、尺寸和滚动能力，只改变视觉层。 */
+.sao-menu {
+  background: var(--card);
+}
+.sao-menu-brand {
+  gap: 0.75rem;
+}
+.sao-menu-symbol {
+  display: none;
+  color: var(--primary);
+}
+.sao-menu-caption {
+  display: none;
+  margin-top: 0.25rem;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+.sao-menu-domain {
+  gap: 0.7rem;
+  border-radius: 0;
+}
+.sao-menu-domain > svg {
+  position: relative;
+  width: 15px;
+  height: 15px;
+}
+.sao-menu-active {
+  border-left: 2px solid var(--primary);
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+.sao-menu-bottom {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .sao-menu-symbol {
+    display: block;
+  }
+  .sao-menu-caption {
+    display: block;
+  }
+  .sao-menu-bottom {
+    display: block;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    padding: 1rem 0.75rem 0;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    line-height: 1.9;
+  }
+}
+@media (max-width: 1199px) {
+  .sao-hero-copy {
+    padding-left: 2rem;
+  }
+  .sao-hero-art {
+    right: -3rem;
+    width: 52%;
+  }
+  .sao-hero-lead {
+    font-size: 20px;
+  }
+}
+@media (max-width: 767px) {
+  .sao-topline {
+    padding-bottom: 1rem;
+  }
+  .sao-topline .sao-topline-note {
+    display: none;
+  }
+  .sao-hero {
+    min-height: 770px;
+  }
+  .sao-hero-copy {
+    width: 100%;
+    padding: 2rem 1.5rem 0;
+  }
+  .sao-hero h1 {
+    margin-top: 1.2rem;
+    font-size: 92px;
+  }
+  .sao-hero-kana {
+    margin-bottom: 1.2rem;
+  }
+  .sao-hero-lead {
+    max-width: 21rem;
+    padding-right: 0.5rem;
+    font-size: 19px;
+  }
+  .sao-hero-note {
+    max-width: 18rem;
+    font-size: 12px;
+  }
+  .sao-hero-actions {
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  .sao-button {
+    min-height: 42px;
+    padding: 0.6rem 0.85rem;
+    font-size: 12px;
+  }
+  .sao-text-link {
+    font-size: 12px;
+  }
+  .sao-hero-art {
+    top: auto;
+    bottom: 14px;
+    right: -18px;
+    width: 86%;
+    height: 355px;
+  }
+  .asuna-character {
+    height: 170%;
+    right: 2%;
+  }
+  .sao-hero-ambient {
+    top: 200px;
+    right: -56%;
+    width: 110%;
+    height: 700px;
+    rotate: 28deg;
+  }
+  .sao-hero-bottom {
+    padding-inline: 0.8rem;
+    font-size: 10px;
+  }
+  .sao-hero-bottom .sao-hero-footnote {
+    display: none;
+  }
+  .sao-world,
+  .sao-section {
+    margin-top: 2.5rem;
+  }
+  .sao-section-heading {
+    margin-bottom: 1rem;
+  }
+  .sao-section-heading h2 {
+    font-size: 19px;
+  }
+  .sao-section-heading p {
+    font-size: 11px;
+  }
+  .sao-world-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+  .sao-world-entry {
+    min-height: 78px;
+    padding: 0.8rem 0.65rem;
+    gap: 0.4rem;
+  }
+  .sao-world-icon {
+    width: 27px;
+    height: 32px;
+  }
+  .sao-world-entry strong {
+    font-size: 13px;
+  }
+  .sao-world-entry small {
+    font-size: 10px;
+  }
+  .sao-world-entry > .sao-world-arrow {
+    display: none;
+  }
+  .sao-now-grid {
+    gap: 0.65rem;
+  }
+  .sao-now-cover {
+    aspect-ratio: 3 / 4;
+  }
+  .sao-now-status {
+    top: 0.45rem;
+    padding: 0.25rem 0.4rem;
+    font-size: 10px;
+    gap: 0.3rem;
+  }
+  .sao-now-caption {
+    margin: 0;
+    padding: 0.7rem 0.35rem;
+    background: none;
+  }
+  .sao-now-caption h3 {
+    font-size: 12px;
+  }
+  .sao-now-caption p {
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sao-memory-film {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 220px;
+    grid-auto-rows: 140px;
+  }
+  .sao-memory:first-child {
+    grid-column: span 2;
+    grid-row: span 1;
+    height: 220px;
+  }
+  .sao-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .sao-profile {
+    padding: 1.2rem;
+  }
+  .sao-footer {
+    align-items: start;
+    font-size: 10px;
+  }
+  .sao-footer > span {
+    max-width: 17rem;
+    line-height: 1.9;
+  }
+  .sao-menu-domain {
+    gap: 0.4rem;
+  }
+  .sao-menu-domain > svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+@media (max-width: 359px) {
+  .sao-hero-copy {
+    padding: 1.5rem 1.1rem 0;
+  }
+  .sao-hero h1 {
+    font-size: 80px;
+  }
+  .sao-hero {
+    min-height: 830px;
+  }
+  .sao-hero-actions {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .sao-hero-art {
+    height: 330px;
+    bottom: 15px;
+  }
+  .sao-hero-lead {
+    font-size: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sao-home *,
+  .sao-menu * {
+    scroll-behavior: auto;
+  }
+}

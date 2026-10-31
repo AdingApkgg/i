@@ -11,9 +11,11 @@ import { MascotWidget } from "@/components/public/mascot-widget";
 export default function SiteShell() {
   return (
     <MotionConfig reducedMotion="user">
-      <Outlet />
-      <MusicPlayer />
-      <MascotWidget />
+      <div className="sao-site">
+        <Outlet />
+        <MusicPlayer />
+        <MascotWidget />
+      </div>
     </MotionConfig>
   );
 }

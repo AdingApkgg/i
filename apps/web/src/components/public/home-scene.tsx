@@ -1,15 +1,14 @@
 import { useGSAP } from "@gsap/react";
-import { NAV_DOMAINS, siteConfig } from "@i/config";
-import { Card, CardBody } from "@i/ui";
+import { siteConfig } from "@i/config";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowDown, ArrowUpRight, CodeXml, Shield, Sword } from "lucide-react";
 import { type ReactNode, useRef } from "react";
-import { Link } from "react-router";
-import { InterestMap } from "./interest-map";
+import { AsunaPortrait } from "./asuna-portrait";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-/** 首页的演出层：GSAP 只编排 hero 外层、背景和章节线条，不接管 Motion 卡片。 */
+/** GSAP 控制首屏包装层与章节线条，不接管 Motion 交互或 Anime.js 的菜单笔画。 */
 export function HomeScene({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useGSAP(
@@ -20,15 +19,11 @@ export function HomeScene({ children }: { children: ReactNode }) {
         () => {
           gsap
             .timeline({ defaults: { ease: "power3.out" } })
-            .from("[data-hero-line]", { y: 24, opacity: 0.65, duration: 0.8, stagger: 0.09 })
-            .from("[data-hero-map]", { rotate: -7, scale: 0.92, duration: 1.1 }, 0.1)
-            .from(
-              "[data-hero-shortcut]",
-              { y: 10, opacity: 0.6, duration: 0.45, stagger: 0.025 },
-              0.35,
-            );
+            .from("[data-hero-line]", { y: 18, opacity: 0.65, duration: 0.85, stagger: 0.08 })
+            .from("[data-hero-portrait]", { x: 28, opacity: 0.8, duration: 1.3 }, 0)
+            .from("[data-hero-actions]", { y: 8, opacity: 0.8, duration: 0.6 }, 0.4);
           gsap.to("[data-hero-ambient]", {
-            yPercent: -22,
+            yPercent: -10,
             ease: "none",
             scrollTrigger: {
               trigger: "[data-home-hero]",
@@ -58,9 +53,8 @@ export function HomeScene({ children }: { children: ReactNode }) {
     },
     { scope: root },
   );
-
   return (
-    <div ref={root} className="space-y-8">
+    <div ref={root} id="top" className="sao-home">
       {children}
     </div>
   );
@@ -68,51 +62,72 @@ export function HomeScene({ children }: { children: ReactNode }) {
 
 export function HomeHero() {
   return (
-    <Card data-home-hero className="relative isolate overflow-hidden">
-      <div
-        data-hero-ambient
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-24 -z-10 size-96 rounded-full border-[40px] border-primary/[0.035]"
-      />
-      <CardBody className="grid items-center gap-3 p-6 sm:p-8 md:grid-cols-[1.1fr_1fr]">
-        <div className="min-w-0">
-          <span
-            data-hero-line
-            className="inline-flex items-center gap-1.5 rounded-pill bg-soft px-3 py-1 text-sm font-medium text-primary"
-          >
-            <span className="size-1.5 rounded-full bg-primary" />
-            在线
-          </span>
-          <h1 data-hero-line className="mt-4 text-4xl font-bold tracking-wide sm:text-5xl">
+    <>
+      <div className="sao-topline">
+        <span>
+          <span className="sao-diamond" />
+          Asuna 的个人空间<span className="sao-topline-note">／ 日常与冒险的交汇处</span>
+        </span>
+        <a
+          href={siteConfig.socials.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="GitHub"
+        >
+          <CodeXml size={14} />
+          <ArrowUpRight size={12} />
+        </a>
+      </div>
+      <section data-home-hero className="sao-hero" aria-label="欢迎来到 Asuna 的世界">
+        <div data-hero-ambient aria-hidden="true" className="sao-hero-ambient" />
+        <div className="sao-hero-copy">
+          <div data-hero-line className="sao-eyebrow">
+            <Shield size={14} strokeWidth={1.5} />
+            白与绯红，温柔与锋芒
+          </div>
+          <h1 data-hero-line>
             {siteConfig.title}
+            <span aria-hidden="true" className="sao-name-dot">
+              .
+            </span>
           </h1>
-          <div data-hero-line className="mt-2 text-sm font-semibold text-primary">
-            {siteConfig.handle}
+          <div data-hero-line className="sao-hero-kana">
+            <span lang="ja">アスナ</span>
+            <span>／ {siteConfig.handle}</span>
           </div>
-          <p
-            data-hero-line
-            className="mt-4 max-w-sm text-[15px] leading-relaxed text-muted-foreground"
-          >
-            {siteConfig.tagline}
+          <p data-hero-line className="sao-hero-lead">
+            有想守护的日常，
+            <br />
+            也有想奔赴的世界。
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {NAV_DOMAINS.map((domain) => (
-              <Link
-                data-hero-shortcut
-                prefetch="intent"
-                key={domain.key}
-                to={domain.path}
-                className="rounded-pill bg-soft px-3 py-1.5 text-[13px] font-medium text-accent-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-              >
-                {domain.label}
-              </Link>
-            ))}
+          <p data-hero-line className="sao-hero-note">
+            音乐、文字、游戏，和旅途中不舍得删掉的照片。
+            <br />
+            欢迎来到我的后花园。
+          </p>
+          <div data-hero-actions className="sao-hero-actions">
+            <a href="#world" className="sao-button">
+              <Sword size={16} strokeWidth={1.5} />
+              探索我的世界
+              <ArrowDown size={13} />
+            </a>
+            <a href="#journal" className="sao-text-link">
+              读最近的文字
+              <ArrowUpRight size={14} />
+            </a>
           </div>
         </div>
-        <div data-hero-map className="min-w-0 py-2">
-          <InterestMap />
+        <div data-hero-portrait className="sao-hero-art">
+          <AsunaPortrait />
         </div>
-      </CardBody>
-    </Card>
+        <div className="sao-hero-bottom">
+          <span>
+            <span className="sao-diamond" />
+            在这里，慢慢记录喜欢的生活。
+          </span>
+          <span className="sao-hero-footnote">灵感来自艾恩葛朗特 · 非官方个人空间</span>
+        </div>
+      </section>
+    </>
   );
 }

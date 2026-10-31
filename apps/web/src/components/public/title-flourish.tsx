@@ -1,7 +1,7 @@
 import { animate, createScope } from "animejs";
 import { useEffect, useRef } from "react";
 
-/** 栏目标题的小花枝签名；SSR 输出完整路径，减少动态效果时不执行绘制。 */
+/** 栏目标题的细剑刻线；SSR 保持完整，减少动态效果时不执行绘制。 */
 export function TitleFlourish() {
   const root = useRef<SVGSVGElement>(null);
   useEffect(() => {
@@ -20,10 +20,10 @@ export function TitleFlourish() {
       data-title-flourish
       aria-hidden="true"
       viewBox="0 0 128 14"
-      className="mt-2 h-3.5 w-32 fill-none text-primary/60"
+      className="mt-2 h-3.5 w-32 fill-none text-primary"
     >
       <path
-        d="M 1 11 Q 38 2 71 9 T 111 5 Q 105 -1 101 5 Q 102 11 111 5 Q 120 -1 124 5 Q 121 11 111 5"
+        d="M 1 7 H 91 L 97 2 L 103 7 L 97 12 L 91 7 H 127 M 83 3 V 11"
         pathLength="1"
         stroke="currentColor"
         strokeWidth="1.5"
