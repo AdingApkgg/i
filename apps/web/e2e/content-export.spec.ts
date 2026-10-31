@@ -11,6 +11,36 @@ test("匿名用户不能下载正文备份", async ({ request }) => {
 test.describe("正文导出（管理员）", () => {
   test.use({ storageState: ADMIN_STATE });
 
+  test("备份按钮在脚本未就绪时禁用，水合后可正常下载", async ({ page }) => {
+    let releaseScripts!: () => void;
+    const scripts = new Promise<void>((resolve) => {
+      releaseScripts = resolve;
+    });
+    await page.route(
+      (url) => url.pathname.startsWith("/assets/") && url.pathname.endsWith(".js"),
+      async (route) => {
+        await scripts;
+        await route.continue();
+      },
+    );
+    try {
+      // 故意延迟真实客户端脚本，检查 SSR 控件不会接受注定丢失的点击。
+      await page.goto("/dash/blog", { waitUntil: "commit" });
+      const backup = page.getByRole("button", { name: "全部正文备份（JSON）", exact: true });
+      await expect(backup).toBeVisible();
+      await expect(backup).toBeDisabled();
+      releaseScripts();
+      await expect(backup).toBeEnabled();
+      const [download] = await Promise.all([page.waitForEvent("download"), backup.click()]);
+      const data = JSON.parse(await readFile((await download.path())!, "utf8"));
+      expect(data.posts).toBeInstanceOf(Array);
+      expect(data.pages).toBeInstanceOf(Array);
+    } finally {
+      releaseScripts();
+      await page.unrouteAll({ behavior: "wait" });
+    }
+  });
+
   test("单篇 JSON、全量备份和离线 HTML 都保留已保存的草稿", async ({ page, browser }, testInfo) => {
     const slug = `export-${Date.now()}`;
     await page.goto("/dash/blog/new");

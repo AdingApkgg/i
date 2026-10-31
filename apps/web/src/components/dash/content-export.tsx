@@ -1,13 +1,18 @@
 import { Button } from "@i/ui";
 import { ChevronDown, Download, LoaderCircle } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 function useDownload() {
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
+  // SSR 先禁用控件，避免客户端事件尚未绑定时接受并丢失点击。
+  useEffect(() => {
+    setReady(true);
+  }, []);
   async function download(path: string) {
-    if (busy) return;
+    if (!ready || busy) return;
     setBusy(true);
     try {
       const response = await fetch(`/api/content-export/${path}`, { credentials: "same-origin" });
@@ -32,16 +37,16 @@ function useDownload() {
       setBusy(false);
     }
   }
-  return { busy, download };
+  return { busy, download, ready };
 }
 
 /** 两个列表共用全量备份：包括草稿、整页和元数据，不包含媒体文件。 */
 export function ContentBackupButton() {
-  const { busy, download } = useDownload();
+  const { busy, download, ready } = useDownload();
   return (
     <Button
       variant="outline"
-      disabled={busy}
+      disabled={!ready || busy}
       onClick={() => void download("backup.json")}
       title="备份全部文章和整页（含草稿），不包含图片、音视频文件"
     >
@@ -60,14 +65,14 @@ export function ContentExportMenu({
   id: string;
   disabled?: boolean;
 }) {
-  const { busy, download } = useDownload();
+  const { busy, download, ready } = useDownload();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <Button
           variant="outline"
           size="sm"
-          disabled={disabled || busy}
+          disabled={disabled || !ready || busy}
           title={disabled ? "先保存改动，再导出" : "导出已保存的版本"}
         >
           {busy ? (
