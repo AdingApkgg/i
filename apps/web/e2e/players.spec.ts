@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import type { Route } from "@playwright/test";
 import pg from "pg";
 import { expect, test } from "./fixtures";
+import { navigateMain } from "./navigation-helpers";
 
 const slug = `e2e-players-${Date.now()}`;
 const media = (name: string) => `/__media/${name}`;
@@ -119,7 +120,7 @@ test("音乐：主动选播、进度音量控制、切歌和客户端跨页不�
   await audio.evaluate((el) => {
     el.dataset.mark = "persistent";
   });
-  await page.locator("header nav").getByText("音乐", { exact: true }).click();
+  await navigateMain(page, "音乐", "收藏");
   await expect(page).toHaveURL("/music");
   await expect(page.getByRole("heading", { name: "音乐", exact: true })).toBeVisible();
   await expect(audio).toHaveAttribute("data-mark", "persistent");

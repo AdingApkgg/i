@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { navigateMain } from "./navigation-helpers";
 
 const PAGES = [
   "/",
@@ -47,14 +48,14 @@ test("主导航走客户端路由，不整页刷新", async ({ page }) => {
   await page.evaluate(() => {
     (window as unknown as { __marker: number }).__marker = 42;
   });
-  for (const [label, path] of [
-    ["博客", "/blog"],
-    ["相册", "/gallery"],
-    ["友链", "/friends"],
-    ["说说", "/moments"],
-    ["音乐", "/music"],
+  for (const [label, path, group] of [
+    ["博客", "/blog", "日常"],
+    ["相册", "/gallery", "日常"],
+    ["友链", "/friends", undefined],
+    ["说说", "/moments", "日常"],
+    ["音乐", "/music", "收藏"],
   ] as const) {
-    await page.locator("header nav").getByText(label, { exact: true }).click();
+    await navigateMain(page, label, group);
     await expect(page).toHaveURL(path);
   }
   expect(await page.evaluate(() => (window as unknown as { __marker?: number }).__marker)).toBe(42);
