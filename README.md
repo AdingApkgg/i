@@ -136,18 +136,18 @@ GitHub Actions 的机器要能连上服务器的 SSH 端口。
 
 仓库 Settings → Secrets and variables → Actions 里添加：
 
-| 名称 | 类型 | 内容 |
-| --- | --- | --- |
-| `DEPLOY_HOST` | Secret | 服务器 IP 或域名（不要用经过 Cloudflare 代理的域名） |
-| `DEPLOY_USER` | Secret | SSH 用户名 |
-| `DEPLOY_SSH_KEY` | Secret | 专用私钥：`ssh-keygen -t ed25519 -N "" -C github-deploy -f deploy_key`，`deploy_key.pub` 追加到服务器 `~/.ssh/authorized_keys`，`deploy_key` 的全部内容填这里 |
-| `DEPLOY_KNOWN_HOSTS` | Secret（可选） | `ssh-keyscan -p 端口 服务器` 的输出；不填时首次连接自动信任，日志里会打印指纹 |
-| `CLOUDFLARE_API_TOKEN` | Secret（可选） | 不填就跳过 Cloudflare 步骤。My Profile → API Tokens → Create Custom Token，权限：Zone · Zone · Read、Zone · Cache Rules · Edit、Zone · Cache Purge · Purge；Zone Resources 选这个站点的域名 |
-| `DEPLOY_PATH` | Variable（可选） | 服务器上仓库的路径，相对 SSH 用户的家目录或绝对路径（不要写 `~`），默认 `i` |
-| `DEPLOY_PORT` | Variable（可选） | SSH 端口，默认 `22` |
-| `DEPLOY_DOCKER` | Variable（可选） | 默认 `docker` |
-| `CLOUDFLARE_ZONE` | Variable | Cloudflare 里的域名，如 `saop.cc` |
-| `SITE_HOST` | Variable | 站点域名，如 `i.saop.cc` |
+| 名称                   | 类型             | 内容                                                                                                                                                                                        |
+| ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEPLOY_HOST`          | Secret           | 服务器 IP 或域名（不要用经过 Cloudflare 代理的域名）                                                                                                                                        |
+| `DEPLOY_USER`          | Secret           | SSH 用户名                                                                                                                                                                                  |
+| `DEPLOY_SSH_KEY`       | Secret           | 专用私钥：`ssh-keygen -t ed25519 -N "" -C github-deploy -f deploy_key`，`deploy_key.pub` 追加到服务器 `~/.ssh/authorized_keys`，`deploy_key` 的全部内容填这里                               |
+| `DEPLOY_KNOWN_HOSTS`   | Secret（可选）   | `ssh-keyscan -p 端口 服务器` 的输出；不填时首次连接自动信任，日志里会打印指纹                                                                                                               |
+| `CLOUDFLARE_API_TOKEN` | Secret（可选）   | 不填就跳过 Cloudflare 步骤。My Profile → API Tokens → Create Custom Token，权限：Zone · Zone · Read、Zone · Cache Rules · Edit、Zone · Cache Purge · Purge；Zone Resources 选这个站点的域名 |
+| `DEPLOY_PATH`          | Variable（可选） | 服务器上仓库的路径，相对 SSH 用户的家目录或绝对路径（不要写 `~`），默认 `i`                                                                                                                 |
+| `DEPLOY_PORT`          | Variable（可选） | SSH 端口，默认 `22`                                                                                                                                                                         |
+| `DEPLOY_DOCKER`        | Variable（可选） | 默认 `docker`                                                                                                                                                                               |
+| `CLOUDFLARE_ZONE`      | Variable         | Cloudflare 里的域名，如 `saop.cc`                                                                                                                                                           |
+| `SITE_HOST`            | Variable         | 站点域名，如 `i.saop.cc`                                                                                                                                                                    |
 
 不方便从 GitHub 连服务器时，也可以在服务器上直接跑：`DEPLOY_PATH=~/i MIGRATE_STORAGE=1 bash deploy/deploy.sh`。
 
@@ -162,14 +162,14 @@ GitHub Actions 的机器要能连上服务器的 SSH 端口。
 源站已给每类响应设好缓存头（`apps/web/src/server/cache.ts`）。`Cache-Control` 给浏览器，
 `CDN-Cache-Control` 给 Cloudflare（它优先看这个头）：
 
-| 响应 | 浏览器 | Cloudflare |
-| --- | --- | --- |
-| 前台页面、页面数据（`*.data`） | 每次重新取 | 1 分钟；过期后 1 分钟内先给旧版、后台刷新 |
-| `/assets/*`、相册原图与缩略图 | 1 年（immutable） | 同左 |
-| RSS / sitemap | 10 分钟 | 1 小时（过期后 1 天内先给旧版） |
-| 分享卡片 | 1 小时 | 1 天（过期后 7 天内先给旧版） |
-| `/dash`、`/api/*`、带 Set-Cookie 的、非 200 的页面 | 不缓存 | 不缓存 |
-| 数据库出错时降级出来的页面（空列表）、RSS / sitemap（503） | 不缓存 | 不缓存 |
+| 响应                                                       | 浏览器            | Cloudflare                                |
+| ---------------------------------------------------------- | ----------------- | ----------------------------------------- |
+| 前台页面、页面数据（`*.data`）                             | 每次重新取        | 1 分钟；过期后 1 分钟内先给旧版、后台刷新 |
+| `/assets/*`、相册原图与缩略图                              | 1 年（immutable） | 同左                                      |
+| RSS / sitemap                                              | 10 分钟           | 1 小时（过期后 1 天内先给旧版）           |
+| 分享卡片                                                   | 1 小时            | 1 天（过期后 7 天内先给旧版）             |
+| `/dash`、`/api/*`、带 Set-Cookie 的、非 200 的页面         | 不缓存            | 不缓存                                    |
+| 数据库出错时降级出来的页面（空列表）、RSS / sitemap（503） | 不缓存            | 不缓存                                    |
 
 前台页面对所有人输出一样（登录状态在浏览器里取），所以可以放心让 CDN 缓存；发文、改内容后最多约 1 分钟生效，
 急的话在 Cloudflare 后台 Purge 对应 URL。
@@ -185,16 +185,17 @@ Cloudflare 默认不缓存 HTML，需要在面板里加一条缓存规则（「�
 > 旧版本（Next.js）给静态页发的是 `s-maxage=31536000`，会被缓存一年。
 
 **Caching → Cache Rules** 新建一条：
-   - 匹配（Custom filter expression → Edit expression，域名换成你的）：
-     ```
-     http.host eq "i.saop.cc" and not starts_with(http.request.uri.path, "/dash") and not (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/gallery/files/"))
-     ```
-   - Cache eligibility：**Eligible for cache**
-   - Edge TTL：**Use cache-control header if present, bypass cache if not**
-   - Browser TTL：**Respect origin**（不设的话 Cloudflare 会按 zone 的 Browser Cache TTL 把浏览器缓存时间改长，
-     访客看不到更新。不要为此去改 Caching → Configuration 里的 Browser Cache TTL：那是整个域名的设置，
-     同一域名下的其他站点也会跟着变）
-   - 缓存键保持默认（包含查询串，缩略图靠 `?w=` 区分）
+- 匹配（Custom filter expression → Edit expression，域名换成你的）：
+
+  ```
+  http.host eq "i.saop.cc" and not starts_with(http.request.uri.path, "/dash") and not (starts_with(http.request.uri.path, "/api/") and not starts_with(http.request.uri.path, "/api/gallery/files/"))
+  ```
+- Cache eligibility：**Eligible for cache**
+- Edge TTL：**Use cache-control header if present, bypass cache if not**
+- Browser TTL：**Respect origin**（不设的话 Cloudflare 会按 zone 的 Browser Cache TTL 把浏览器缓存时间改长，
+  访客看不到更新。不要为此去改 Caching → Configuration 里的 Browser Cache TTL：那是整个域名的设置，
+  同一域名下的其他站点也会跟着变）
+- 缓存键保持默认（包含查询串，缩略图靠 `?w=` 区分）
 
 验证：同一个页面请求两次，第二次响应头应为 `cf-cache-status: HIT`，且 `cache-control` 仍是 `max-age=0`；
 `/dash` 始终是 `DYNAMIC` 或 `BYPASS`。

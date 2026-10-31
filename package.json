@@ -24,8 +24,8 @@
     "db:seed": "bun --filter @i/db db:seed"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
-    "turbo": "^2.5.9",
+    "@biomejs/biome": "^2.6.4",
+    "turbo": "^2.11.10",
     "typescript": "^7.0.0"
   },
   "engines": {
