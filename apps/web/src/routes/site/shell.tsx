@@ -1,3 +1,4 @@
+import { MotionConfig } from "motion/react";
 import { Outlet } from "react-router";
 import { MusicPlayer } from "@/components/player/music-player";
 import { MascotWidget } from "@/components/public/mascot-widget";
@@ -9,10 +10,10 @@ import { MascotWidget } from "@/components/public/mascot-widget";
  */
 export default function SiteShell() {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <Outlet />
       <MusicPlayer />
       <MascotWidget />
-    </>
+    </MotionConfig>
   );
 }

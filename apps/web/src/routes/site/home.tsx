@@ -1,10 +1,10 @@
-import { NAV_DOMAINS, siteConfig } from "@i/config";
 import { Card, CardBody } from "@i/ui";
 import { ArrowRight, ArrowUp, Disc3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
+import { Stagger, StaggerItem } from "@/components/motion";
 import { Badge } from "@/components/public/collection";
+import { HomeHero, HomeScene } from "@/components/public/home-scene";
 import { adxChartUrl } from "@/lib/adx";
 import { degradeTo } from "@/lib/degrade.server";
 import { formatDate } from "@/lib/format";
@@ -52,36 +52,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
   const mmTop = [...mmB50.b35, ...mmB50.b15].sort((a, b) => b.ra - a.ra).slice(0, 6);
 
   return (
-    <div className="space-y-8">
-      {/* hero（看板娘在全站右下角悬浮，不占 hero） */}
-      <FadeIn y={18}>
-        <Card className="relative overflow-hidden">
-          <CardBody className="p-8">
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-soft px-3 py-1 text-sm font-medium text-primary">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
-              </span>{" "}
-              在线
-            </span>
-            <h1 className="mt-4 text-3xl font-bold tracking-wide">{siteConfig.title}</h1>
-            <div className="text-sm font-semibold text-primary">{siteConfig.handle}</div>
-            <p className="mt-3 text-[15px] text-muted-foreground">{siteConfig.tagline}</p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {NAV_DOMAINS.map((d) => (
-                <Link
-                  prefetch="intent"
-                  key={d.key}
-                  to={d.path}
-                  className="rounded-pill bg-soft px-3.5 py-1.5 text-[13px] font-medium text-accent-foreground transition hover:-translate-y-0.5 hover:brightness-95"
-                >
-                  {d.label}
-                </Link>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      </FadeIn>
+    <HomeScene>
+      <HomeHero />
 
       {/* 最近在…… */}
       <Section title="最近在……" moreHref="/music" moreLabel="音乐库">
@@ -233,7 +205,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </Stagger>
         )}
       </Section>
-    </div>
+    </HomeScene>
   );
 }
 
@@ -249,8 +221,13 @@ function Section({
   moreLabel?: string;
 }) {
   return (
-    <section>
-      <div className="mb-3 flex items-baseline justify-between">
+    <section data-home-section>
+      <div className="relative mb-3 flex items-baseline justify-between pb-2">
+        <span
+          data-section-rule
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-px origin-left bg-primary/25"
+        />
         <h2 className="text-lg font-semibold">{title}</h2>
         {moreHref && (
           <Link

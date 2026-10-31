@@ -12,7 +12,7 @@
  */
 
 import { ChevronLeft, ChevronRight, Download, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { thumbProps } from "@/lib/thumb";
@@ -66,6 +66,8 @@ export function PhotoLightbox({
 }) {
   const photo = index != null && index >= 0 ? items[index] : undefined;
   const open = photo !== undefined;
+  const reduce = useReducedMotion();
+  const direction = useRef(1);
 
   const [view, setView] = useState<View>(RESET_VIEW);
   const [gesturing, setGesturing] = useState(false);
@@ -126,6 +128,7 @@ export function PhotoLightbox({
         }
         return;
       }
+      direction.current = i < (indexRef.current ?? 0) ? -1 : 1;
       onIndexChange(i);
     },
     [items.length, hasMore, onLoadMore, onIndexChange],
@@ -318,25 +321,37 @@ export function PhotoLightbox({
             {!loaded && (
               <div className="absolute size-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             )}
-            {/* 缩放/平移在包装层上做——motion 组件会接管 img 自身的 transform */}
-            <div
-              className={gesturing ? "" : "transition-transform duration-150"}
-              style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
+            {/* Motion 只控制切图外层；手势缩放仍由内层单独持有 transform。 */}
+            <motion.div
+              key={photo.id}
+              data-photo-transition
+              initial={{
+                opacity: reduce ? 1 : 0,
+                x: reduce ? 0 : direction.current * 24,
+                scale: reduce ? 1 : 0.98,
+              }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: reduce ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
-              {/* biome-ignore lint/a11y/useKeyWithClickEvents: 点图缩放，键盘走全局监听 */}
-              <img
-                key={photo.id}
-                ref={imgRef}
-                {...largeImage(photo.imageUrl)}
-                alt={photo.title || "照片"}
-                draggable={false}
-                onLoad={() => setLoaded(true)}
-                onClick={onImageClick}
-                className={`max-h-[88dvh] max-w-[92vw] select-none object-contain transition-opacity duration-200 ${
-                  loaded ? "opacity-100" : "opacity-0"
-                } ${view.scale > 1 ? (gesturing ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"}`}
-              />
-            </div>
+              <div
+                className={gesturing ? "" : "motion-safe:transition-transform duration-150"}
+                style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
+              >
+                {/* biome-ignore lint/a11y/useKeyWithClickEvents: 点图缩放，键盘走全局监听 */}
+                <img
+                  key={photo.id}
+                  ref={imgRef}
+                  {...largeImage(photo.imageUrl)}
+                  alt={photo.title || "照片"}
+                  draggable={false}
+                  onLoad={() => setLoaded(true)}
+                  onClick={onImageClick}
+                  className={`max-h-[88dvh] max-w-[92vw] select-none object-contain transition-opacity duration-200 ${
+                    loaded ? "opacity-100" : "opacity-0"
+                  } ${view.scale > 1 ? (gesturing ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"}`}
+                />
+              </div>
+            </motion.div>
           </div>
 
           {/* 顶栏 */}
