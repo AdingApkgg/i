@@ -61,7 +61,7 @@
     "drizzle-orm": "0.45.4",
     "gsap": "3.15.0",
     "hast-util-to-html": "^9.0.5",
-    "hono": "4.13.14",
+    "hono": "4.13.16",
     "ioredis": "^6.0.0",
     "isbot": "5",
     "katex": "0.19.1",
