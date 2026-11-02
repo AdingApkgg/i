@@ -37,19 +37,21 @@ test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) 
   await page.goto("/");
   await page.locator("header nav").getByRole("link", { name: "关于" }).click();
   await expect(page.getByRole("heading", { name: "关于", exact: true })).toBeVisible();
-  // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点
-  const spoiler = page.getByRole("button", { name: /点此显示/ }).first();
+  // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点；
+  // 点开后按钮的可访问名会变，所以按位置而不是按文案定位
+  const spoiler = page.locator("main button[aria-pressed]").first();
   await expect(spoiler).toBeVisible();
+  await expect(spoiler).toHaveText("点此显示");
   // SSR 出来就能看到按钮，水合完成前点击是空点：这里点到达成为止
   for (let i = 0; i < 10; i++) {
     if ((await spoiler.getAttribute("aria-pressed")) === "true") break;
     await spoiler.click();
     await page.waitForTimeout(300);
   }
-  // 点开后按钮文字变成被藏起来的正文，且带上按下态
+  // 点开后按钮显示被藏起来的正文，且带上按下态
   await expect(spoiler).toHaveAttribute("aria-pressed", "true");
-  await expect(spoiler).not.toHaveAccessibleName(/点此显示/);
-  await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(1);
+  await expect(spoiler).not.toHaveText("点此显示");
+  await expect(page.locator("main button[aria-pressed=true]")).toHaveCount(1);
 });
 
 test("不存在的页面：404、保留站点外壳、noindex", async ({ page }) => {
