@@ -46,6 +46,12 @@ describe("hexoToMdx", () => {
     );
   });
 
+  it("内联 script：包成模板字符串，否则 MDX 会把 JS 当表达式", () => {
+    expect(hexoToMdx('<script type="text/javascript">var a = { b: 1 };</script>')).toBe(
+      '<script type="text/javascript">{`var a = { b: 1 };`}</script>',
+    );
+  });
+
   it("hideInline：正文藏起来，点击才显示", () => {
     expect(hexoToMdx("有一个 {% hideInline 合法萝莉, 点此显示 %} 的设定")).toBe(
       '有一个 <HideInline text="合法萝莉" hint="点此显示" /> 的设定',

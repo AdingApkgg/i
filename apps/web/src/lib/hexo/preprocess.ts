@@ -120,6 +120,12 @@ export function hexoToMdx(input: string): string {
     (_m, head: string, u: string) => `${head}${resolveImg(u)})`,
   );
 
+  // ---- 内联 <script>：包成模板字符串，MDX 才不会把里头的 JS 当表达式解析 ----
+  s = s.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (_m, attrs: string, body: string) => {
+    const code = body.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+    return `<script${attrs}>{\`${code}\`}</script>`;
+  });
+
   // ---- hideInline：正文藏起来，点一下才显示（行内，不换行） ----
   s = s.replace(/\{%\s*hideInline\s+([^%]*?)\s*%\}/g, (_m, a) => {
     const [text = "", hint = ""] = splitArgs(a);
