@@ -37,8 +37,9 @@ test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) 
   await page.goto("/");
   await page.locator("header nav").getByRole("link", { name: "关于" }).click();
   await expect(page.getByRole("heading", { name: "关于", exact: true })).toBeVisible();
-  const spoiler = page.getByRole("button", { name: /点此显示/ });
-  await expect(spoiler).toHaveCount(1);
+  // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点
+  const spoiler = page.getByRole("button", { name: /点此显示/ }).first();
+  await expect(spoiler).toBeVisible();
   await spoiler.click();
   await expect(page.getByRole("button", { name: /可爱又羞涩的女孩子/ })).toBeVisible();
 });
