@@ -40,8 +40,14 @@ test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) 
   // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点
   const spoiler = page.getByRole("button", { name: /点此显示/ }).first();
   await expect(spoiler).toBeVisible();
-  await spoiler.click();
+  // SSR 出来就能看到按钮，水合完成前点击是空点：这里点到达成为止
+  for (let i = 0; i < 10; i++) {
+    if ((await spoiler.getAttribute("aria-pressed")) === "true") break;
+    await spoiler.click();
+    await page.waitForTimeout(300);
+  }
   // 点开后按钮文字变成被藏起来的正文，且带上按下态
+  await expect(spoiler).toHaveAttribute("aria-pressed", "true");
   await expect(spoiler).not.toHaveAccessibleName(/点此显示/);
   await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(1);
 });
