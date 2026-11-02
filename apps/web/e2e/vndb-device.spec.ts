@@ -250,9 +250,9 @@ test.describe("VNDB、翻译配置与设备", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/device");
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
-    await expect(page.getByText("CPU: test\nRAM: 32G", { exact: true })).toBeVisible();
-    await expect(page.getByText("入手：2024 年春天")).toBeVisible();
-    await expect(page.getByText("随身设备备注")).toBeVisible();
+    await expect(page.getByText("CPU: test\nRAM: 32G", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("入手：2024 年春天").first()).toBeVisible();
+    await expect(page.getByText("随身设备备注").first()).toBeVisible();
     await expect(page.getByRole("img", { name, exact: true })).toHaveAttribute("src", /device.png/);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
