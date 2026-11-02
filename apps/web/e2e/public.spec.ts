@@ -41,7 +41,9 @@ test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) 
   const spoiler = page.getByRole("button", { name: /点此显示/ }).first();
   await expect(spoiler).toBeVisible();
   await spoiler.click();
-  await expect(page.getByRole("button", { name: /可爱又羞涩的女孩子/ })).toBeVisible();
+  // 点开后按钮文字变成被藏起来的正文，且带上按下态
+  await expect(spoiler).not.toHaveAccessibleName(/点此显示/);
+  await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(1);
 });
 
 test("不存在的页面：404、保留站点外壳、noindex", async ({ page }) => {
