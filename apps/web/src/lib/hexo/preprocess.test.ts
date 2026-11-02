@@ -58,6 +58,10 @@ describe("hexoToMdx", () => {
     );
   });
 
+  it("markdown 图片站内相对路径补全为旧站绝对地址", () => {
+    expect(hexoToMdx("![看板娘](/img/a.webp)")).toBe("![看板娘](https://gh.saop.cc/img/a.webp)");
+  });
+
   it("dplayer：提取 url / pic，pic 相对路径补全", () => {
     const out = hexoToMdx('{% dplayer "url=https://v.example/a.mp4" "pic=/img/c.jpg" %}');
     expect(out).toContain(

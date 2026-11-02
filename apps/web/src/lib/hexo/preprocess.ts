@@ -114,6 +114,12 @@ export function hexoToMdx(input: string): string {
     });
   }
 
+  // ---- markdown 图片：站内相对路径补全为旧站绝对地址（新站自己不托管 /img） ----
+  s = s.replace(
+    /(!\[[^\]]*\]\()(\/[^)\s]+)\)/g,
+    (_m, head: string, u: string) => `${head}${resolveImg(u)})`,
+  );
+
   // ---- hideInline：正文藏起来，点一下才显示（行内，不换行） ----
   s = s.replace(/\{%\s*hideInline\s+([^%]*?)\s*%\}/g, (_m, a) => {
     const [text = "", hint = ""] = splitArgs(a);

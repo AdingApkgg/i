@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { cn } from "@i/ui";
+import { useState } from "react";
 
 /**
  * 行内剧透：正文默认藏起来，点一下才显示（Butterfly 的 {% hideInline %}）。
@@ -20,7 +20,7 @@ export function HideInline({ text, hint }: { text?: string; hint?: string }) {
           : "border-border bg-muted/60 text-muted-foreground hover:border-primary/40 hover:text-primary",
       )}
     >
-      <span>{shown ? text || "…" : (hint || "点此显示")}</span>
+      <span>{shown ? text || "…" : hint || "点此显示"}</span>
     </button>
   );
 }

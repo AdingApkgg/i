@@ -1,10 +1,10 @@
+import { data } from "react-router";
 import { HexoContent } from "@/components/hexo/content";
 import { PageTitle } from "@/components/public/site-header";
-import { compileHexo } from "@/lib/hexo/compile.server";
 import { degradeTo } from "@/lib/degrade.server";
+import { compileHexo } from "@/lib/hexo/compile.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
-import { data } from "react-router";
 import type { Route } from "./+types/about";
 
 const prose =
@@ -12,15 +12,15 @@ const prose =
 
 /** 关于页：整页内容存在 Page(id="about")，由后台维护，和 music/movie 走同一条导入渲染链路。 */
 export async function loader({ request }: Route.LoaderArgs) {
-  const page = await serverApi(request)
-    .page.get({ id: "about" })
-    .catch(degradeTo(null));
+  const page = await serverApi(request).page.get({ id: "about" }).catch(degradeTo(null));
   if (!page) throw data(null, { status: 404 });
   return { page: { source: page.contentMd, code: await compileHexo(page.contentMd) } };
 }
 
 export const meta: Route.MetaFunction = (args) =>
-  args.loaderData ? seo(args, { title: "关于", path: "/about" }) : seo(args, { title: "404", noindex: true });
+  args.loaderData
+    ? seo(args, { title: "关于", path: "/about" })
+    : seo(args, { title: "404", noindex: true });
 
 export default function AboutPage({ loaderData }: Route.ComponentProps) {
   const { page } = loaderData;
