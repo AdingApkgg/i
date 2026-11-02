@@ -6,6 +6,7 @@
  * Emitted contract (must match the components):
  *   <Note color icon? flavor?>md</Note>
  *   <HideToggle title color?>md</HideToggle>
+ *   <HideInline text hint? />
  *   <Btn url text icon? variant? />
  *   <Tabs><Tab label>md</Tab>…</Tabs>
  *   <DPlayer url pic? />
@@ -112,6 +113,13 @@ export function hexoToMdx(input: string): string {
       return `\n\n<HideToggle title="${title}" color="${color}">${wrap(body)}</HideToggle>\n\n`;
     });
   }
+
+  // ---- hideInline：正文藏起来，点一下才显示（行内，不换行） ----
+  s = s.replace(/\{%\s*hideInline\s+([^%]*?)\s*%\}/g, (_m, a) => {
+    const [text = "", hint = ""] = splitArgs(a);
+    const shown = hint || "点此显示";
+    return `<HideInline text="${attr(text)}" hint="${attr(shown)}" />`;
+  });
 
   // ---- gallery (image grid; keep inner markdown images) ----
   s = replacePaired(s, "gallery", (_args, body) => `\n\n<Gallery>${wrap(body)}</Gallery>\n\n`);

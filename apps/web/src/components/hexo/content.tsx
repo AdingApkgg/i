@@ -7,6 +7,7 @@ import { Btn } from "./btn";
 import { DPlayer } from "./dplayer";
 import { Gallery } from "./gallery";
 import { GalleryGroup } from "./gallery-group";
+import { HideInline } from "./hide-inline";
 import { HideToggle } from "./hide-toggle";
 import { Meting } from "./meting";
 import { Note } from "./note";
@@ -17,6 +18,7 @@ import { Timeline, TimelineItem } from "./timeline";
 const components: Record<string, any> = {
   Note,
   HideToggle,
+  HideInline,
   Tabs,
   Tab,
   Btn,

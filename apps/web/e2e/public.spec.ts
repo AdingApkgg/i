@@ -15,6 +15,7 @@ const PAGES = [
   "/friends",
   "/monitor",
   "/maimai",
+  "/about",
 ];
 
 test.describe("前台页面（含看板娘）", () => {
@@ -30,6 +31,16 @@ test.describe("前台页面（含看板娘）", () => {
     await expect(page.getByRole("heading", { name: "你好，世界", exact: true })).toBeVisible();
     await expect(page).toHaveTitle(/^你好，世界 ✿ · /);
   });
+});
+
+test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("header nav").getByRole("link", { name: "关于" }).click();
+  await expect(page.getByRole("heading", { name: "关于", exact: true })).toBeVisible();
+  const spoiler = page.getByRole("button", { name: /点此显示/ });
+  await expect(spoiler).toHaveCount(1);
+  await spoiler.click();
+  await expect(page.getByRole("button", { name: /可爱又羞涩的女孩子/ })).toBeVisible();
 });
 
 test("不存在的页面：404、保留站点外壳、noindex", async ({ page }) => {

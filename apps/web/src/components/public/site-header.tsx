@@ -3,6 +3,9 @@ import { cn } from "@i/ui";
 import { motion } from "motion/react";
 import { Link, useLocation } from "react-router";
 
+/** 顶栏固定尾部链接（不属于内容域，所以不放进 NAV_DOMAINS）。 */
+const NAV_TAIL = [{ key: "about", label: "关于", path: "/about" }];
+
 /** Shared public top nav — 活动项带滑动下划线（layoutId 共享布局动画）。 */
 export function SiteHeader() {
   const { pathname } = useLocation();
@@ -14,7 +17,7 @@ export function SiteHeader() {
           <span className="text-primary">.</span>
         </Link>
         <nav className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          {NAV_DOMAINS.map((d) => {
+          {[...NAV_DOMAINS, ...NAV_TAIL].map((d) => {
             const active = pathname === d.path || pathname.startsWith(`${d.path}/`);
             return (
               <Link

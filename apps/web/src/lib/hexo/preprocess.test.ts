@@ -46,6 +46,12 @@ describe("hexoToMdx", () => {
     );
   });
 
+  it("hideInline：正文藏起来，点击才显示", () => {
+    expect(hexoToMdx("有一个 {% hideInline 合法萝莉, 点此显示 %} 的设定")).toBe(
+      '有一个 <HideInline text="合法萝莉" hint="点此显示" /> 的设定',
+    );
+  });
+
   it("btn：站内相对链接补全为旧站绝对地址", () => {
     expect(hexoToMdx("{% btn '/about/',关于,fas fa-user,block %}")).toBe(
       '<Btn url="https://gh.saop.cc/about/" text="关于" icon="fas fa-user" variant="block" />',
