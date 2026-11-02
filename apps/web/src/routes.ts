@@ -11,6 +11,7 @@ export default [
       index("routes/site/home.tsx"),
       route("blog", "routes/site/blog.tsx"),
       route("blog/:slug", "routes/site/blog-post.tsx"),
+      route("about", "routes/site/about.tsx"),
       route("music", "routes/site/music.tsx"),
       route("anime", "routes/site/anime.tsx"),
       route("movie", "routes/site/movie.tsx"),

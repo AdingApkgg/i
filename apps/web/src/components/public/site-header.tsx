@@ -16,6 +16,7 @@ import {
   Orbit,
   Sword,
   Tv,
+  UserRound,
   Users,
   X,
 } from "lucide-react";
@@ -124,6 +125,13 @@ export function SiteHeader() {
               pathname={pathname}
               kind="desktop"
             />
+            <NavLink
+              path="/about"
+              label="关于"
+              icon={UserRound}
+              pathname={pathname}
+              kind="desktop"
+            />
           </div>
           <div className="grouped-mobile">
             <NavLink path="/" label="首页" icon={House} pathname={pathname} kind="bar" />
@@ -161,6 +169,7 @@ export function SiteHeader() {
               pathname={pathname}
               kind="bar"
             />
+            <NavLink path="/about" label="关于" icon={UserRound} pathname={pathname} kind="bar" />
           </div>
         </motion.nav>
       </motion.header>

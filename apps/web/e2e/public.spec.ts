@@ -17,6 +17,7 @@ const PAGES = [
   "/friends",
   "/monitor",
   "/maimai",
+  "/about",
 ];
 
 test.describe("前台页面（含看板娘）", () => {
@@ -32,6 +33,29 @@ test.describe("前台页面（含看板娘）", () => {
     await expect(page.getByRole("heading", { name: "你好，世界", exact: true })).toBeVisible();
     await expect(page).toHaveTitle(/^你好，世界 ✿ · /);
   });
+});
+
+test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) => {
+  await page.goto("/");
+  // 桌面与手机导航各有一个「关于」入口，点桌面的那个
+  await page.locator("header nav").getByRole("link", { name: "关于" }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/about$/);
+  // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点；
+  // 点开后按钮的可访问名会变，所以按位置而不是按文案定位
+  const spoiler = page.locator("main button[aria-pressed]").first();
+  await expect(spoiler).toBeVisible();
+  await expect(spoiler).toHaveText("点此显示");
+  // SSR 出来就能看到按钮，水合完成前点击是空点：这里点到达成为止
+  for (let i = 0; i < 10; i++) {
+    if ((await spoiler.getAttribute("aria-pressed")) === "true") break;
+    await spoiler.click();
+    await page.waitForTimeout(300);
+  }
+  // 点开后按钮显示被藏起来的正文，且带上按下态
+  await expect(spoiler).toHaveAttribute("aria-pressed", "true");
+  await expect(spoiler).not.toHaveText("点此显示");
+  await expect(page.locator("main button[aria-pressed=true]")).toHaveCount(1);
 });
 
 test("不存在的页面：404、保留站点外壳、noindex", async ({ page }) => {
@@ -149,7 +173,9 @@ test("RSS / sitemap / robots / 分享卡片", async ({ request }) => {
   expect(await rss.text()).toContain("你好，世界");
 
   const sitemap = await request.get("/sitemap.xml");
-  expect(await sitemap.text()).toContain("/blog/hello-world");
+  const sitemapBody = await sitemap.text();
+  expect(sitemapBody).toContain("/blog/hello-world");
+  expect(sitemapBody).toContain("/about");
 
   const robots = await request.get("/robots.txt");
   expect(await robots.text()).toContain("Sitemap:");

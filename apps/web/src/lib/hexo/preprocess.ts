@@ -6,6 +6,7 @@
  * Emitted contract (must match the components):
  *   <Note color icon? flavor?>md</Note>
  *   <HideToggle title color?>md</HideToggle>
+ *   <HideInline text hint? />
  *   <Btn url text icon? variant? />
  *   <Tabs><Tab label>md</Tab>…</Tabs>
  *   <DPlayer url pic? />
@@ -135,6 +136,25 @@ function transform(input: string): string {
       return `\n\n<HideToggle title="${title}" color="${color}">${wrap(body)}</HideToggle>\n\n`;
     });
   }
+
+  // ---- markdown 图片：站内相对路径补全为旧站绝对地址（新站自己不托管 /img） ----
+  s = s.replace(
+    /(!\[[^\]]*\]\()(\/[^)\s]+)\)/g,
+    (_m, head: string, u: string) => `${head}${resolveImg(u)})`,
+  );
+
+  // ---- 内联 <script>：包成模板字符串，MDX 才不会把里头的 JS 当表达式解析 ----
+  s = s.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (_m, attrs: string, body: string) => {
+    const code = body.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+    return `<script${attrs}>{\`${code}\`}</script>`;
+  });
+
+  // ---- hideInline：正文藏起来，点一下才显示（行内，不换行） ----
+  s = s.replace(/\{%\s*hideInline\s+([^%]*?)\s*%\}/g, (_m, a) => {
+    const [text = "", hint = ""] = splitArgs(a);
+    const shown = hint || "点此显示";
+    return `<HideInline text="${attr(text)}" hint="${attr(shown)}" />`;
+  });
 
   // ---- gallery (image grid; keep inner markdown images) ----
   s = replacePaired(s, "gallery", (_args, body) => `\n\n<Gallery>${wrap(body)}</Gallery>\n\n`);

@@ -7,6 +7,7 @@ import {
   moment,
   monitor,
   movie,
+  page,
   photo,
   post,
   touhou,
@@ -31,6 +32,14 @@ async function main() {
       publishedAt: new Date(),
     })
     .onConflictDoNothing({ target: post.slug });
+
+  if ((await db.$count(page)) === 0)
+    await db.insert(page).values({
+      id: "about",
+      title: "关于",
+      contentMd:
+        "## 关于我\n\n一个喜欢计算机、AI 和漫文化的普通人，平时写点踩坑记录。\n\n- 喜欢 {% hideInline 可爱又羞涩的女孩子！, 点此显示 %}\n- 不可知论者\n\n### 这个站\n\n自己写、自己部署的个人空间：React Router + Hono + Postgres。\n\n![看板娘](https://gh.saop.cc/img/moe/moe_60.webp)",
+    });
 
   if ((await db.$count(track)) === 0)
     await db.insert(track).values([

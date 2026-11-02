@@ -128,6 +128,7 @@ export async function sitemapResponse(): Promise<Response> {
       changeFrequency: "weekly" as const,
       priority: d.key === "blog" ? 0.8 : 0.6,
     })),
+    { url: absUrl("/about"), changeFrequency: "monthly" as const, priority: 0.5 },
     ...posts.map((p) => ({
       url: absUrl(`/blog/${p.slug}`),
       lastModified: p.updatedAt,

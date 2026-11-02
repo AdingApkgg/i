@@ -197,12 +197,13 @@ async function importMusic() {
   return n;
 }
 
-// ---------------- 富文本页：music / movie 整页(交给 HexoContent 渲染 meting/dplayer) ----------------
+// ---------------- 富文本页：music / movie / about 整页(交给 HexoContent 渲染 meting/dplayer) ----------------
 async function importPages() {
   let n = 0;
   for (const [key, title, rel] of [
     ["music", "音乐", "music/index.md"],
     ["movie", "影视", "movie/index.md"],
+    ["about", "关于", "about/index.md"],
   ] as const) {
     const file = join(SRC, rel);
     if (!existsSync(file)) continue;
