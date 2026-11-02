@@ -158,7 +158,9 @@ test("RSS / sitemap / robots / 分享卡片", async ({ request }) => {
   expect(await rss.text()).toContain("你好，世界");
 
   const sitemap = await request.get("/sitemap.xml");
-  expect(await sitemap.text()).toContain("/blog/hello-world");
+  const sitemapBody = await sitemap.text();
+  expect(sitemapBody).toContain("/blog/hello-world");
+  expect(sitemapBody).toContain("/about");
 
   const robots = await request.get("/robots.txt");
   expect(await robots.text()).toContain("Sitemap:");
