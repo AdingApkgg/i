@@ -6,7 +6,7 @@ import { siteUrl } from "@/lib/site-url";
 import { CACHE } from "@/server/cache";
 
 /**
- * 分享卡片：樱粉底 + 白卡片 + 大标题，1200×630 PNG。
+ * 分享卡片：月白底、绯红边框与白色面板，1200×630 PNG。
  * satori 把 JSX 排版成 SVG，resvg（WASM）光栅化成 PNG —— 即 next/og 内部的做法。
  * 两者都在第一次出图时才加载，渲染出问题也不影响站点启动。
  */
@@ -29,15 +29,13 @@ const loadResvg = () =>
     return mod;
   })());
 
-// globals.css 主题色（oklch → sRGB），satori 不认 CSS 变量
+// 与 asuna.css 的前台浅色主题保持一致；satori 不识别 CSS 变量。
 const C = {
-  bg: "#fffcfe",
-  fg: "#281e25",
-  muted: "#75626e",
-  primary: "#f072b3",
-  soft: "#ffeaf5",
-  accent: "#fee2f1",
-  border: "#ece1e7",
+  bg: "#f6f7f9",
+  fg: "#252b35",
+  muted: "#5d6672",
+  primary: "#b42f3c",
+  border: "#dce2e8",
 };
 
 const FONT_FAMILY = "Noto Sans SC";
@@ -103,7 +101,7 @@ export async function renderOgImage(card: OgCard): Promise<Response> {
         boxSizing: "border-box",
         display: "flex",
         padding: 56,
-        background: `linear-gradient(135deg, ${C.soft} 0%, ${C.bg} 55%, ${C.accent} 100%)`,
+        background: C.bg,
         fontFamily: font ? `${FONT_FAMILY}, Noto Sans` : "Noto Sans",
       }}
     >
@@ -114,14 +112,16 @@ export async function renderOgImage(card: OgCard): Promise<Response> {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "56px 64px",
-          borderRadius: 40,
+          borderRadius: 4,
           background: "#ffffff",
           border: `2px solid ${C.border}`,
-          boxShadow: "0 20px 60px rgba(240, 114, 179, 0.18)",
+          borderTop: `6px solid ${C.primary}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 18, height: 18, borderRadius: 999, background: C.primary }} />
+          <div
+            style={{ width: 14, height: 14, transform: "rotate(45deg)", background: C.primary }}
+          />
           <div style={{ fontSize: 30, color: C.primary, fontWeight: 700 }}>{c.brand}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

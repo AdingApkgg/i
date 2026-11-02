@@ -165,7 +165,7 @@ async function main(): Promise<void> {
     if (resolved && isImageUrl(resolved)) found.add(resolved);
   };
   for (const p of posts) {
-    for (const ref of extractRefs(p.contentMd)) consider(ref);
+    for (const ref of extractRefs(p.contentMd ?? "")) consider(ref);
     consider(p.coverUrl);
   }
   for (const ph of photos) consider(ph.imageUrl);
@@ -186,7 +186,7 @@ async function main(): Promise<void> {
 
   for (const p of posts) {
     try {
-      let content = p.contentMd;
+      let content = p.contentMd ?? "";
       // build unique (asWritten -> newPath) pairs, replace longest-first so an
       // absolute url is rewritten before its embedded root-relative substring.
       const pairs = new Map<string, string>();

@@ -1,8 +1,10 @@
 import { cn } from "@i/ui";
 import {
   Activity,
+  CalendarDays,
   Camera,
   Disc3,
+  FileText,
   Film,
   Gamepad2,
   Images,
@@ -27,10 +29,12 @@ const DOMAIN_ICONS: Record<string, LucideIcon> = {
   blog: PenLine,
   music: Music,
   maimai: Disc3,
+  anime: Film,
   movie: Film,
   vn: Gamepad2,
   touhou: Sparkles,
   device: Laptop,
+  masturbation: CalendarDays,
   gallery: Camera,
   albums: Images,
   moments: MessageCircle,
@@ -50,6 +54,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
 
   const item = (href: string, label: string, active: boolean, Icon: LucideIcon) => (
     <Link
+      prefetch="intent"
       key={href}
       to={href}
       className={cn(
@@ -76,7 +81,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
   return (
     <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
       <aside className="w-44 shrink-0">
-        <Link to="/" className="mb-4 block px-3 text-lg font-bold">
+        <Link prefetch="intent" to="/" className="mb-4 block px-3 text-lg font-bold">
           i · 后台
         </Link>
         <nav className="space-y-1">
@@ -84,11 +89,12 @@ export function DashShell({ userName, children }: { userName: string; children: 
           {ADMIN_ORDER.map((k) =>
             item(
               `/dash/${k}`,
-              ADMIN_FIELDS[k]?.label ?? k,
-              pathname === `/dash/${k}`,
+              ADMIN_FIELDS[k]?.label ?? (k === "anime" ? "番剧" : k),
+              pathname === `/dash/${k}` || pathname.startsWith(`/dash/${k}/`),
               DOMAIN_ICONS[k] ?? PenLine,
             ),
           )}
+          {item("/dash/pages", "整页", pathname.startsWith("/dash/pages"), FileText)}
           {item("/dash/settings", "设置", pathname === "/dash/settings", Settings)}
         </nav>
         <div className="mt-6 border-t border-border px-3 pt-4">

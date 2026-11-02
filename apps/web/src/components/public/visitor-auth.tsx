@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@i/ui";
-import { LogIn, UserRoundPlus } from "lucide-react";
+import { LoaderCircle, LogIn, UserRoundPlus } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -103,8 +103,14 @@ export function VisitorAuth() {
       </div>
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={isSubmitting}>
-          {mode === "in" ? <LogIn className="size-3.5" /> : <UserRoundPlus className="size-3.5" />}
-          {isSubmitting ? "…" : mode === "in" ? "登录" : "注册"}
+          {isSubmitting ? (
+            <LoaderCircle className="size-3.5 animate-spin" />
+          ) : mode === "in" ? (
+            <LogIn className="size-3.5" />
+          ) : (
+            <UserRoundPlus className="size-3.5" />
+          )}
+          {isSubmitting ? (mode === "in" ? "登录中…" : "注册中…") : mode === "in" ? "登录" : "注册"}
         </Button>
         <button
           type="button"

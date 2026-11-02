@@ -10,6 +10,7 @@ export interface FieldSpec {
   label: string;
   type: FieldType;
   required?: boolean;
+  readOnly?: boolean;
   options?: string[];
   placeholder?: string;
 }
@@ -44,9 +45,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     fields: [
       { name: "slug", label: "Slug", type: "text", required: true, placeholder: "hello-world" },
       { name: "title", label: "标题", type: "text", required: true },
-      { name: "excerpt", label: "摘要", type: "textarea" },
-      { name: "contentMd", label: "正文 (Markdown)", type: "textarea", required: true },
-      cover,
+      // 正文、摘要、封面在独立的富文本编辑页（routes/dash/blog-edit.tsx）里编辑
       {
         name: "status",
         label: "状态",
@@ -139,8 +138,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       },
       rating,
       { name: "playHours", label: "游玩时长(h)", type: "number" },
-      cover,
+      { ...cover, type: "image" },
       link,
+      { name: "vndbId", label: "VNDB ID", type: "text", readOnly: true },
+      { name: "released", label: "发售日期", type: "text", readOnly: true },
+      { name: "vndbRating", label: "VNDB 评分", type: "number", readOnly: true },
+      { name: "descriptionOriginal", label: "简介原文", type: "textarea", readOnly: true },
+      { name: "descriptionZh", label: "中文简介", type: "textarea" },
       note,
       sortOrder,
     ],
@@ -172,7 +176,13 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
     fields: [
       { name: "name", label: "名称", type: "text", required: true },
       { name: "category", label: "分类", type: "text", placeholder: "手机 / 电脑…" },
-      { name: "spec", label: "规格", type: "text" },
+      {
+        name: "spec",
+        label: "规格",
+        type: "textarea",
+        placeholder: "每行一项，例如 CPU、内存、存储",
+      },
+      { name: "imageUrl", label: "设备图片", type: "image", placeholder: "https://… 或上传图片" },
       {
         name: "status",
         label: "状态",
@@ -186,6 +196,7 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       sortOrder,
     ],
   },
+  masturbation: { key: "masturbation", label: "自慰记录", fields: [], columns: [] },
   // 相册照片走专属管理页 app/dash/(admin)/gallery（网格多选/批量上传/移动图集），
   // fields 供该页的编辑表单复用（图集下拉在页内单独渲染）。
   gallery: {
@@ -280,11 +291,13 @@ export const ADMIN_ORDER = [
   "gallery",
   "albums",
   "music",
+  "anime",
   "movie",
   "vn",
   "maimai",
   "touhou",
   "device",
+  "masturbation",
   "friends",
   "monitor",
 ];

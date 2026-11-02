@@ -1,4 +1,5 @@
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
+import { bangumiRouter } from "./routers/bangumi";
 import { commentRouter } from "./routers/comment";
 import {
   albumsRouter,
@@ -9,6 +10,7 @@ import {
   touhouRouter,
   vnRouter,
 } from "./routers/content";
+import { dailyRecordRouter } from "./routers/daily-record";
 import { friendsRouter } from "./routers/friends";
 import { galleryRouter } from "./routers/gallery";
 import { healthRouter } from "./routers/health";
@@ -16,13 +18,19 @@ import { maimaiRouter } from "./routers/maimai";
 import { monitorRouter } from "./routers/monitor";
 import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
+import { translationRouter } from "./routers/translation";
+import { vndbRouter } from "./routers/vndb";
 
 export const router = {
+  bangumi: bangumiRouter,
+  dailyRecord: dailyRecordRouter,
   health: healthRouter,
   blog: postRouter,
   music: musicRouter,
   movie: movieRouter,
   vn: vnRouter,
+  vndb: vndbRouter,
+  translation: translationRouter,
   touhou: touhouRouter,
   device: deviceRouter,
   gallery: galleryRouter,

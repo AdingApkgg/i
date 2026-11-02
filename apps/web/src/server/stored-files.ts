@@ -8,6 +8,7 @@
 import {
   album,
   comment,
+  device,
   friend,
   moment,
   movie,
@@ -27,19 +28,22 @@ import type { Context } from "./orpc";
 import { escapeLike } from "./sql";
 import { deleteThumbs } from "./thumbs";
 
-/** 可能出现站内图片地址的列（链接字段 + 会内嵌图片的正文） */
+/** 可能出现站内图片地址的列（链接字段 + 会内嵌图片的正文）；jsonb 正文按文本匹配 */
 const REFERENCES: [PgTable, AnyColumn][] = [
   [photo, photo.imageUrl],
   [photo, photo.thumbUrl],
   [album, album.coverUrl],
   [post, post.coverUrl],
   [post, post.contentMd],
+  [post, post.content],
   [page, page.contentMd],
+  [page, page.content],
   [comment, comment.contentMd],
   [moment, moment.content],
   [track, track.coverUrl],
   [movie, movie.coverUrl],
   [vn, vn.coverUrl],
+  [device, device.imageUrl],
   [touhou, touhou.coverUrl],
   [friend, friend.avatarUrl],
   [user, user.image],
@@ -67,7 +71,7 @@ function objectKey(raw: string) {
 async function isReferenced(db: Context["db"], raw: string) {
   const pattern = `%${escapeLike(STORED + raw)}%`;
   const checks = REFERENCES.map(
-    ([table, col]) => sql`exists (select 1 from ${table} where ${col} like ${pattern})`,
+    ([table, col]) => sql`exists (select 1 from ${table} where ${col}::text like ${pattern})`,
   );
   const res = await db.execute<{ used: boolean }>(
     sql`select (${sql.join(checks, sql` or `)}) as used`,

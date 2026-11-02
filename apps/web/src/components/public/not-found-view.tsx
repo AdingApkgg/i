@@ -18,10 +18,14 @@ export function NotFoundView() {
         <p className="text-sm text-muted-foreground">链接可能已经失效，或者内容被搬到了别处 ✿</p>
         <div className="mt-4 flex gap-2">
           <Button asChild>
-            <Link to="/">回首页</Link>
+            <Link prefetch="intent" to="/">
+              回首页
+            </Link>
           </Button>
           <Button asChild variant="soft">
-            <Link to="/blog">去看博客</Link>
+            <Link prefetch="intent" to="/blog">
+              去看博客
+            </Link>
           </Button>
         </div>
       </div>

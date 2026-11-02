@@ -61,6 +61,16 @@ export const vnRouter = crudRouter({
   createSchema: z.object({
     title: z.string().min(1),
     brand: str,
+    vndbId: z
+      .string()
+      .trim()
+      .regex(/^(?:v[1-9]\d{0,8})?$/)
+      .nullish()
+      .transform((v) => (v === "" ? null : v)),
+    released: z.string().max(32).optional(),
+    vndbRating: z.number().min(0).max(10).nullish(),
+    descriptionOriginal: z.string().max(20000).optional(),
+    descriptionZh: z.string().max(30000).optional(),
     status: z.enum(["在玩", "通关", "想玩", "搁置"]).default("在玩"),
     rating,
     playHours: z.number().int().nullish(),
@@ -95,6 +105,7 @@ export const deviceRouter = crudRouter({
     name: z.string().min(1),
     category: str,
     spec: str,
+    imageUrl: str,
     status: z.enum(["在用", "退役", "想要"]).default("在用"),
     acquired: str,
     link: str,

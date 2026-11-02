@@ -1,6 +1,6 @@
-import { motion, useReducedMotion } from "motion/react";
 import { Outlet, redirect, useLocation } from "react-router";
 import { DashShell } from "@/components/dash/shell";
+import { PageTransition } from "@/components/motion";
 import { auth } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
 import { seo } from "@/lib/seo";
@@ -19,18 +19,12 @@ export const meta: Route.MetaFunction = (args) => seo(args, { title: "后台", n
 
 export default function AdminLayout({ loaderData }: Route.ComponentProps) {
   const { pathname } = useLocation();
-  const reduce = useReducedMotion();
   return (
     <DashShell userName={loaderData.userName}>
       {/* 后台路由切换过渡 */}
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-      >
+      <PageTransition key={pathname} y={6} duration={0.25}>
         <Outlet />
-      </motion.div>
+      </PageTransition>
     </DashShell>
   );
 }

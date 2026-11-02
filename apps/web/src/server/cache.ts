@@ -40,8 +40,14 @@ export const CACHE = {
 export type CachePolicy = keyof typeof CACHE;
 
 function write(headers: Headers, policy: CachePolicy) {
+  const noTransform = headers
+    .get("cache-control")
+    ?.split(",")
+    .some((directive) => directive.trim().toLowerCase() === "no-transform");
   headers.delete("cdn-cache-control");
   for (const [k, v] of Object.entries(CACHE[policy])) headers.set(k, v);
+  // 强制私有缓存策略时仍须保留附件禁止中间层改写正文的声明。
+  if (noTransform) headers.append("cache-control", "no-transform");
 }
 
 /** 不随登录状态变化、但也不该进共享缓存的路径（后台、各类 API；相册文件除外） */

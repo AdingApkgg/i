@@ -13,6 +13,30 @@ function pngSize(buf: ArrayBuffer) {
 }
 
 describe("renderOgImage", () => {
+  it("分享卡片使用月白背景和绯红边框，不保留樱粉主题", { timeout: 30_000 }, async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("offline");
+      }),
+    );
+    const response = await renderOgImage({ title: "Asuna" });
+    const image = sharp(Buffer.from(await response.arrayBuffer()));
+    const corner = await image
+      .clone()
+      .extract({ left: 1190, top: 620, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    const accent = await image
+      .clone()
+      .extract({ left: 100, top: 58, width: 1, height: 1 })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    expect([...corner]).toEqual([246, 247, 249]);
+    expect([...accent]).toEqual([180, 47, 60]);
+  });
   // 首次加载 satori / resvg 的 WASM 较慢
   it("拉不到中文字体时降级为拉丁文卡片，仍输出 1200×630 PNG", { timeout: 30_000 }, async () => {
     vi.stubGlobal(

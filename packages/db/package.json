@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
+    "./bangumi-types": "./src/bangumi-types.ts",
     "./errors": "./src/errors.ts",
     "./storage": "./src/storage.ts"
   },

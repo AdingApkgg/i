@@ -8,7 +8,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Pencil, Plus, Upload } from "lucide-react";
+import { Check, LoaderCircle, Pencil, Plus, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useRef, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -234,7 +234,8 @@ export function PhotosAdmin() {
             >
               {uploading ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" /> {uploading.done}/{uploading.total}
+                  <LoaderCircle className="size-4 animate-spin" /> {uploading.done}/
+                  {uploading.total}
                 </>
               ) : (
                 <>
@@ -282,7 +283,7 @@ export function PhotosAdmin() {
                     </div>
                     <div className="flex gap-2">
                       <Button type="submit" disabled={saving}>
-                        {saving && <Loader2 className="size-4 animate-spin" />}
+                        {saving && <LoaderCircle className="size-4 animate-spin" />}
                         {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
                       </Button>
                       <Button

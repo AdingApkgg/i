@@ -42,7 +42,7 @@ services:
   # 对象存储：SeaweedFS（S3 网关 :8333）。凭据写成 s3.json 后交给镜像自带入口。
   # 卷大小显式设 1GB（二进制默认 30GB，磁盘不大时新桶会分不到卷、上传报 500）。
   seaweedfs:
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.51
     environment:
       S3_ACCESS_KEY: ${SEAWEEDFS_ACCESS_KEY:-seaweed}
       S3_SECRET_KEY: ${SEAWEEDFS_SECRET_KEY:-seaweed12345}
@@ -64,7 +64,7 @@ services:
       start_period: 60s
 
   web:
-    image: oven/bun:1.4.3
+    image: oven/bun:1.4.4
     working_dir: /app
     # First boot installs deps into the shared volume, applies DB migrations,
     # seeds sample data, then runs the React Router dev server.
@@ -78,6 +78,11 @@ services:
       - path: .env
         required: false
     environment:
+      BANGUMI_ACCESS_TOKEN: ${BANGUMI_ACCESS_TOKEN-}
+      NODE_USE_ENV_PROXY: ${NODE_USE_ENV_PROXY:-0}
+      HTTP_PROXY: ${HTTP_PROXY-}
+      HTTPS_PROXY: ${HTTPS_PROXY-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,db,redis,seaweedfs}
       NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL:-postgres://i:i@db:5432/i}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}

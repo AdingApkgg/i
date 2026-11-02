@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { FadeIn } from "@/components/motion";
 import { EmptyCard } from "@/components/public/collection";
@@ -29,17 +30,19 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
     <FadeIn delay={index * 0.05}>
       <section className="mt-8 first:mt-0">
         <div className="flex items-baseline justify-between gap-3">
-          <Link to={href} className="group flex items-baseline gap-2">
+          <Link prefetch="intent" to={href} className="group flex items-baseline gap-2">
             <h2 className="text-lg font-bold transition group-hover:text-primary">
               {section.name}
             </h2>
             <span className="text-xs text-muted-foreground">{section.count} 张</span>
           </Link>
           <Link
+            prefetch="intent"
             to={href}
-            className="shrink-0 text-xs text-muted-foreground transition hover:text-primary"
+            className="group inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition hover:text-primary"
           >
-            查看全部 →
+            查看全部
+            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
         {section.description && (
@@ -51,6 +54,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
           {cover && (
             <Link
+              prefetch="intent"
               to={href}
               className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"
             >
@@ -66,6 +70,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
             const isLast = i === section.photos.length - 1;
             return (
               <Link
+                prefetch="intent"
                 key={p.id}
                 to={href}
                 className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"

@@ -30,7 +30,7 @@ export default function BlogPage({ loaderData }: Route.ComponentProps) {
         <Stagger className="flex flex-col gap-4">
           {items.map((p) => (
             <StaggerItem key={p.slug} hover>
-              <Link to={`/blog/${p.slug}`}>
+              <Link prefetch="intent" to={`/blog/${p.slug}`}>
                 <Card className="transition hover:shadow-md">
                   <CardBody>
                     <div className="font-semibold">{p.title}</div>

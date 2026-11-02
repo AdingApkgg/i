@@ -1,19 +1,28 @@
-import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { isRouteErrorResponse, Outlet, useLocation, useRevalidator } from "react-router";
+import { PageTransition } from "@/components/motion";
 import { ErrorView } from "@/components/public/error-view";
 import { NotFoundView } from "@/components/public/not-found-view";
 import { SiteHeader } from "@/components/public/site-header";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/layout";
 
-/** 前台外壳：顶栏 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
+/** 前台外壳：响应式导航 + 主体。正常页面和错误页共用（播放器、看板娘在外层 shell.tsx，出错时不重挂载）。 */
 function Chrome({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
   return (
-    <>
+    <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-48">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-    </>
+      <main
+        className={
+          pathname === "/"
+            ? "mx-auto max-w-7xl px-4 py-5 lg:px-8 lg:py-6"
+            : "mx-auto max-w-5xl px-4 py-8"
+        }
+      >
+        {children}
+      </main>
+    </div>
   );
 }
 
@@ -30,18 +39,12 @@ export const meta: Route.MetaFunction = (args) => {
 
 export default function SiteLayout() {
   const { pathname } = useLocation();
-  const reduce = useReducedMotion();
   return (
     <Chrome>
       {/* 路由切换时的页面过渡（按路径重新挂载） */}
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
+      <PageTransition key={pathname}>
         <Outlet />
-      </motion.div>
+      </PageTransition>
     </Chrome>
   );
 }

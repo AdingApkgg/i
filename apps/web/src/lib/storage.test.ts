@@ -56,6 +56,29 @@ describe("storage", () => {
     await expect(s.get("x.png")).rejects.toMatchObject({ status: 403 });
   });
 
+  it("视频 Range 请求传给对象存储，并保留 206 分段响应", async () => {
+    stubFetch((req) =>
+      req.headers.get("range") === "bytes=2-4"
+        ? new Response("234", { status: 206, headers: { "content-range": "bytes 2-4/6" } })
+        : new Response("012345"),
+    );
+    const response = await createStorage(cfg).get("video.mp4", "bytes=2-4");
+    expect(response?.status).toBe(206);
+    expect(response?.headers.get("content-range")).toBe("bytes 2-4/6");
+    expect(await response?.text()).toBe("234");
+  });
+
+  it("不可满足的 Range 保留 416，交给 HTTP 层返回客户端", async () => {
+    stubFetch((req) =>
+      req.headers.has("range")
+        ? new Response(null, { status: 416, headers: { "content-range": "bytes */6" } })
+        : new Response("012345"),
+    );
+    const response = await createStorage(cfg).get("video.mp4", "bytes=6-");
+    expect(response?.status).toBe(416);
+    expect(response?.headers.get("content-range")).toBe("bytes */6");
+  });
+
   it("拒绝空段和 . / .. 段，不发请求（否则会被规范化成对桶或根的操作）", async () => {
     const seen = stubFetch(() => new Response(null));
     const s = createStorage(cfg);

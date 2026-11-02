@@ -8,10 +8,12 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { NavProgress } from "@/components/nav-progress";
 import { Providers } from "@/components/providers";
 import { seo } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import type { Route } from "./+types/root";
+import "@videojs/react/video/skin.css";
 import "./globals.css";
 
 export const links: Route.LinksFunction = () => [
@@ -32,7 +34,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <html lang="zh-CN">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         {/* CSS 还没加载时浏览器也按系统深浅色铺底，避免深色下白屏一闪 */}
         <meta name="color-scheme" content="light dark" />
         <Meta />
@@ -48,7 +50,12 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <NavProgress />
+      <Outlet />
+    </>
+  );
 }
 
 /** 兜底：前台 / 后台布局各自有更友好的错误页，能冒泡到这里说明布局本身挂了 */

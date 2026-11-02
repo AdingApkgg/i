@@ -10,19 +10,27 @@
  *    `updatedAt` 没有库级默认（同 Prisma @updatedAt），由 $defaultFn/$onUpdate 在应用层写
  *  - 业务表主键是应用层生成的 cuid（同 Prisma @default(cuid())）；auth 表由 better-auth 生成
  */
+
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
+  date,
   doublePrecision,
   foreignKey,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { BangumiMetadata, BangumiState } from "./bangumi-types";
+
+/** 富文本正文：Tiptap / ProseMirror 文档 JSON（schema 见 apps/web/src/lib/content） */
+export type RichDocJson = { type: "doc"; content?: unknown[] };
 
 const ts = (name: string) => timestamp(name, { precision: 3, mode: "date" });
 
@@ -123,7 +131,9 @@ export const post = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     excerpt: text("excerpt"),
-    contentMd: text("contentMd").notNull(),
+    // 旧 Hexo Markdown，迁移到 content 后只作备份，确认无误后删除
+    contentMd: text("contentMd"),
+    content: jsonb("content").$type<RichDocJson>(),
     coverUrl: text("coverUrl"),
     // 可空数组（沿用 Prisma 建的列）。默认值放应用层：drizzle-kit 0.31 内省数组默认值有 bug
     // （`ARRAY[]::text[]` / `'{}'` 都会被判为有差异），放库里会导致每次 push 都重设一遍
@@ -219,6 +229,11 @@ export const vn = pgTable(
     id: id(),
     title: text("title").notNull(),
     brand: text("brand"),
+    vndbId: text("vndbId"),
+    released: text("released"),
+    vndbRating: doublePrecision("vndbRating"),
+    descriptionOriginal: text("descriptionOriginal"),
+    descriptionZh: text("descriptionZh"),
     status: text("status").notNull().default("在玩"), // 在玩 | 通关 | 想玩 | 搁置
     rating: integer("rating"),
     playHours: integer("playHours"),
@@ -229,7 +244,10 @@ export const vn = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("Vn_status_createdAt_idx").on(t.status, t.createdAt)],
+  (t) => [
+    index("Vn_status_createdAt_idx").on(t.status, t.createdAt),
+    uniqueIndex("Vn_vndbId_key").on(t.vndbId),
+  ],
 );
 
 export const touhou = pgTable(
@@ -257,6 +275,7 @@ export const device = pgTable(
     name: text("name").notNull(),
     category: text("category"), // 手机 / 电脑…
     spec: text("spec"),
+    imageUrl: text("imageUrl"),
     status: text("status").notNull().default("在用"), // 在用 | 退役 | 想要
     acquired: text("acquired"), // 入手日期（自由文本）
     link: text("link"),
@@ -315,7 +334,9 @@ export const photo = pgTable(
 export const page = pgTable("Page", {
   id: text("id").primaryKey(), // "music" | "movie" | ...
   title: text("title").notNull(),
-  contentMd: text("contentMd").notNull(),
+  // 旧 Hexo Markdown，迁移到 content 后只作备份，确认无误后删除
+  contentMd: text("contentMd"),
+  content: jsonb("content").$type<RichDocJson>(),
   updatedAt: updatedAt(),
 });
 
@@ -501,3 +522,67 @@ export type MonitorCheck = typeof monitorCheck.$inferSelect;
 export type MaimaiConfig = typeof maimaiConfig.$inferSelect;
 export type MaimaiProfile = typeof maimaiProfile.$inferSelect;
 export type MaimaiRecord = typeof maimaiRecord.$inferSelect;
+
+// ==================== Bangumi 单账号追番同步 ====================
+
+export const bangumiAccount = pgTable("BangumiAccount", {
+  id: text("id").primaryKey(),
+  userId: integer("userId"),
+  username: text("username").notNull().default(""),
+  initialized: boolean("initialized").notNull().default(false),
+  autoSync: boolean("autoSync").notNull().default(false),
+  activeRunId: text("activeRunId"),
+  activeSince: ts("activeSince"),
+  lastAttemptAt: ts("lastAttemptAt"),
+  lastSyncedAt: ts("lastSyncedAt"),
+  lastError: text("lastError"),
+  updatedAt: updatedAt(),
+});
+export const bangumiEntry = pgTable("BangumiEntry", {
+  subjectId: integer("subjectId").primaryKey(),
+  metadata: jsonb("metadata").$type<BangumiMetadata>().notNull(),
+  state: jsonb("state").$type<BangumiState>().notNull(),
+  baseline: jsonb("baseline").$type<BangumiState>(),
+  lastRemote: jsonb("lastRemote").$type<BangumiState>(),
+  revision: integer("revision").notNull().default(0),
+  syncStatus: text("syncStatus").notNull().default("pending"),
+  syncError: text("syncError"),
+  conflicts: jsonb("conflicts").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  writeUncertain: boolean("writeUncertain").notNull().default(false),
+  paused: boolean("paused").notNull().default(false),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+export const bangumiRun = pgTable("BangumiRun", {
+  id: id(),
+  kind: text("kind").notNull(),
+  status: text("status").notNull().default("running"),
+  progress: text("progress").notNull().default("准备连接 Bangumi"),
+  data: jsonb("data").$type<unknown>(),
+  error: text("error"),
+  createdAt: createdAt(),
+  expiresAt: ts("expiresAt").notNull(),
+  finishedAt: ts("finishedAt"),
+});
+
+// 私有服务配置：不得通过公共 CRUD 暴露；密钥使用服务端认证 secret 加密。
+export const aiTranslation = pgTable("AiTranslation", {
+  id: text("id").primaryKey(),
+  baseUrl: text("baseUrl").notNull(),
+  model: text("model").notNull(),
+  encryptedApiKey: text("encryptedApiKey"),
+  enabled: boolean("enabled").notNull().default(false),
+  updatedAt: updatedAt(),
+});
+
+// 按用户要求公开的每日记录；写入仅管理员，日期唯一。
+export const masturbationDay = pgTable(
+  "MasturbationDay",
+  {
+    date: date("date", { mode: "string" }).primaryKey(),
+    count: integer("count").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [check("MasturbationDay_count_check", sql`${t.count} > 0 AND ${t.count} <= 1000`)],
+);

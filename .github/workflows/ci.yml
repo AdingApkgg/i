@@ -138,6 +138,7 @@ jobs:
         run: bun run test:e2e
         env:
           E2E_BASE_URL: http://localhost:8099
+          BANGUMI_FIXTURE_URL: http://127.0.0.1:3413
           # 给 e2e 的 global setup 提权管理员用（compose.e2e.yaml 开放了本机端口）
           DATABASE_URL: postgres://i:i@localhost:5432/i
 

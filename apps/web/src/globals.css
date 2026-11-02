@@ -1,13 +1,74 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./asuna.css";
 
 /* Scan the app + the shared ui package for class names. */
 @source "./";
 @source "../../../packages/ui/src";
 
-/* ==================== moe / 樱粉 theme ==================== */
+/* Video.js 自定义音乐控制；默认视频布局使用官方样式。 */
+.music-player {
+  display: contents;
+}
+.music-slider {
+  position: relative;
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.music-slider-track {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--border);
+}
+.music-slider-fill,
+.music-slider-buffer {
+  position: absolute;
+  height: 100%;
+  border-radius: inherit;
+}
+.music-slider-fill {
+  width: var(--media-slider-fill);
+  background: var(--primary);
+}
+.music-slider-buffer {
+  width: var(--media-slider-buffer);
+  background: var(--muted-foreground);
+  opacity: 0.25;
+}
+.music-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: var(--media-slider-fill);
+  height: 10px;
+  width: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--primary);
+}
+.music-slider[data-interactive] .music-slider-track {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.music-slider[data-disabled] {
+  cursor: default;
+  opacity: 0.5;
+}
+.article-video {
+  --media-brand: var(--primary);
+  --media-focus-ring-color: var(--ring);
+}
+
+/* 后台保留原有 moe 主题；公开前台由 asuna.css 的 .sao-site 条件覆盖。 */
 /* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
 :root {
+  /* 底栏、正文留白和悬浮组件共用高度，包含 iPhone 底部安全区。 */
+  --site-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
   color-scheme: light dark;
   --background: oklch(0.995 0.006 350);
   --foreground: oklch(0.25 0.02 340);
@@ -94,4 +155,155 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+}
+
+/* 路由切换进度条（components/nav-progress.tsx）：忙时延迟 150ms 出现并缓慢推进到 92%，
+   完成时撤掉动画、瞬间补满再淡出。只动 transform / opacity，不触发重排。 */
+.nav-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 60;
+  height: 2px;
+  background-color: var(--primary);
+  transform-origin: left;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms ease 100ms;
+}
+.nav-progress.is-busy {
+  opacity: 1;
+  transition: opacity 150ms ease 150ms;
+  animation: nav-progress 8s cubic-bezier(0.1, 0.7, 0.2, 1) 150ms both;
+}
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}
+
+/* 富文本正文（components/content/rich-content.tsx）里 Tailwind 类不方便覆盖的部分：
+   表格、标题锚点、分割线、高亮，以及 lowlight（highlight.js 类名）代码配色 */
+.prose-content :is(h1, h2, h3, h4) {
+  scroll-margin-top: 5rem;
+}
+.prose-content h1 {
+  margin-top: 1.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.prose-content h4 {
+  margin-top: 1rem;
+  font-weight: 600;
+}
+.prose-content hr {
+  margin-block: 2rem;
+  border-color: var(--border);
+}
+.prose-content mark {
+  border-radius: 0.2em;
+  padding-inline: 0.15em;
+  background-color: color-mix(in srgb, var(--primary) 25%, transparent);
+  color: inherit;
+}
+.prose-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.prose-content :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.7rem;
+  vertical-align: top;
+}
+.prose-content :is(th, td) > p {
+  margin: 0;
+}
+.prose-content th {
+  background-color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+.prose-content pre code.hljs {
+  display: block;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* GitHub 风格配色，深浅色各一套 */
+.hljs {
+  --hl-keyword: #cf222e;
+  --hl-string: #0a3069;
+  --hl-number: #0550ae;
+  --hl-title: #8250df;
+  --hl-comment: #6e7781;
+  --hl-attr: #116329;
+  --hl-built: #953800;
+}
+@media (prefers-color-scheme: dark) {
+  .hljs {
+    --hl-keyword: #ff7b72;
+    --hl-string: #a5d6ff;
+    --hl-number: #79c0ff;
+    --hl-title: #d2a8ff;
+    --hl-comment: #8b949e;
+    --hl-attr: #7ee787;
+    --hl-built: #ffa657;
+  }
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-meta .hljs-keyword,
+.hljs-doctag,
+.hljs-type {
+  color: var(--hl-keyword);
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-meta .hljs-string {
+  color: var(--hl-string);
+}
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-attr {
+  color: var(--hl-number);
+}
+.hljs-title,
+.hljs-title.class_,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--hl-title);
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: var(--hl-comment);
+}
+.hljs-name,
+.hljs-tag,
+.hljs-selector-pseudo,
+.hljs-addition {
+  color: var(--hl-attr);
+}
+.hljs-built_in,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-params,
+.hljs-deletion {
+  color: var(--hl-built);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
 }

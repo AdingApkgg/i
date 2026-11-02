@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { navigateMain } from "./navigation-helpers";
 
 const PAGES = [
   "/",
@@ -9,6 +10,7 @@ const PAGES = [
   "/vn",
   "/touhou",
   "/device",
+  "/masturbation",
   "/gallery",
   "/gallery/旅行记录",
   "/moments",
@@ -35,8 +37,10 @@ test.describe("前台页面（含看板娘）", () => {
 
 test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) => {
   await page.goto("/");
-  await page.locator("header nav").getByRole("link", { name: "关于" }).click();
-  await expect(page.getByRole("heading", { name: "关于", exact: true })).toBeVisible();
+  // 桌面与手机导航各有一个「关于」入口，点桌面的那个
+  await page.locator("header nav").getByRole("link", { name: "关于" }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page).toHaveURL(/\/about$/);
   // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点；
   // 点开后按钮的可访问名会变，所以按位置而不是按文案定位
   const spoiler = page.locator("main button[aria-pressed]").first();
@@ -62,20 +66,20 @@ test("不存在的页面：404、保留站点外壳、noindex", async ({ page })
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
 });
 
-test("顶栏导航走客户端路由，不整页刷新", async ({ page }) => {
+test("主导航走客户端路由，不整页刷新", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => {
     (window as unknown as { __marker: number }).__marker = 42;
   });
-  for (const [label, path] of [
-    ["博客", "/blog"],
-    ["相册", "/gallery"],
-    ["友链", "/friends"],
-    ["说说", "/moments"],
-    ["音乐", "/music"],
+  for (const [label, path, group] of [
+    ["博客", "/blog", "日常"],
+    ["相册", "/gallery", "日常"],
+    ["友链", "/friends", undefined],
+    ["说说", "/moments", "日常"],
+    ["音乐", "/music", "收藏"],
   ] as const) {
-    await page.locator("header nav").getByText(label, { exact: true }).click();
+    await navigateMain(page, label, group);
     await expect(page).toHaveURL(path);
   }
   expect(await page.evaluate(() => (window as unknown as { __marker?: number }).__marker)).toBe(42);
