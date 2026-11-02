@@ -6,7 +6,6 @@
  *   /rss.xml /sitemap.xml /robots.txt
  *   /og.png /og/blog/:slug.png   分享卡片
  */
-import { randomUUID } from "node:crypto";
 import { siteConfig } from "@i/config";
 import { db, post } from "@i/db";
 import { ORPCError, onError } from "@orpc/server";
@@ -19,13 +18,15 @@ import { formatDate } from "@/lib/format";
 import { renderOgImage } from "@/lib/og";
 import { isAdminRole } from "@/lib/roles";
 import { StorageError, storage } from "@/lib/s3";
-import { isThumbWidth } from "@/lib/thumb";
+import { isThumbWidth, STORED } from "@/lib/thumb";
+import { storeCas } from "./cas";
 import { contentExportRoutes } from "./content-export";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
 import { createContext } from "./orpc";
 import { router } from "./router";
 import { storedFileResponse } from "./stored-file-response";
-import { deleteThumbs, getThumb } from "./thumbs";
+import { releaseStoredFiles } from "./stored-files";
+import { getThumb } from "./thumbs";
 
 export const http = new Hono();
 
@@ -57,15 +58,6 @@ http.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // ---------------- 相册：上传 / 删除 / 读图 ----------------
 
-const EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/gif": "gif",
-  "image/webp": "webp",
-  "image/avif": "avif",
-  "image/svg+xml": "svg",
-};
-
 async function isAdmin(headers: Headers) {
   const session = await auth.api.getSession({ headers }).catch(() => null);
   return isAdminRole(session?.user);
@@ -79,34 +71,28 @@ http.post("/api/gallery/upload", async (c) => {
   if (!(file instanceof File)) return c.json({ error: "missing file" }, 400);
 
   const type = file.type || "application/octet-stream";
-  const ext =
-    EXT[type] ??
-    (file.name
-      .split(".")
-      .pop()
-      ?.toLowerCase()
-      .replace(/[^a-z0-9]/g, "") ||
-      "bin");
-  const key = `${randomUUID()}.${ext}`;
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   try {
-    await storage.put(key, bytes, type);
+    // 内容寻址：同一份内容重复上传落到同一个 key，不再堆出多份字节
+    const { key } = await storeCas(storage, bytes, { type, name: file.name });
+    return c.json({ imageUrl: `${STORED}${key}` });
   } catch (e) {
     return c.json({ error: `upload failed: ${String(e)}` }, 500);
   }
-  return c.json({ imageUrl: `/api/gallery/files/${key}` });
 });
 
-/** 批量上传里 create 失败时的善后：按 key 删掉刚传的对象，避免存储孤儿 */
+/**
+ * 批量上传里 create 失败时的善后：按 key 删掉刚传的对象，避免存储孤儿。
+ * 走引用检查——CAS 下这一份内容可能已经被别的记录引用，那就留着。
+ */
 http.delete("/api/gallery/upload", async (c) => {
   if (!(await isAdmin(c.req.raw.headers))) return c.json({ error: "unauthorized" }, 401);
   const key = c.req.query("key");
-  // key 是 upload 生成的 `${uuid}.${ext}`，拒绝路径分隔符防目录逃逸
+  // key 是 upload 生成的内容哈希，拒绝路径分隔符防目录逃逸
   if (!key || key.includes("/") || key.includes("\\")) return c.json({ error: "bad key" }, 400);
   try {
-    await storage.delete(key);
-    await deleteThumbs(key);
+    await releaseStoredFiles(db, [`${STORED}${key}`]);
   } catch (e) {
     if (e instanceof StorageError && e.status === 400) return c.json({ error: "bad key" }, 400);
     return c.json({ error: `delete failed: ${String(e)}` }, 500);

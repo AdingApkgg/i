@@ -39,4 +39,20 @@ test.describe("对象存储视频分段读取", () => {
       expect(deleted.ok()).toBe(true);
     }
   });
+
+  test("同一份内容重复上传落到同一个地址（内容寻址）", async ({ request }) => {
+    const bytes = await readFile(new URL("./media/sample.mp4", import.meta.url));
+    const upload = () =>
+      request.post("/api/gallery/upload", {
+        multipart: { file: { name: "cas-dup.mp4", mimeType: "video/mp4", buffer: bytes } },
+      });
+    const first = await upload();
+    const second = await upload();
+    expect(first.ok()).toBe(true);
+    expect(second.ok()).toBe(true);
+    const a = (await first.json()).imageUrl as string;
+    const b = (await second.json()).imageUrl as string;
+    expect(b).toBe(a);
+    expect(a).toMatch(/^\/api\/gallery\/files\/[0-9a-f]{64}\.mp4$/);
+  });
 });

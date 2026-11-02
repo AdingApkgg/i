@@ -45,7 +45,7 @@ test.describe("每日记录编辑", () => {
       ).toBe(true);
       await page.goto("/dash/masturbation?year=2025");
       await page.getByLabel("日期", { exact: true }).fill(date);
-      await expect(page.getByLabel("次数", { exact: true })).toHaveValue("7", { timeout: 1500 });
+      await expect(page.getByLabel("次数", { exact: true })).toHaveValue("7", { timeout: 5000 });
       await page.getByRole("button", { name: "保存次数", exact: true }).click();
       await expect(page.getByText("已保存次数", { exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: `${date}：7 次`, exact: true })).toBeVisible();

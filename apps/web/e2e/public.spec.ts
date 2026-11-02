@@ -35,6 +35,25 @@ test.describe("前台页面（含看板娘）", () => {
   });
 });
 
+test("设备页按分类分组，卡片带状态徽章", async ({ page }) => {
+  await page.goto("/device");
+  const main = page.locator("main");
+  // 分类分组标题按「电脑 → 手机」排序
+  await expect(main.getByRole("heading", { name: "电脑", exact: true })).toBeVisible();
+  await expect(main.getByRole("heading", { name: "手机", exact: true })).toBeVisible();
+  // 每台设备一张卡，卡片上有名称、规格与在用徽章
+  const cards = main.locator("h3");
+  await expect(cards.first()).toBeVisible();
+  expect(await cards.count()).toBeGreaterThan(0);
+  await expect(main.getByText("在用").first()).toBeVisible();
+  await expect(main.getByText("共 ")).toBeVisible();
+  // 手机宽度下不横向溢出
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(
+    0,
+  );
+});
+
 test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) => {
   await page.goto("/");
   // 桌面与手机导航各有一个「关于」入口，点桌面的那个
