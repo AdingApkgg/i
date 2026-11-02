@@ -1,5 +1,5 @@
 import { Card, CardBody } from "@i/ui";
-import { Boxes, Laptop, Link2, Smartphone, Sparkles, Undo2 } from "lucide-react";
+import { Boxes, ExternalLink, Laptop, Smartphone, Sparkles, Undo2 } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
@@ -67,7 +67,7 @@ function DeviceCard({ device }: { device: Device }) {
   const Icon = CATEGORY_ICON[device.category ?? ""] ?? Boxes;
   const StatusIcon = STATUS_ICON[device.status] ?? Sparkles;
   const statusStyle = STATUS_STYLE[device.status] ?? STATUS_STYLE.退役;
-  return (
+  const card = (
     <Card className="group h-full overflow-hidden transition hover:border-primary/40 hover:shadow-md">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-soft via-card to-soft">
         {device.imageUrl ? (
@@ -95,6 +95,12 @@ function DeviceCard({ device }: { device: Device }) {
           <StatusIcon className="size-3" />
           {device.status}
         </span>
+        {device.link && (
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-pill bg-card/80 px-2 py-0.5 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/25 backdrop-blur">
+            官网
+            <ExternalLink className="size-3" />
+          </span>
+        )}
       </div>
       <CardBody className="space-y-3">
         <div className="flex items-start justify-between gap-2">
@@ -112,18 +118,26 @@ function DeviceCard({ device }: { device: Device }) {
           <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{device.note}</p>
         )}
         {device.link && (
-          <a
-            href={device.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-          >
-            <Link2 className="size-3.5" />
-            相关链接
-          </a>
+          <span className="inline-flex items-center gap-1 text-sm text-primary group-hover:underline">
+            <ExternalLink className="size-3.5" />
+            查看官网
+          </span>
         )}
       </CardBody>
     </Card>
+  );
+
+  if (!device.link) return card;
+  return (
+    <a
+      href={device.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${device.name} 官网`}
+      className="block h-full rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+    >
+      {card}
+    </a>
   );
 }
 
