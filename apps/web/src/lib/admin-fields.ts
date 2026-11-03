@@ -152,16 +152,19 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
   touhou: {
     key: "touhou",
     label: "东方",
-    columns: ["title", "category"],
+    columns: ["title", "code", "releasedAt"],
     fields: [
       { name: "title", label: "标题", type: "text", required: true },
+      { name: "code", label: "作品编号", type: "text", placeholder: "TH06" },
+      { name: "originalTitle", label: "日文原名", type: "text" },
+      { name: "releasedAt", label: "首发日期", type: "text", placeholder: "2002-08-11" },
       {
         name: "category",
         label: "分类",
         type: "select",
         options: ["game", "music", "print", "doujin"],
       },
-      { name: "status", label: "状态", type: "text", placeholder: "收藏 / 通关…" },
+      { name: "status", label: "状态", type: "text", placeholder: "收藏 / STG…" },
       rating,
       cover,
       link,

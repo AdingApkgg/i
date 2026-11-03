@@ -261,11 +261,20 @@ export const touhou = pgTable(
     coverUrl: text("coverUrl"),
     link: text("link"),
     note: text("note"),
+    /** 作品编号（TH06、TH075…），用于同一天多作时的稳定次序 */
+    code: text("code"),
+    /** 日文原名，展示用 */
+    originalTitle: text("originalTitle"),
+    /** 首发日期 YYYY-MM-DD，列表按它倒序 */
+    releasedAt: text("releasedAt"),
     sortOrder: integer("sortOrder").notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("Touhou_category_createdAt_idx").on(t.category, t.createdAt)],
+  (t) => [
+    index("Touhou_category_createdAt_idx").on(t.category, t.createdAt),
+    index("Touhou_releasedAt_idx").on(t.releasedAt),
+  ],
 );
 
 export const device = pgTable(

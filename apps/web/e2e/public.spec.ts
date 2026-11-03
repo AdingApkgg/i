@@ -202,3 +202,30 @@ test("RSS / sitemap / robots / 分享卡片", async ({ request }) => {
   const og = await request.get("/og/blog/hello-world.png");
   expect(og.headers()["content-type"]).toBe("image/png");
 });
+
+test("东方页按首发日期倒序，封面按原比例不裁切且带编号、日期", async ({ page }) => {
+  await page.goto("/touhou");
+  const titles = await page.locator("main h2").allInnerTexts();
+  // 最新作排最前，越早越靠后
+  expect(titles[0]).toBe("东方锦上京");
+  expect(titles.indexOf("东方妖妖梦")).toBeGreaterThanOrEqual(0);
+  expect(titles.indexOf("东方妖妖梦")).toBeLessThan(titles.indexOf("东方红魔乡"));
+
+  await expect(page.getByText("2003.08.17")).toBeVisible();
+  await expect(page.getByText("TH07").first()).toBeVisible();
+
+  // 不裁切：渲染宽高比必须跟原图一致（容差 2%）
+  const ratios = await page.locator("main img").evaluateAll((els) =>
+    els.map((e) => {
+      const img = e as HTMLImageElement;
+      return [img.clientWidth / img.clientHeight, img.naturalWidth / img.naturalHeight];
+    }),
+  );
+  expect(ratios.length).toBeGreaterThan(30);
+  for (const [rendered, natural] of ratios) {
+    expect(Math.abs(rendered - natural) / natural).toBeLessThan(0.02);
+  }
+
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  expect(over).toBe(0);
+});

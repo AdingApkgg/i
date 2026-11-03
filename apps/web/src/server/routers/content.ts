@@ -82,9 +82,13 @@ export const vnRouter = crudRouter({
 });
 
 // ---- 东方 ----
+// 按首发日期倒序（最新在前），同一天的按作品编号排；没填日期的排最后
 export const touhouRouter = crudRouter({
   table: touhou,
-  order: bySort(touhou),
+  order: [
+    [touhou.releasedAt, "desc"],
+    [touhou.sortOrder, "asc"],
+  ],
   createSchema: z.object({
     title: z.string().min(1),
     category: z.enum(["game", "music", "print", "doujin"]).optional(),
@@ -93,6 +97,9 @@ export const touhouRouter = crudRouter({
     coverUrl: str,
     link: str,
     note: text,
+    code: str,
+    originalTitle: str,
+    releasedAt: str,
     sortOrder,
   }),
 });
