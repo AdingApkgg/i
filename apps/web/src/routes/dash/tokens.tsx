@@ -10,9 +10,9 @@ import { toast } from "sonner";
 import { inputCls } from "@/components/dash/domain-admin";
 import { orpc } from "@/lib/orpc/client";
 
-const fmt = (iso: string | null) => {
-  if (!iso) return "—";
-  const t = Date.parse(iso);
+const fmt = (value: string | Date | null) => {
+  if (!value) return "—";
+  const t = value instanceof Date ? value.getTime() : Date.parse(value);
   return Number.isFinite(t) ? new Date(t).toLocaleString("zh-CN", { hour12: false }) : "—";
 };
 

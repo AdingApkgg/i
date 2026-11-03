@@ -6,7 +6,7 @@
  * createRouterClient，中间件（admin / 只读 token）照常生效。
  */
 
-import { OpenAPIGenerator, type OpenAPIOperationObject } from "@orpc/openapi";
+import { type OpenAPI, OpenAPIGenerator } from "@orpc/openapi";
 import { createRouterClient, ORPCError } from "@orpc/server";
 import type { Context } from "./orpc";
 import { router } from "./router";
@@ -56,7 +56,7 @@ async function buildSpec() {
     servers: [{ url: "/api/rpc" }],
   })) as Record<string, unknown>;
 
-  const paths = (doc.paths ?? {}) as Record<string, Record<string, OpenAPIOperationObject>>;
+  const paths = (doc.paths ?? {}) as Record<string, Record<string, OpenAPI.OperationObject>>;
   for (const [path, item] of Object.entries(paths)) {
     if (!GROUPS.has(path.split("/")[1] ?? "")) {
       delete paths[path];
@@ -105,13 +105,14 @@ type Tool = {
 
 /** 工具名 = 分组_方法；写操作靠 procedure 是否 writeProcedure 区分不了，改用 scope 过滤 */
 function toolsFrom(doc: Record<string, unknown>): Tool[] {
-  const paths = (doc.paths ?? {}) as Record<string, Record<string, OpenAPIOperationObject>>;
+  const paths = (doc.paths ?? {}) as Record<string, Record<string, OpenAPI.OperationObject>>;
   const tools: Tool[] = [];
   for (const [path, item] of Object.entries(paths)) {
     const [, group, method] = path.split("/");
     for (const [key, op] of Object.entries(item)) {
       if (!isOperation(key, op)) continue;
-      const body = op.requestBody?.content?.["application/json"]?.schema as
+      const requestBody = op.requestBody as OpenAPI.RequestBodyObject | undefined;
+      const body = requestBody?.content?.["application/json"]?.schema as
         | Record<string, unknown>
         | undefined;
       tools.push({

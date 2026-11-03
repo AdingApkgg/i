@@ -50,12 +50,14 @@ function write(headers: Headers, policy: CachePolicy) {
   if (noTransform) headers.append("cache-control", "no-transform");
 }
 
-/** 不随登录状态变化、但也不该进共享缓存的路径（后台、各类 API；相册文件除外） */
+/** 不随登录状态变化、但也不该进共享缓存的路径（后台、各类 API；相册文件与 OpenAPI 文档除外） */
 const isPrivatePath = (path: string) =>
   path === "/dash" ||
   path.startsWith("/dash/") ||
   path.startsWith("/dash.") ||
-  (path.startsWith("/api/") && !path.startsWith("/api/gallery/files/"));
+  (path.startsWith("/api/") &&
+    !path.startsWith("/api/gallery/files/") &&
+    path !== "/api/openapi.json");
 
 /**
  * 包在所有处理之外（react-router-hono-server 的 beforeAll），在响应发出前补齐缓存头：

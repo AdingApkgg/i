@@ -16,6 +16,10 @@ app.get(
 app.get("/api/gallery/files/:key", () => new Response("", { headers: CACHE.immutable }));
 app.get("/rss.xml", () => new Response("", { headers: CACHE.feed }));
 app.get(
+  "/api/openapi.json",
+  () => new Response("{}", { headers: { "cache-control": "public, max-age=300" } }),
+);
+app.get(
   "/api/rpc/*",
   () => new Response("{}", { headers: { "content-type": "application/json" } }),
 );
@@ -72,8 +76,9 @@ describe("缓存策略", () => {
     expect((await get("/assets/app-abc123.js")).cc).toBe("public, max-age=31536000, immutable");
   });
 
-  it("路由自己设置的缓存头保留（相册文件、RSS）", async () => {
+  it("路由自己设置的缓存头保留（相册文件、RSS、OpenAPI 文档）", async () => {
     expect((await get("/api/gallery/files/a.png")).cc).toContain("immutable");
+    expect((await get("/api/openapi.json")).cc).toBe("public, max-age=300");
     expect(await get("/rss.xml")).toMatchObject({
       cc: CACHE.feed["cache-control"],
       cdn: CACHE.feed["cdn-cache-control"],

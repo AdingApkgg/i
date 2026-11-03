@@ -2,7 +2,14 @@ import { auth } from "@/lib/auth";
 import { parseBearer, type TokenScope, verifyToken } from "./api-token";
 
 export type Identity = {
-  user: { id: string; email: string; role?: string | null };
+  // 形状要能同时接住 session 用户和 verifyToken 查出来的行，下游会读 image
+  user: {
+    id: string;
+    email: string;
+    name?: string | null;
+    image?: string | null;
+    role?: string | null;
+  };
   scope: TokenScope;
   tokenId?: string;
   session: Awaited<ReturnType<typeof auth.api.getSession>>;
