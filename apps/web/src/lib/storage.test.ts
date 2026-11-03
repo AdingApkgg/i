@@ -93,7 +93,10 @@ describe("storage", () => {
     const page = (keys: string[], next?: string) =>
       new Response(
         `<ListBucketResult>${keys
-          .map((k) => `<Contents><Key>${k}</Key><Size>${k.length}</Size></Contents>`)
+          .map(
+            (k) =>
+              `<Contents><Key>${k}</Key><Size>${k.length}</Size><LastModified>2026-02-01T00:00:00.000Z</LastModified></Contents>`,
+          )
           .join("")}<IsTruncated>${!!next}</IsTruncated>${
           next ? `<NextContinuationToken>${next}</NextContinuationToken>` : ""
         }</ListBucketResult>`,
@@ -106,9 +109,9 @@ describe("storage", () => {
     const out = [];
     for await (const o of createStorage(cfg).list()) out.push(o);
     expect(out).toEqual([
-      { key: "a.png", size: 5 },
-      { key: "b&c.png", size: 11 },
-      { key: "c.png", size: 5 },
+      { key: "a.png", size: 5, lastModified: "2026-02-01T00:00:00.000Z" },
+      { key: "b&c.png", size: 11, lastModified: "2026-02-01T00:00:00.000Z" },
+      { key: "c.png", size: 5, lastModified: "2026-02-01T00:00:00.000Z" },
     ]);
     expect(seen).toHaveLength(2);
   });

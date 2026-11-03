@@ -1,8 +1,16 @@
 import sharp from "sharp";
 import { ADMIN_STATE, expect, test } from "./fixtures";
 
-const png = (color: string) =>
-  sharp({ create: { width: 64, height: 48, channels: 3, background: color } })
+const png = (color: string, size = 64) =>
+  sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 3,
+      background: color,
+      noise: { type: "gaussian", mean: 128, sigma: 40 },
+    },
+  })
     .png()
     .toBuffer();
 
@@ -43,6 +51,27 @@ test.describe("媒体库", () => {
     await expect(page.locator("main li", { hasText: b })).toBeVisible();
   });
 
+  test("体积排序与统计面板可用，选中后可导出清单", async ({ page, request }) => {
+    await upload(request, "media-big.png", await png("#ffd6a5", 600));
+    await upload(request, "media-small.png", await png("#bdb2ff", 16));
+
+    await page.goto("/dash/media");
+    await expect(page.getByText("最大的文件：")).toBeVisible();
+
+    const first = page.locator("main li").first();
+    await expect(first).toBeVisible();
+    const largestFirst = (await first.textContent()) ?? "";
+
+    await page.locator("select").nth(1).selectOption({ label: "体积从小到大" });
+    await expect(first).toBeVisible();
+    await expect(first).not.toHaveText(largestFirst);
+
+    await page.locator("main li").first().locator("input[type=checkbox]").check();
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: /导出清单/ }).click();
+    expect((await download).suggestedFilename()).toBe("media-selected.txt");
+  });
+
   test("后台上传按钮可用，类型筛选与关键字搜索收窄列表", async ({ page }) => {
     await page.goto("/dash/media");
     await page.locator('input[type="file"]').setInputFiles({
@@ -56,9 +85,9 @@ test.describe("媒体库", () => {
     await expect(page.getByText("没有匹配的文件")).toBeVisible();
 
     await page.locator("select").first().selectOption({ label: "图片" });
-    await page.locator('input[placeholder="搜索文件名…"]').fill(".png");
+    await page.locator('input[placeholder="搜索文件名或出处…"]').fill(".png");
     await expect(page.locator("main li img").first()).toBeVisible();
-    await page.locator('input[placeholder="搜索文件名…"]').fill("不存在的文件");
+    await page.locator('input[placeholder="搜索文件名或出处…"]').fill("不存在的文件");
     await expect(page.getByText("没有匹配的文件")).toBeVisible();
   });
 });
