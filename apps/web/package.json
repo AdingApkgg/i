@@ -91,7 +91,7 @@
     "@electric-sql/pglite": "0.5.14",
     "@playwright/test": "1.64.1",
     "@react-router/dev": "8.5.1",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@types/mdast": "^4.0.4",
     "@types/node": "24",
     "@types/pg": "^8.20.0",
@@ -104,6 +104,6 @@
     "typescript": "^7.0.0",
     "unified": "^11.0.5",
     "vite": "8.3.5",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }
