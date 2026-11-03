@@ -74,7 +74,8 @@ describe("签发与列出", () => {
 
 describe("撤销与删除", () => {
   it("撤销保留行、删除才消失", async () => {
-    const { id } = await call(apiToken.create, { name: "x" }, { context: asAdmin() });
+    const { token: row } = await call(apiToken.create, { name: "x" }, { context: asAdmin() });
+    const id = row.id;
     await call(apiToken.revoke, { id }, { context: asAdmin() });
     let list = await call(apiToken.list, undefined, { context: asAdmin() });
     expect(list.items[0]!.revokedAt).toBeTruthy();
@@ -86,7 +87,8 @@ describe("撤销与删除", () => {
   });
 
   it("重复撤销 404", async () => {
-    const { id } = await call(apiToken.create, { name: "x" }, { context: asAdmin() });
+    const { token: row } = await call(apiToken.create, { name: "x" }, { context: asAdmin() });
+    const id = row.id;
     await call(apiToken.revoke, { id }, { context: asAdmin() });
     await expect(call(apiToken.revoke, { id }, { context: asAdmin() })).rejects.toThrow();
   });
