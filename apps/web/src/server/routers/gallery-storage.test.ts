@@ -82,18 +82,19 @@ describe("删除照片时回收存储", () => {
     expect(hasAny("dup.png")).toBe(true);
   });
 
-  it.each([
-    "delete",
-    "replace",
-  ] as const)("设备仍引用图片时，照片 %s 保留原图和缩略图", async (operation) => {
-    const p = await seedPhoto("device-shared.png");
-    await t.db.insert(device).values({ name: "Laptop", imageUrl: url("device-shared.png") });
-    if (operation === "delete") await call(galleryRouter.delete, { id: p.id }, admin());
-    else await call(galleryRouter.update, { id: p.id, imageUrl: url("replacement.png") }, admin());
-    expect(files.has("device-shared.png")).toBe(true);
-    expect(files.has(thumbKey("device-shared.png", 320))).toBe(true);
-    expect(files.has(thumbKey("device-shared.png", 640))).toBe(true);
-  });
+  it.each(["delete", "replace"] as const)(
+    "设备仍引用图片时，照片 %s 保留原图和缩略图",
+    async (operation) => {
+      const p = await seedPhoto("device-shared.png");
+      await t.db.insert(device).values({ name: "Laptop", imageUrl: url("device-shared.png") });
+      if (operation === "delete") await call(galleryRouter.delete, { id: p.id }, admin());
+      else
+        await call(galleryRouter.update, { id: p.id, imageUrl: url("replacement.png") }, admin());
+      expect(files.has("device-shared.png")).toBe(true);
+      expect(files.has(thumbKey("device-shared.png", 320))).toBe(true);
+      expect(files.has(thumbKey("device-shared.png", 640))).toBe(true);
+    },
+  );
 
   it("key 里的 LIKE 通配符按字面匹配，不会把别的引用误算进来", async () => {
     const p = await seedPhoto("a_b.png");
