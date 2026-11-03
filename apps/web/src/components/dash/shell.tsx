@@ -105,7 +105,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-4 lg:flex lg:gap-6 lg:py-6">
+    <div className="dash-shell mx-auto max-w-6xl px-4 py-4 lg:flex lg:gap-6 lg:py-6">
       {/* 窄屏顶栏 */}
       <header className="sticky top-0 z-30 -mx-4 mb-4 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur lg:hidden">
         <button
@@ -146,9 +146,12 @@ export function DashShell({ userName, children }: { userName: string; children: 
         )}
       >
         <div className="mb-4 flex items-center justify-between">
-          <Link prefetch="intent" to="/" className="block px-3 text-lg font-bold">
-            i · 后台
-          </Link>
+          <div className="px-3">
+            <p className="dash-eyebrow">Admin</p>
+            <Link prefetch="intent" to="/" className="dash-mark block">
+              i · 后台
+            </Link>
+          </div>
           <button
             type="button"
             onClick={() => setOpen(false)}

@@ -37,7 +37,7 @@ export default function LoginPage() {
   });
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-4">
+    <main className="dash-login mx-auto flex min-h-screen max-w-md items-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -46,7 +46,7 @@ export default function LoginPage() {
       >
         <Card className="w-full">
           <CardBody className="p-7">
-            <h1 className="text-xl font-bold">登录后台 ✿</h1>
+            <h1>登录后台 ✿</h1>
             <p className="mt-1 text-sm text-muted-foreground">管理你的个人空间内容</p>
             <form noValidate onSubmit={submit} className="mt-5 space-y-3">
               <label className="block">

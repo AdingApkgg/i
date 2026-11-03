@@ -851,3 +851,151 @@
     scroll-behavior: auto;
   }
 }
+
+/* ── 后台：沿用主站同一套 token 与排版语汇（绯红强调、直角细线、衬线标题） ──
+   只在 .dash-shell / .dash-login 作用域内改，不影响前台与其它页面。 */
+.dash-shell,
+.dash-login {
+  --background: #f6f7f9;
+  --foreground: #252b35;
+  --muted: #edf0f3;
+  --muted-foreground: #5d6672;
+  --border: #dce2e8;
+  --input: #dce2e8;
+  --ring: #b42f3c;
+  --primary: #b42f3c;
+  --primary-foreground: #ffffff;
+  --secondary: #e9edf1;
+  --secondary-foreground: #303b49;
+  --accent: #ede9e3;
+  --accent-foreground: #8f2b36;
+  --soft: #ece8e2;
+  --card: #ffffff;
+  --card-foreground: #252b35;
+  --popover: #ffffff;
+  --popover-foreground: #252b35;
+  --destructive: #a8322c;
+  --radius-sm: 0.1rem;
+  --radius-md: 0.16rem;
+  --radius-lg: 0.22rem;
+  --sao-line: #c3ccd5;
+  --sao-gold: #80683d;
+  color: var(--foreground);
+}
+@media (prefers-color-scheme: dark) {
+  .dash-shell,
+  .dash-login {
+    --background: #101820;
+    --foreground: #edf1f4;
+    --muted: #202c37;
+    --muted-foreground: #a6b2bd;
+    --border: #33414d;
+    --input: #33414d;
+    --ring: #ed5260;
+    --primary: #ed5260;
+    --primary-foreground: #25151b;
+    --secondary: #26333e;
+    --secondary-foreground: #e1e8ee;
+    --accent: #2f3032;
+    --accent-foreground: #e6d2c2;
+    --soft: #2b2d30;
+    --card: #18232d;
+    --card-foreground: #edf1f4;
+    --popover: #18232d;
+    --popover-foreground: #edf1f4;
+    --destructive: #e0696b;
+    --sao-line: #4d606e;
+    --sao-gold: #ceb788;
+  }
+}
+.dash-shell {
+  min-height: 100dvh;
+  background: var(--background);
+}
+/* 标题：衬线斜体 + 前置菱形 + 右侧渐隐细线，与前台 hero 同一手法 */
+.dash-shell h1,
+.dash-login h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.dash-shell h1::before,
+.dash-login h1::before {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  rotate: 45deg;
+  background: var(--primary);
+}
+.dash-shell h1::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+/* 标题下的说明文字收成小号疏排，接近前台 eyebrow */
+.dash-shell h1 + p,
+.dash-login h1 + p {
+  margin-top: 0.5rem;
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  color: var(--muted-foreground);
+}
+/* 卡片：去阴影，换成细线面板 + 左上绯红短横 */
+.dash-shell .bg-card {
+  position: relative;
+  box-shadow: none;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.dash-shell .bg-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 28px;
+  height: 2px;
+  background: var(--primary);
+}
+.dash-shell .bg-card:hover {
+  border-color: var(--sao-line);
+  box-shadow: none;
+}
+/* 主操作按钮切角，同前台的 sao-button */
+.dash-shell :is(button, a, span).bg-primary,
+.dash-login button.bg-primary {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+/* 侧栏小标题 */
+.dash-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sao-gold);
+}
+.dash-eyebrow::before {
+  content: "";
+  width: 1.4rem;
+  height: 1px;
+  background: var(--primary);
+}
+.dash-mark {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
