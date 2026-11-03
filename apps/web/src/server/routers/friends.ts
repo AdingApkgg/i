@@ -7,7 +7,7 @@ import { isAdminRole } from "@/lib/roles";
 import { FRIEND_STATUSES, friendApplySchema, friendWriteSchema } from "@/lib/schemas";
 import { notFound } from "../crud";
 import { checkFriend, runFriendChecks } from "../friend-check";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { adminProcedure, publicProcedure, writeProcedure } from "../orpc";
 
 /**
  * MX Space 式友链：
@@ -149,7 +149,7 @@ export const friendsRouter = {
     context.db.select().from(friend).orderBy(desc(friend.createdAt)),
   ),
 
-  review: adminProcedure
+  review: writeProcedure
     .input(
       z.object({
         id: z.string().min(1),
@@ -182,7 +182,7 @@ export const friendsRouter = {
       return updated;
     }),
 
-  check: adminProcedure
+  check: writeProcedure
     .input(z.object({ id: z.string().min(1).optional() }).optional())
     .handler(async ({ context, input }) => {
       if (input?.id) {
@@ -197,18 +197,18 @@ export const friendsRouter = {
       return { queued, friend: null };
     }),
 
-  create: adminProcedure.input(friendWriteSchema).handler(async ({ context, input }) => {
+  create: writeProcedure.input(friendWriteSchema).handler(async ({ context, input }) => {
     const [row] = await context.db.insert(friend).values(input).returning();
     return row!;
   }),
 
-  update: adminProcedure.input(updateSchema).handler(async ({ context, input }) => {
+  update: writeProcedure.input(updateSchema).handler(async ({ context, input }) => {
     const { id, ...data } = input;
     const [row] = await context.db.update(friend).set(data).where(eq(friend.id, id)).returning();
     return row ?? notFound();
   }),
 
-  delete: adminProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().min(1) }))
     .handler(async ({ context, input }) => {
       const [row] = await context.db.delete(friend).where(eq(friend.id, input.id)).returning();

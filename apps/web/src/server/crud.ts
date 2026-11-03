@@ -3,7 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { eq, getTableColumns } from "drizzle-orm";
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import { z } from "zod";
-import { adminProcedure, publicProcedure } from "./orpc";
+import { publicProcedure, writeProcedure } from "./orpc";
 import { after, cursorValues, type OrderSpec, orderBy } from "./pagination";
 
 /**
@@ -122,14 +122,14 @@ export function crudRouter<TTable extends CrudTable, TShape extends z.ZodRawShap
       return (row ?? null) as Row | null;
     }),
 
-    create: adminProcedure.input(createSchema).handler(async ({ context, input }) => {
+    create: writeProcedure.input(createSchema).handler(async ({ context, input }) => {
       const [row] = (await withDbErrors(() =>
         context.db.insert(t).values(input).returning(),
       )) as Row[];
       return row!;
     }),
 
-    update: adminProcedure.input(updateSchema).handler(async ({ context, input }) => {
+    update: writeProcedure.input(updateSchema).handler(async ({ context, input }) => {
       const { id, ...data } = input as { id: string } & Record<string, unknown>;
       const [row] = (await withDbErrors(() =>
         context.db.update(t).set(data).where(eq(table.id, id)).returning(),
@@ -137,7 +137,7 @@ export function crudRouter<TTable extends CrudTable, TShape extends z.ZodRawShap
       return row ?? notFound();
     }),
 
-    delete: adminProcedure.input(idSchema).handler(async ({ context, input }) => {
+    delete: writeProcedure.input(idSchema).handler(async ({ context, input }) => {
       const [row] = (await context.db.delete(t).where(eq(table.id, input.id)).returning()) as Row[];
       return row ?? notFound();
     }),

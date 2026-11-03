@@ -3,7 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { decryptKey, encryptKey, normalizeBaseUrl, translateText } from "../ai";
-import { adminProcedure, type Context } from "../orpc";
+import { adminProcedure, type Context, writeProcedure } from "../orpc";
 
 const id = "translation";
 async function read(db: Context["db"]) {
@@ -32,7 +32,7 @@ const settingsInput = z.object({
 });
 export const translationRouter = {
   settings: adminProcedure.handler(async ({ context }) => publicSettings(await read(context.db))),
-  saveSettings: adminProcedure.input(settingsInput).handler(async ({ context, input }) => {
+  saveSettings: writeProcedure.input(settingsInput).handler(async ({ context, input }) => {
     if (input.clearKey && input.apiKey)
       throw new ORPCError("BAD_REQUEST", { message: "清除密钥与填写新密钥不能同时进行" });
     const baseUrl = input.baseUrl ? normalizeBaseUrl(input.baseUrl) : "";

@@ -3,6 +3,8 @@
  *   /api/rpc/*            oRPC
  *   /api/auth/*           better-auth
  *   /api/gallery/*        相册上传 / 读图 / 缩略图（SeaweedFS S3 + sharp）
+ *   /api/openapi.json     管理面描述（给 AI 读）
+ *   /api/mcp              MCP（JSON-RPC over HTTP，Bearer）
  *   /rss.xml /sitemap.xml /robots.txt
  *   /og.png /og/blog/:slug.png   分享卡片
  */
@@ -19,9 +21,11 @@ import { renderOgImage } from "@/lib/og";
 import { isAdminRole } from "@/lib/roles";
 import { StorageError, storage } from "@/lib/s3";
 import { isThumbWidth, STORED } from "@/lib/thumb";
+import { mcpResponse, openApiDocument } from "./ai-api";
 import { storeCas } from "./cas";
 import { contentExportRoutes } from "./content-export";
 import { robotsResponse, rssResponse, sitemapResponse } from "./feeds";
+import { identify } from "./identity";
 import { createContext } from "./orpc";
 import { router } from "./router";
 import { storedFileResponse } from "./stored-file-response";
@@ -52,6 +56,18 @@ http.all("/api/rpc/*", async (c) => {
   return matched ? response : c.text("Not found", 404);
 });
 
+// ---------------- AI 管理面：OpenAPI 描述 + MCP ----------------
+
+http.get("/api/openapi.json", async (c) =>
+  c.json(await openApiDocument(), 200, { "cache-control": "public, max-age=300" }),
+);
+
+http.all("/api/mcp", async (c) => {
+  const who = await identify(c.req.raw.headers);
+  if (!who || !isAdminRole(who.user)) return c.json({ error: "unauthorized" }, 401);
+  return mcpResponse(await createContext({ headers: c.req.raw.headers }), c.req.raw);
+});
+
 // ---------------- better-auth ----------------
 
 http.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
@@ -59,8 +75,8 @@ http.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 // ---------------- 相册：上传 / 删除 / 读图 ----------------
 
 async function isAdmin(headers: Headers) {
-  const session = await auth.api.getSession({ headers }).catch(() => null);
-  return isAdminRole(session?.user);
+  const who = await identify(headers);
+  return isAdminRole(who?.user) && who?.scope === "write";
 }
 
 http.post("/api/gallery/upload", async (c) => {

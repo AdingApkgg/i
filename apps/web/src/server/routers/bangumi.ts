@@ -18,7 +18,7 @@ import {
   saveEntry,
   synchronize,
 } from "../bangumi/service";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { adminProcedure, publicProcedure, writeProcedure } from "../orpc";
 
 const subjectId = z.number().int().positive();
 async function handle<T>(work: () => Promise<T>) {
@@ -79,14 +79,14 @@ export const bangumiRouter = {
   run: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
     .handler(({ context, input }) => handle(() => getRun(context.db, input.id))),
-  add: adminProcedure.input(z.object({ subjectId })).handler(({ context, input }) =>
+  add: writeProcedure.input(z.object({ subjectId })).handler(({ context, input }) =>
     handle(async () => {
       const row = await addEntry(context.db, bangumiClient(), input.subjectId);
       void wakeBangumi(context.db, true).catch(() => {});
       return row;
     }),
   ),
-  update: adminProcedure
+  update: writeProcedure
     .input(z.object({ subjectId, revision: z.number().int().nonnegative(), state: stateSchema }))
     .handler(({ context, input }) =>
       handle(async () => {
@@ -98,7 +98,7 @@ export const bangumiRouter = {
   preview: adminProcedure.handler(({ context }) =>
     handle(() => createPreview(context.db, bangumiClient(), true)),
   ),
-  apply: adminProcedure
+  apply: writeProcedure
     .input(
       z.object({
         id: z.string().min(1),
@@ -110,10 +110,10 @@ export const bangumiRouter = {
     .handler(({ context, input }) =>
       handle(() => confirmPreview(context.db, bangumiClient(), input.id, input.choices, true)),
     ),
-  sync: adminProcedure.handler(({ context }) =>
+  sync: writeProcedure.handler(({ context }) =>
     handle(() => synchronize(context.db, bangumiClient(), true)),
   ),
-  settings: adminProcedure
+  settings: writeProcedure
     .input(z.object({ autoSync: z.boolean() }))
     .handler(({ context, input }) =>
       handle(async () => {

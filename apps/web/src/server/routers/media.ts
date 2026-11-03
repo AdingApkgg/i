@@ -10,7 +10,7 @@ import { z } from "zod";
 import { storage } from "@/lib/s3";
 import { STORED } from "@/lib/thumb";
 import type { Context } from "../orpc";
-import { adminProcedure } from "../orpc";
+import { adminProcedure, writeProcedure } from "../orpc";
 import { deleteThumbs } from "../thumbs";
 
 /** 可能出现站内地址的列：[表, 列, jsonb] */
@@ -289,7 +289,7 @@ export const mediaRouter = {
     }),
 
   /** 删除：有引用默认保留，force 时连引用一起断掉直接删 */
-  remove: adminProcedure
+  remove: writeProcedure
     .input(z.object({ keys: z.array(z.string().min(1)).min(1), force: z.boolean().default(false) }))
     .handler(async ({ context, input }) => {
       const refs = input.force ? null : await collectRefs(context.db);
@@ -309,7 +309,7 @@ export const mediaRouter = {
     }),
 
   /** 替换：把旧 key 的全部引用改成新 key，再删掉旧文件 */
-  replace: adminProcedure
+  replace: writeProcedure
     .input(z.object({ key: z.string().min(1), newKey: z.string().min(1) }))
     .handler(async ({ context, input }) => {
       if (input.key === input.newKey) return { updated: 0 };

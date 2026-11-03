@@ -2,7 +2,7 @@ import { monitor, monitorCheck } from "@i/db";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { notFound, stripDefaults } from "../crud";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { publicProcedure, writeProcedure } from "../orpc";
 
 const upsert = z.object({
   name: z.string().min(1),
@@ -17,12 +17,12 @@ export const monitorRouter = {
     context.db.select().from(monitor).orderBy(desc(monitor.createdAt)),
   ),
 
-  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+  create: writeProcedure.input(upsert).handler(async ({ context, input }) => {
     const [row] = await context.db.insert(monitor).values(input).returning();
     return row!;
   }),
 
-  update: adminProcedure
+  update: writeProcedure
     // stripDefaults：部分更新不能把 enabled/kind/intervalSec 悄悄重置成默认值
     .input(
       stripDefaults(upsert)
@@ -39,7 +39,7 @@ export const monitorRouter = {
       return row ?? notFound();
     }),
 
-  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+  delete: writeProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
     const [row] = await context.db.delete(monitor).where(eq(monitor.id, input.id)).returning();
     return row ?? notFound();
   }),
