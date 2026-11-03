@@ -109,8 +109,27 @@ async function main() {
 
   if ((await db.$count(touhou)) === 0)
     await db.insert(touhou).values([
-      { title: "东方红魔乡", category: "game", status: "通关", rating: 9, coverUrl: img("th1") },
-      { title: "东方妖々梦", category: "game", status: "收藏", coverUrl: img("th2") },
+      {
+        title: "东方红魔乡",
+        code: "TH06",
+        originalTitle: "東方紅魔郷 〜 the Embodiment of Scarlet Devil.",
+        releasedAt: "2002-08-11",
+        category: "game",
+        status: "通关",
+        rating: 9,
+        coverUrl: img("th1"),
+        sortOrder: 600,
+      },
+      {
+        title: "东方妖妖梦",
+        code: "TH07",
+        originalTitle: "東方妖々夢 〜 Perfect Cherry Blossom.",
+        releasedAt: "2003-08-17",
+        category: "game",
+        status: "收藏",
+        coverUrl: img("th2"),
+        sortOrder: 700,
+      },
     ]);
 
   if ((await db.$count(device)) === 0)

@@ -38,8 +38,12 @@ test.describe("VNDB、翻译配置与设备", () => {
 
   test("VNDB 选择预览、翻译确认、保存；保留个人记录", async ({ page }) => {
     const title = `e2e VN ${Date.now()}`;
+    // vndbId 有唯一索引，用时间戳派生的唯一值，避免上次运行残留的同值记录让保存 409
+    const suffix = String(Date.now()).slice(-7);
+    const vndbId = `v1${suffix}`;
+    const otherId = `v2${suffix}`;
     const candidate = {
-      vndbId: "v99999999",
+      vndbId,
       title,
       originalTitle: "Original novel",
       brand: "Key",
@@ -47,7 +51,7 @@ test.describe("VNDB、翻译配置与设备", () => {
       coverUrl: "",
       vndbRating: 8.64,
       descriptionOriginal: "Original description",
-      link: "https://vndb.org/v99999999",
+      link: `https://vndb.org/${vndbId}`,
     };
     await page.route("**/api/rpc/vndb/search*", (r) =>
       r.fulfill({
@@ -56,7 +60,7 @@ test.describe("VNDB、翻译配置与设备", () => {
             candidate,
             {
               ...candidate,
-              vndbId: "v99999998",
+              vndbId: otherId,
               title: "Different novel",
               descriptionOriginal: "Different original",
             },
@@ -85,7 +89,7 @@ test.describe("VNDB、翻译配置与设备", () => {
     const row = rows(page, title);
     await row.getByRole("button", { name: "编辑" }).click();
     await page.getByRole("button", { name: "搜索 VNDB", exact: true }).click();
-    await page.getByRole("button", { name: new RegExp(`${title}.*v99999999`) }).click();
+    await page.getByRole("button", { name: new RegExp(`${title}.*${vndbId}`) }).click();
     await expect(page.getByRole("group", { name: "VNDB 资料预览" })).toContainText(
       "Original description",
     );
@@ -107,14 +111,16 @@ test.describe("VNDB、翻译配置与设备", () => {
       .filter({ has: page.getByRole("heading", { name: title, exact: true }) })
       .filter({ hasText: "已确认中文简介" })
       .last();
-    await expect(card).toContainText("我的评分 10/10");
-    await expect(card).toContainText("VNDB 评分：8.64/10");
-    await card.getByText("简介原文", { exact: true }).click();
-    await expect(card.getByText("Original description", { exact: true })).toBeVisible();
+    await expect(card).toContainText("10/10");
+    await expect(card).toContainText("VNDB 8.64/10");
+    // 中文/原文合并进一个 <details>，点 summary 展开；卡片容器取 last() 不一定包含它，按内容定位
+    const intro = page.locator("details").filter({ hasText: "已确认中文简介" }).last();
+    await intro.locator("summary").click();
+    await expect(intro.getByText("Original description", { exact: true })).toBeVisible();
     await page.goto("/dash/vn");
     await rows(page, title).getByRole("button", { name: "编辑" }).click();
     await page.getByRole("button", { name: "搜索 VNDB", exact: true }).click();
-    await page.getByRole("button", { name: /Different novel.*v99999998/ }).click();
+    await page.getByRole("button", { name: new RegExp(`Different novel.*${otherId}`) }).click();
     await page.getByRole("button", { name: "确认填入草稿" }).click();
     await expect(page.getByLabel("中文简介")).toHaveValue("");
     await page.getByRole("button", { name: "取消", exact: true }).click();

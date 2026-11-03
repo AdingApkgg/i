@@ -1,4 +1,6 @@
+import pg from "pg";
 import { expect, test } from "./fixtures";
+import { TOUHOU_ROWS } from "./fixtures/touhou";
 import { navigateMain } from "./navigation-helpers";
 
 const PAGES = [
@@ -201,4 +203,72 @@ test("RSS / sitemap / robots / 分享卡片", async ({ request }) => {
 
   const og = await request.get("/og/blog/hello-world.png");
   expect(og.headers()["content-type"]).toBe("image/png");
+});
+
+test.describe("东方作品列表", () => {
+  // 用完整的 32 作自铺数据：CI 的种子库只放两部，比例和倒序都验不出来
+  test.beforeAll(async () => {
+    const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await db.connect();
+    try {
+      await db.query('DELETE FROM "Touhou"');
+      for (const row of TOUHOU_ROWS)
+        await db.query(
+          `INSERT INTO "Touhou" (id, title, code, "originalTitle", "releasedAt", category, status, "sortOrder", "coverUrl", "updatedAt")
+           VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, $8, now())`,
+          [
+            row.title,
+            row.code,
+            row.originalTitle,
+            row.releasedAt,
+            row.category,
+            row.status,
+            row.sortOrder,
+            row.coverUrl,
+          ],
+        );
+    } finally {
+      await db.end();
+    }
+  });
+
+  test("按首发日期倒序，封面按原比例不裁切且带编号、日期", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto("/touhou");
+    // 封面是外链，等足够多的图解码完再量比例，否则量到的都是 0
+    await page.waitForFunction(
+      () =>
+        [...document.querySelectorAll<HTMLImageElement>("main img")].filter(
+          (img) => img.complete && img.naturalWidth > 0,
+        ).length > 30,
+      undefined,
+      { timeout: 60_000 },
+    );
+    const titles = await page.locator("main h2").allInnerTexts();
+    // 最新作排最前，越早越靠后
+    expect(titles[0]).toBe("东方锦上京");
+    expect(titles.indexOf("东方妖妖梦")).toBeGreaterThanOrEqual(0);
+    expect(titles.indexOf("东方妖妖梦")).toBeLessThan(titles.indexOf("东方红魔乡"));
+
+    await expect(page.getByText("2003.08.17")).toBeVisible();
+    await expect(page.getByText("TH07").first()).toBeVisible();
+
+    // 不裁切：渲染宽高比必须跟原图一致（容差 2%）
+    const ratios = await page.locator("main img").evaluateAll((els) =>
+      els
+        .map((e) => e as HTMLImageElement)
+        .filter((img) => img.naturalWidth > 0 && img.clientHeight > 0)
+        .map(
+          (img) =>
+            [img.clientWidth / img.clientHeight, img.naturalWidth / img.naturalHeight] as const,
+        ),
+    );
+    expect(ratios.length).toBeGreaterThan(30);
+    for (const [rendered, natural] of ratios) {
+      expect(Math.abs(rendered - natural) / natural).toBeLessThan(0.02);
+    }
+
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    expect(over).toBe(0);
+  });
 });

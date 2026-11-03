@@ -102,6 +102,9 @@ test.describe("后台移动端导航", () => {
   test("媒体库选中后底部操作条固定在视口底部", async ({ page, request }) => {
     const key = await uploadOne(request);
     await page.goto("/dash/media");
+    // 内容固定的夹具复用同一个 CAS key，lastModified 是首次上传时间，可能已翻出首页；
+    // 用搜索框按 key 精确定位，断言与库内对象总数无关。
+    await page.getByPlaceholder("搜索文件名或出处…").fill(key.replace(/\.png$/, ""));
     const first = page.locator("main li", { hasText: key });
     await expect(first).toBeVisible();
 

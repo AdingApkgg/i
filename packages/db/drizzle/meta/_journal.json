@@ -43,6 +43,13 @@
       "when": 1792132875502,
       "tag": "0005_warm_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792200000000,
+      "tag": "0006_touhou_meta",
+      "breakpoints": true
     }
   ]
 }
