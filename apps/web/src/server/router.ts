@@ -15,6 +15,7 @@ import { friendsRouter } from "./routers/friends";
 import { galleryRouter } from "./routers/gallery";
 import { healthRouter } from "./routers/health";
 import { maimaiRouter } from "./routers/maimai";
+import { mediaRouter } from "./routers/media";
 import { monitorRouter } from "./routers/monitor";
 import { pageRouter } from "./routers/page";
 import { postRouter } from "./routers/post";
@@ -39,6 +40,7 @@ export const router = {
   friends: friendsRouter,
   monitor: monitorRouter,
   maimai: maimaiRouter,
+  media: mediaRouter,
   comment: commentRouter,
   page: pageRouter,
 };

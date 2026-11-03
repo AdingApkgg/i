@@ -39,6 +39,8 @@ export default [
       route("pages/:id", "routes/dash/page-edit.tsx"),
       route("friends", "routes/dash/friends.tsx"),
       route("gallery", "routes/dash/gallery.tsx"),
+      route("media", "routes/dash/media.tsx"),
+      route("media/orphans", "routes/dash/media-orphans.tsx"),
       route("maimai", "routes/dash/maimai.tsx"),
       route("anime", "routes/dash/anime.tsx"),
       route("settings", "routes/dash/settings.tsx"),
