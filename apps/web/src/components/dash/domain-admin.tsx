@@ -35,7 +35,7 @@ type Row = Record<string, unknown> & { id: string };
 const ImageUploadContext = createContext<(token: symbol, busy: boolean) => void>(() => {});
 
 export const inputCls =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 export function DomainAdmin({
   domainKey,
@@ -124,7 +124,7 @@ export function DomainAdmin({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{spec.label}</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">{spec.label}</h1>
         {editing == null && (
           <Button onClick={() => startEdit("new")}>
             <Plus className="size-4" /> 新建
@@ -160,7 +160,11 @@ export function DomainAdmin({
                         </p>
                       )}
                       <div className="flex gap-2">
-                        <Button type="submit" disabled={saving || uploading}>
+                        <Button
+                          type="submit"
+                          className="flex-1 sm:flex-none"
+                          disabled={saving || uploading}
+                        >
                           {saving && <LoaderCircle className="size-4 animate-spin" />}
                           {saving ? "保存中…" : editing === "new" ? "创建" : "保存修改"}
                         </Button>
@@ -201,56 +205,96 @@ export function DomainAdmin({
                   还没有记录,点右上「+ 新建」添加 ✿
                 </CardBody>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b border-border text-left text-xs text-muted-foreground">
-                      <tr>
-                        {spec.columns.map((c) => (
-                          <th key={c} className="px-4 py-2.5 font-medium">
-                            {spec.fields.find((f) => f.name === c)?.label ?? c}
-                          </th>
-                        ))}
-                        <th className="px-4 py-2.5" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <AnimatePresence initial={false}>
-                        {rows.map((row) => (
-                          <motion.tr
-                            key={row.id}
-                            layout
-                            exit={{ opacity: 0 }}
-                            className="border-b border-border/60 last:border-0 hover:bg-muted/40"
+                <>
+                  {/* 窄屏：每条记录一张卡，避免横向拖表 */}
+                  <ul className="divide-y divide-border sm:hidden">
+                    {rows.map((row) => (
+                      <li key={row.id} className="flex items-start gap-3 px-3 py-3">
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="truncate font-medium">
+                            {String(row[spec.columns[0]!] ?? "—")}
+                          </div>
+                          {spec.columns.slice(1).map((c) => (
+                            <div key={c} className="truncate text-xs text-muted-foreground">
+                              <span className="mr-1 opacity-70">
+                                {spec.fields.find((f) => f.name === c)?.label ?? c}
+                              </span>
+                              {String(row[c] ?? "—")}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex shrink-0 items-center">
+                          <button
+                            type="button"
+                            aria-label="编辑"
+                            className="grid size-10 place-items-center text-primary active:bg-muted"
+                            onClick={() => startEdit(row)}
                           >
-                            {spec.columns.map((c) => (
-                              <td key={c} className="max-w-[16rem] truncate px-4 py-2.5">
-                                {String(row[c] ?? "—")}
+                            <Pencil className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="删除"
+                            className="grid size-10 place-items-center text-muted-foreground active:bg-muted"
+                            onClick={() => void remove(row)}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="hidden overflow-x-auto sm:block">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                        <tr>
+                          {spec.columns.map((c) => (
+                            <th key={c} className="px-4 py-2.5 font-medium">
+                              {spec.fields.find((f) => f.name === c)?.label ?? c}
+                            </th>
+                          ))}
+                          <th className="px-4 py-2.5" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <AnimatePresence initial={false}>
+                          {rows.map((row) => (
+                            <motion.tr
+                              key={row.id}
+                              layout
+                              exit={{ opacity: 0 }}
+                              className="border-b border-border/60 last:border-0 hover:bg-muted/40"
+                            >
+                              {spec.columns.map((c) => (
+                                <td key={c} className="max-w-[16rem] truncate px-4 py-2.5">
+                                  {String(row[c] ?? "—")}
+                                </td>
+                              ))}
+                              <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                                <button
+                                  type="button"
+                                  aria-label="编辑"
+                                  className="text-primary hover:underline"
+                                  onClick={() => startEdit(row)}
+                                >
+                                  <Pencil className="size-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label="删除"
+                                  className="ml-3 text-muted-foreground hover:text-destructive"
+                                  onClick={() => void remove(row)}
+                                >
+                                  <Trash2 className="size-4" />
+                                </button>
                               </td>
-                            ))}
-                            <td className="whitespace-nowrap px-4 py-2.5 text-right">
-                              <button
-                                type="button"
-                                aria-label="编辑"
-                                className="text-primary hover:underline"
-                                onClick={() => startEdit(row)}
-                              >
-                                <Pencil className="size-4" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label="删除"
-                                className="ml-3 text-muted-foreground hover:text-destructive"
-                                onClick={() => void remove(row)}
-                              >
-                                <Trash2 className="size-4" />
-                              </button>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </AnimatePresence>
-                    </tbody>
-                  </table>
-                </div>
+                            </motion.tr>
+                          ))}
+                        </AnimatePresence>
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </Card>
           </motion.div>

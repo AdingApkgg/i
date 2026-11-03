@@ -11,6 +11,9 @@ export default defineConfig({
     reactRouterHonoServer({ serverEntryPoint: "src/hono.ts" }),
     reactRouter(),
   ],
+  // recharts 及 d3 依赖走 ESM 且要按需 tree-shake：SSR 阶段一并打进服务端产物，
+  // 免得镜像 node_modules 少了新依赖就启动失败
+  ssr: { noExternal: [/^recharts/] },
   resolve: {
     alias: { "@/": fileURLToPath(new URL("./src/", import.meta.url)) },
   },

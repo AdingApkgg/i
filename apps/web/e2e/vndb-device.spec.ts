@@ -1,6 +1,10 @@
 import sharp from "sharp";
 import { ADMIN_STATE, expect, test } from "./fixtures";
 
+/** 条目行：桌面是表格行，窄屏是卡片项，只取当下可见的那份 */
+const rows = (page: import("@playwright/test").Page, text: string) =>
+  page.locator("main tr, main li").filter({ hasText: text }).filter({ visible: true });
+
 test.describe("VNDB、翻译配置与设备", () => {
   test.use({ storageState: ADMIN_STATE });
 
@@ -78,7 +82,7 @@ test.describe("VNDB、翻译配置与设备", () => {
     await page.getByLabel("游玩时长(h)").fill("50");
     await page.getByLabel("备注").fill("个人记录保留");
     await page.getByRole("button", { name: "创建", exact: true }).click();
-    const row = page.getByRole("row").filter({ hasText: title });
+    const row = rows(page, title);
     await row.getByRole("button", { name: "编辑" }).click();
     await page.getByRole("button", { name: "搜索 VNDB", exact: true }).click();
     await page.getByRole("button", { name: new RegExp(`${title}.*v99999999`) }).click();
@@ -108,23 +112,15 @@ test.describe("VNDB、翻译配置与设备", () => {
     await card.getByText("简介原文", { exact: true }).click();
     await expect(card.getByText("Original description", { exact: true })).toBeVisible();
     await page.goto("/dash/vn");
-    await page
-      .getByRole("row")
-      .filter({ hasText: title })
-      .getByRole("button", { name: "编辑" })
-      .click();
+    await rows(page, title).getByRole("button", { name: "编辑" }).click();
     await page.getByRole("button", { name: "搜索 VNDB", exact: true }).click();
     await page.getByRole("button", { name: /Different novel.*v99999998/ }).click();
     await page.getByRole("button", { name: "确认填入草稿" }).click();
     await expect(page.getByLabel("中文简介")).toHaveValue("");
     await page.getByRole("button", { name: "取消", exact: true }).click();
     page.once("dialog", (d) => d.accept());
-    await page
-      .getByRole("row")
-      .filter({ hasText: title })
-      .getByRole("button", { name: "删除" })
-      .click();
-    await expect(page.getByRole("row").filter({ hasText: title })).toHaveCount(0);
+    await rows(page, title).getByRole("button", { name: "删除" }).click();
+    await expect(rows(page, title).first()).toHaveCount(0);
   });
 
   test("图片上传未结束时不能保存或取消，完成后再提交", async ({ page }) => {
@@ -215,7 +211,7 @@ test.describe("VNDB、翻译配置与设备", () => {
     await expect(page.getByText("上传成功 ✿", { exact: true })).toBeVisible();
     const imageUrl = await page.getByPlaceholder("https://… 或上传图片").inputValue();
     await page.getByRole("button", { name: "创建", exact: true }).click();
-    await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+    await expect(rows(page, name).first()).toBeVisible();
     await page.goto("/device");
     const image = page.getByRole("img", { name, exact: true });
     await expect
@@ -223,12 +219,8 @@ test.describe("VNDB、翻译配置与设备", () => {
       .toBeGreaterThan(0);
     await page.goto("/dash/device");
     page.once("dialog", (d) => d.accept());
-    await page
-      .getByRole("row")
-      .filter({ hasText: name })
-      .getByRole("button", { name: "删除" })
-      .click();
-    await expect(page.getByRole("row").filter({ hasText: name })).toHaveCount(0);
+    await rows(page, name).getByRole("button", { name: "删除" }).click();
+    await expect(rows(page, name).first()).toHaveCount(0);
     const key = imageUrl.split("/").pop()!;
     expect((await request.delete(`/api/gallery/upload?key=${encodeURIComponent(key)}`)).ok()).toBe(
       true,
@@ -246,7 +238,7 @@ test.describe("VNDB、翻译配置与设备", () => {
     await page.getByLabel("入手日期").fill("2024 年春天");
     await page.getByLabel("备注").fill("随身设备备注");
     await page.getByRole("button", { name: "创建", exact: true }).click();
-    await expect(page.getByRole("row").filter({ hasText: name })).toBeVisible();
+    await expect(rows(page, name).first()).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/device");
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
@@ -259,10 +251,6 @@ test.describe("VNDB、翻译配置与设备", () => {
     ).toBe(true);
     await page.goto("/dash/device");
     page.once("dialog", (d) => d.accept());
-    await page
-      .getByRole("row")
-      .filter({ hasText: name })
-      .getByRole("button", { name: "删除" })
-      .click();
+    await rows(page, name).getByRole("button", { name: "删除" }).click();
   });
 });

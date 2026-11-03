@@ -13,7 +13,7 @@ import { orpc } from "@/lib/orpc/client";
 import { MAIMAI_SOURCES, maimaiConfigSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 type Values = z.input<typeof maimaiConfigSchema>;
 type Source = (typeof MAIMAI_SOURCES)[number];
@@ -68,7 +68,7 @@ export default function MaimaiAdmin() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-2xl font-bold">舞萌 · 查分器对接</h1>
+      <h1 className="text-xl font-bold sm:text-2xl">舞萌 · 查分器对接</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         配置水鱼 / 落雪账号后点「同步」，成绩会拉进本地库，前台 /maimai 展示 b50 与全部成绩。
       </p>
@@ -165,7 +165,12 @@ export default function MaimaiAdmin() {
           </AnimatePresence>
 
           <div className="flex gap-2">
-            <Button onClick={() => void submit()} disabled={save.isPending} variant="soft">
+            <Button
+              onClick={() => void submit()}
+              disabled={save.isPending}
+              variant="soft"
+              className="min-h-10 sm:min-h-0"
+            >
               {save.isPending ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
@@ -173,7 +178,11 @@ export default function MaimaiAdmin() {
               )}
               {save.isPending ? "保存中…" : "保存配置"}
             </Button>
-            <Button onClick={() => sync.mutate(undefined)} disabled={sync.isPending}>
+            <Button
+              onClick={() => sync.mutate(undefined)}
+              disabled={sync.isPending}
+              className="min-h-10 sm:min-h-0"
+            >
               <RefreshCw className={`size-4 ${sync.isPending ? "animate-spin" : ""}`} />
               {sync.isPending ? "同步中…" : "立即同步"}
             </Button>

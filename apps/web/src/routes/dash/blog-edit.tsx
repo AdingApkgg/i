@@ -79,7 +79,7 @@ function readDraft(key: string): Draft | null {
 }
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
 
 function PostEditor({ post }: { post: Post | null }) {
   const navigate = useNavigate();

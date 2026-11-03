@@ -77,7 +77,8 @@ test.describe("后台（已登录）", () => {
     await expect(page.getByText("「标题」不能为空")).toBeVisible();
     await page.locator("input").first().fill(title);
     await page.getByRole("button", { name: "创建" }).click();
-    await expect(page.getByText(title).first()).toBeVisible();
+    // 桌面走表格、窄屏走卡片，取当下可见的那份
+    await expect(page.getByText(title).filter({ visible: true }).first()).toBeVisible();
 
     await page.goto("/music");
     await expect(page.getByText(title)).toBeVisible();

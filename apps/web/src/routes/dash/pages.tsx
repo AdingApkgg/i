@@ -20,7 +20,7 @@ export default function DashPages() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">整页</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">整页</h1>
         <ContentBackupButton />
       </div>
       <p className="mt-1 text-sm text-muted-foreground">前台 /music、/movie 这类整页的正文</p>

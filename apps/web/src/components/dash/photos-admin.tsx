@@ -200,7 +200,7 @@ export function PhotosAdmin() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">相册</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">相册</h1>
         {editing == null && (
           <div className="flex flex-wrap items-center gap-2">
             <select
@@ -388,7 +388,7 @@ export function PhotosAdmin() {
                         </button>
                         <span
                           className={cn(
-                            "pointer-events-none absolute left-1.5 top-1.5 grid size-5 place-items-center rounded-full border text-white transition",
+                            "pointer-events-none absolute left-1.5 top-1.5 grid size-6 place-items-center rounded-full border text-white transition sm:size-5",
                             on
                               ? "border-primary bg-primary"
                               : "border-white/70 bg-black/30 opacity-0 group-hover:opacity-100",
@@ -404,7 +404,7 @@ export function PhotosAdmin() {
                         <button
                           type="button"
                           aria-label="编辑"
-                          className="absolute bottom-1 right-1 grid size-6 place-items-center rounded-full bg-black/50 text-white opacity-0 transition hover:bg-black/70 group-hover:opacity-100"
+                          className="absolute bottom-1 right-1 grid size-9 place-items-center rounded-full bg-black/50 text-white transition hover:bg-black/70 sm:size-6 sm:opacity-0 sm:group-hover:opacity-100"
                           onClick={() => openEdit(p)}
                         >
                           <Pencil className="size-3.5" />

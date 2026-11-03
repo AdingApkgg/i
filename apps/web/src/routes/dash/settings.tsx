@@ -11,7 +11,7 @@ import { reportAuthError } from "@/lib/form";
 import { changePasswordSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 const EMPTY = { currentPassword: "", newPassword: "" };
 
@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold">设置</h1>
+      <h1 className="text-xl font-bold sm:text-2xl">设置</h1>
       <Card className="mt-4">
         <CardBody className="space-y-3">
           <div className="font-semibold">修改密码</div>

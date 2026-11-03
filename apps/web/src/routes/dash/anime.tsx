@@ -101,7 +101,7 @@ export default function AnimeAdmin() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">番剧 · Bangumi</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">番剧 · Bangumi</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           单账号双向同步追番状态、逐集进度、评分与短评。首次演练只读，确认后才应用。
         </p>
@@ -290,6 +290,7 @@ export default function AnimeAdmin() {
                   </div>
                   <Button
                     variant="soft"
+                    className="min-h-10 sm:min-h-0"
                     aria-label={`编辑 ${entry.metadata.nameCn || entry.metadata.name}`}
                     disabled={busy || active}
                     onClick={() => setEditing(entry)}
