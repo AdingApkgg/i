@@ -11,6 +11,7 @@ import {
   vnRouter,
 } from "./routers/content";
 import { dailyRecordRouter } from "./routers/daily-record";
+import { dashStatsRouter } from "./routers/dash-stats";
 import { friendsRouter } from "./routers/friends";
 import { galleryRouter } from "./routers/gallery";
 import { healthRouter } from "./routers/health";
@@ -43,6 +44,7 @@ export const router = {
   media: mediaRouter,
   comment: commentRouter,
   page: pageRouter,
+  dashStats: dashStatsRouter,
 };
 
 export type AppRouter = typeof router;

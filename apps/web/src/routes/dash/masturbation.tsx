@@ -7,7 +7,7 @@ export function loader({ request }: Route.LoaderArgs) {
 export default function DailyRecordAdmin({ loaderData }: Route.ComponentProps) {
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">自慰记录</h1>
+      <h1 className="mb-4 text-xl font-bold sm:text-2xl">自慰记录</h1>
       <DailyJournal
         key={`${loaderData.initial.year}:${loaderData.initialDate ?? ""}`}
         {...loaderData}

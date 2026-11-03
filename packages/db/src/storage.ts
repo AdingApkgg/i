@@ -115,7 +115,7 @@ export function createStorage(cfg: StorageConfig) {
     },
 
     /** 列出桶内全部对象（ListObjectsV2 自动翻页） */
-    async *list(prefix = ""): AsyncGenerator<{ key: string; size: number }> {
+    async *list(prefix = ""): AsyncGenerator<{ key: string; size: number; lastModified: string }> {
       let token: string | undefined;
       do {
         const q = new URLSearchParams({ "list-type": "2", prefix });
@@ -126,7 +126,10 @@ export function createStorage(cfg: StorageConfig) {
           const block = m[1]!;
           const key = decodeXml(/<Key>([\s\S]*?)<\/Key>/.exec(block)?.[1] ?? "");
           const size = Number(/<Size>(\d+)<\/Size>/.exec(block)?.[1] ?? 0);
-          if (key) yield { key, size };
+          const lastModified = decodeXml(
+            /<LastModified>([\s\S]*?)<\/LastModified>/.exec(block)?.[1] ?? "",
+          );
+          if (key) yield { key, size, lastModified };
         }
         token = /<IsTruncated>true<\/IsTruncated>/.test(xml)
           ? decodeXml(

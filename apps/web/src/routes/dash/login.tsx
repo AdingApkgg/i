@@ -13,7 +13,7 @@ import { seo } from "@/lib/seo";
 import type { Route } from "./+types/login";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/40 aria-invalid:border-destructive";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/40 aria-invalid:border-destructive";
 
 export default function LoginPage() {
   const navigate = useNavigate();

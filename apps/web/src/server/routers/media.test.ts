@@ -1,5 +1,6 @@
-import { device, photo, post } from "@i/db/schema";
+import { comment, device, photo, post } from "@i/db/schema";
 import { call } from "@orpc/server";
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestDb, makeContext } from "../../../test/db";
 import { mediaRouter as media } from "./media";
@@ -7,22 +8,22 @@ import { mediaRouter as media } from "./media";
 vi.mock("@i/db", async () => (await import("../../../test/mock-db")).dbModule());
 vi.mock("@/lib/auth", () => ({ auth: {} }));
 
-/** 内存版对象存储：key → 字节数 */
-const files = vi.hoisted(() => new Map<string, number>());
+/** 内存版对象存储：key → 大小 + 上传时间 */
+const files = vi.hoisted(() => new Map<string, { size: number; at: string }>());
 vi.mock("@/lib/s3", () => ({
   storage: {
     async *list() {
-      for (const [key, size] of files) yield { key, size };
+      for (const [key, meta] of files) yield { key, size: meta.size, lastModified: meta.at };
     },
     async head(key: string) {
-      const size = files.get(key);
-      return size === undefined ? null : { size };
+      const meta = files.get(key);
+      return meta === undefined ? null : { size: meta.size };
     },
     async delete(key: string) {
       files.delete(key);
     },
     async put(key: string, body: Uint8Array | ArrayBuffer) {
-      files.set(key, body.byteLength);
+      files.set(key, { size: body.byteLength, at: new Date().toISOString() });
     },
   },
 }));
@@ -39,7 +40,8 @@ beforeEach(async () => {
 
 const admin = () => ({ context: makeContext(t.db, { role: "admin" }) });
 const url = (key: string) => `/api/gallery/files/${key}`;
-const put = (key: string, size = 1000) => files.set(key, size);
+const put = (key: string, size = 1000, at = "2026-01-01T00:00:00.000Z") =>
+  files.set(key, { size, at });
 
 describe("媒体库", () => {
   it("非管理员不能访问", async () => {
@@ -85,6 +87,79 @@ describe("媒体库", () => {
     put("bbb222.png");
     const res = await call(media.list, { q: "aaa" }, admin());
     expect(res.items.map((i) => i.key)).toEqual(["aaa111.png"]);
+  });
+
+  it("关键字也搜引用来源标题", async () => {
+    put("aaa111.png");
+    put("bbb222.png");
+    await t.db.insert(post).values({ slug: "p", title: "夏天去看海", coverUrl: url("bbb222.png") });
+
+    const res = await call(media.list, { q: "看海" }, admin());
+    expect(res.items.map((i) => i.key)).toEqual(["bbb222.png"]);
+  });
+
+  it("默认按最近上传倒序，可切换大小 / 引用数 / key 排序", async () => {
+    put("old.png", 10, "2026-01-01T00:00:00.000Z");
+    put("mid.png", 300, "2026-02-01T00:00:00.000Z");
+    put("new.png", 20, "2026-03-01T00:00:00.000Z");
+    await t.db.insert(post).values({ slug: "p", title: "t", coverUrl: url("new.png") });
+
+    const keys = async (sort: "newest" | "oldest" | "largest" | "smallest" | "refs" | "key") =>
+      (await call(media.list, { sort }, admin())).items.map((i) => i.key);
+    expect(await keys("newest")).toEqual(["new.png", "mid.png", "old.png"]);
+    expect(await keys("oldest")).toEqual(["old.png", "mid.png", "new.png"]);
+    expect(await keys("largest")).toEqual(["mid.png", "new.png", "old.png"]);
+    expect(await keys("smallest")).toEqual(["old.png", "new.png", "mid.png"]);
+    expect((await keys("refs"))[0]).toBe("new.png");
+    expect(await keys("key")).toEqual(["mid.png", "new.png", "old.png"]);
+  });
+
+  it("按最小体积筛选，便于找大文件", async () => {
+    put("small.png", 10);
+    put("big.webp", 5_000_000);
+
+    const res = await call(media.list, { minBytes: 1_000_000 }, admin());
+    expect(res.items.map((i) => i.key)).toEqual(["big.webp"]);
+  });
+
+  it("分页用 offset，next 给出下一页起点", async () => {
+    for (let n = 0; n < 61; n++) put(`k${String(n).padStart(3, "0")}.png`, n);
+
+    const first = await call(media.list, { sort: "key" }, admin());
+    expect(first.items).toHaveLength(60);
+    expect(first.next).toBe(60);
+    const second = await call(media.list, { sort: "key", offset: first.next! }, admin());
+    expect(second.items.map((i) => i.key)).toEqual(["k060.png"]);
+    expect(second.next).toBeUndefined();
+  });
+
+  it("统计给出类型分布与最大文件", async () => {
+    put("a.png", 100);
+    put("v.mp4", 9000);
+    put("b.webp", 300);
+
+    const res = await call(media.stats, {}, admin());
+    expect(res.byType).toMatchObject({ image: 2, video: 1 });
+    expect(res.largest[0]).toMatchObject({ key: "v.mp4", size: 9000, type: "video" });
+    expect(res.largest).toHaveLength(3);
+  });
+
+  it("引用来源给中文表名，评论指向所属文章", async () => {
+    put("a.png");
+    const [u] = await t.db
+      .execute(
+        sql`insert into "User" ("id", "email", "createdAt", "updatedAt") values ('u-c', 'c@example.com', now(), now()) returning "id"`,
+      )
+      .then((r) => r.rows as { id: string }[]);
+    const [p] = await t.db.insert(post).values({ slug: "hai", title: "海" }).returning();
+    await t.db
+      .insert(comment)
+      .values({ path: "/blog/hai", userId: u!.id, postId: p!.id, contentMd: `图 ${url("a.png")}` });
+
+    const d = await call(media.detail, { key: "a.png" }, admin());
+    const ref = d!.refs.find((r) => r.table === "Comment")!;
+    expect(ref.source).toBe("评论");
+    expect(ref.href).toBe("/blog/hai");
   });
 
   it("统计给出总数、占用与孤儿数", async () => {

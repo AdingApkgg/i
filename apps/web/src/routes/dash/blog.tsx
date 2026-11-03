@@ -40,7 +40,7 @@ export default function DashBlog() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">博客</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">博客</h1>
         <div className="flex flex-wrap items-center gap-2">
           <ContentBackupButton />
           <Button asChild>
@@ -89,7 +89,7 @@ export default function DashBlog() {
                   target="_blank"
                   rel="noreferrer"
                   title="在前台查看"
-                  className="text-muted-foreground hover:text-primary"
+                  className="-m-2 grid size-10 place-items-center text-muted-foreground active:bg-muted sm:m-0 sm:size-auto"
                 >
                   <ExternalLink className="size-4" />
                 </a>
@@ -97,7 +97,7 @@ export default function DashBlog() {
                   prefetch="intent"
                   to={`/dash/blog/${p.id}`}
                   title="编辑"
-                  className="text-muted-foreground hover:text-primary"
+                  className="-mx-2 grid size-10 place-items-center text-muted-foreground active:bg-muted sm:mx-0 sm:size-auto"
                 >
                   <Pencil className="size-4" />
                 </Link>
@@ -105,7 +105,7 @@ export default function DashBlog() {
                   type="button"
                   title="删除"
                   onClick={() => void remove(p.id, p.title)}
-                  className="text-muted-foreground hover:text-destructive"
+                  className="-mr-2 grid size-10 place-items-center text-muted-foreground active:bg-muted sm:mr-0 sm:size-auto"
                 >
                   <Trash2 className="size-4" />
                 </button>

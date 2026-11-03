@@ -13,14 +13,17 @@ import {
   Library,
   LogOut,
   type LucideIcon,
+  Menu,
   MessageCircle,
   Music,
   PenLine,
   Settings,
   Sparkles,
   Users,
+  X,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { ADMIN_FIELDS, ADMIN_ORDER } from "@/lib/admin-fields";
 import { authClient } from "@/lib/auth-client";
@@ -47,6 +50,27 @@ const DOMAIN_ICONS: Record<string, LucideIcon> = {
 export function DashShell({ userName, children }: { userName: string; children: React.ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  // 窄屏把导航收进抽屉：手机上侧栏一占就是半个屏，正文只剩巴掌大
+  const [open, setOpen] = useState(false);
+
+  // 切页自动收起，省得每次手动关（依赖只有 pathname，故按路径变化触发）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname 就是触发条件
+  useEffect(() => setOpen(false), [pathname]);
+
+  // 抽屉打开时锁住背景滚动，并支持 Esc 关闭
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   async function signOut() {
     await authClient.signOut();
@@ -60,7 +84,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
       key={href}
       to={href}
       className={cn(
-        "relative block rounded-[var(--radius-md)] px-3 py-2 text-sm transition",
+        "relative block rounded-[var(--radius-md)] px-3 py-3 text-sm transition lg:py-2",
         active
           ? "font-medium text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -73,19 +97,67 @@ export function DashShell({ userName, children }: { userName: string; children: 
           transition={{ type: "spring", stiffness: 450, damping: 35 }}
         />
       )}
-      <span className="relative z-10 flex items-center gap-2">
-        <Icon className="size-4" />
+      <span className="relative z-10 flex items-center gap-2.5">
+        <Icon className="size-4 shrink-0" />
         {label}
       </span>
     </Link>
   );
 
   return (
-    <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
-      <aside className="w-44 shrink-0">
-        <Link prefetch="intent" to="/" className="mb-4 block px-3 text-lg font-bold">
-          i · 后台
+    <div className="mx-auto max-w-6xl px-4 py-4 lg:flex lg:gap-6 lg:py-6">
+      {/* 窄屏顶栏 */}
+      <header className="sticky top-0 z-30 -mx-4 mb-4 flex items-center gap-2 border-b border-border bg-background/95 px-4 py-2.5 backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="打开后台导航"
+          aria-expanded={open}
+          aria-controls="dash-nav"
+          className="-ml-1.5 inline-flex size-10 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <Menu className="size-5" />
+        </button>
+        <span className="font-bold">后台</span>
+        <Link
+          to="/"
+          className="ml-auto rounded-[var(--radius-md)] px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          回前台
         </Link>
+      </header>
+
+      {open && (
+        <button
+          type="button"
+          aria-label="关闭导航"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px] lg:hidden"
+        />
+      )}
+
+      <aside
+        id="dash-nav"
+        className={cn(
+          "z-50 lg:static lg:block lg:w-44 lg:shrink-0",
+          open
+            ? "fixed inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl"
+            : "hidden",
+        )}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <Link prefetch="intent" to="/" className="block px-3 text-lg font-bold">
+            i · 后台
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="关闭导航"
+            className="inline-flex size-9 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted lg:hidden"
+          >
+            <X className="size-4.5" />
+          </button>
+        </div>
         <nav className="space-y-1">
           {item("/dash", "仪表盘", pathname === "/dash", LayoutDashboard)}
           {ADMIN_ORDER.map((k) =>
@@ -104,13 +176,14 @@ export function DashShell({ userName, children }: { userName: string; children: 
           <button
             type="button"
             onClick={() => void signOut()}
-            className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive"
+            className="mt-1.5 inline-flex items-center gap-1.5 py-1.5 text-sm text-muted-foreground hover:text-destructive"
           >
             <LogOut className="size-3.5" />
             退出登录
           </button>
         </div>
       </aside>
+
       <main className="min-w-0 flex-1">{children}</main>
     </div>
   );

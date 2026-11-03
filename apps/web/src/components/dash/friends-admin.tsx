@@ -28,7 +28,7 @@ import type { RouterOutputs } from "@/server/router";
 type FriendRow = RouterOutputs["friends"]["adminList"][number];
 
 const inputCls =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   active: { label: "已通过", cls: "bg-emerald-500/10 text-emerald-600" },
@@ -244,13 +244,19 @@ export function FriendsAdmin() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">友链</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">友链</h1>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={checkAll} disabled={busy}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-10 sm:min-h-0"
+            onClick={checkAll}
+            disabled={busy}
+          >
             <RefreshCw className={cn("size-3.5", busy && "animate-spin")} /> 全部检测
           </Button>
           {editing == null && (
-            <Button size="sm" onClick={() => startEdit("new")}>
+            <Button size="sm" className="min-h-10 sm:min-h-0" onClick={() => startEdit("new")}>
               <Plus className="size-3.5" /> 新建
             </Button>
           )}
@@ -408,77 +414,132 @@ export function FriendsAdmin() {
         ) : others.length === 0 ? (
           <CardBody className="text-sm text-muted-foreground">还没有友链 ✿</CardBody>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-border text-left text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">友链</th>
-                  <th className="px-4 py-2.5 font-medium">分组</th>
-                  <th className="px-4 py-2.5 font-medium">状态</th>
-                  <th className="px-4 py-2.5 font-medium">检测</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody>
-                {others.map((f) => (
-                  <tr
-                    key={f.id}
-                    className="border-b border-border/60 last:border-0 hover:bg-muted/40"
-                  >
-                    <td className="max-w-[20rem] px-4 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar f={f} />
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{f.name}</div>
-                          <a
-                            href={f.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block truncate text-xs text-muted-foreground hover:text-primary"
-                          >
-                            {f.url}
-                          </a>
-                        </div>
+          <>
+            <ul className="divide-y divide-border sm:hidden">
+              {others.map((f) => (
+                <li key={f.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar f={f} />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{f.name}</div>
+                        <a
+                          href={f.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block truncate text-xs text-muted-foreground"
+                        >
+                          {f.url}
+                        </a>
                       </div>
-                    </td>
-                    <td className="px-4 py-2.5">{f.group ?? "—"}</td>
-                    <td className="px-4 py-2.5">
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span>{f.group ?? "—"}</span>
                       <StatusBadge status={f.status} />
-                    </td>
-                    <td className="px-4 py-2.5">
                       <CheckInfo f={f} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs">
-                      <button
-                        type="button"
-                        aria-label="编辑"
-                        className="text-primary hover:underline"
-                        onClick={() => startEdit(f)}
-                      >
-                        <Pencil className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="检测"
-                        className="ml-3 text-muted-foreground hover:text-primary"
-                        onClick={() => checkOne(f)}
-                      >
-                        <RefreshCw className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="删除"
-                        className="ml-3 text-muted-foreground hover:text-destructive"
-                        onClick={() => remove(f)}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label="编辑"
+                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-primary active:bg-muted"
+                      onClick={() => startEdit(f)}
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="检测"
+                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-muted-foreground active:bg-muted"
+                      onClick={() => checkOne(f)}
+                    >
+                      <RefreshCw className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="删除"
+                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-muted-foreground active:bg-muted"
+                      onClick={() => remove(f)}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-2.5 font-medium">友链</th>
+                    <th className="px-4 py-2.5 font-medium">分组</th>
+                    <th className="px-4 py-2.5 font-medium">状态</th>
+                    <th className="px-4 py-2.5 font-medium">检测</th>
+                    <th className="px-4 py-2.5" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {others.map((f) => (
+                    <tr
+                      key={f.id}
+                      className="border-b border-border/60 last:border-0 hover:bg-muted/40"
+                    >
+                      <td className="max-w-[20rem] px-4 py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar f={f} />
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{f.name}</div>
+                            <a
+                              href={f.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block truncate text-xs text-muted-foreground hover:text-primary"
+                            >
+                              {f.url}
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5">{f.group ?? "—"}</td>
+                      <td className="px-4 py-2.5">
+                        <StatusBadge status={f.status} />
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <CheckInfo f={f} />
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs">
+                        <button
+                          type="button"
+                          aria-label="编辑"
+                          className="text-primary hover:underline"
+                          onClick={() => startEdit(f)}
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="检测"
+                          className="ml-3 text-muted-foreground hover:text-primary"
+                          onClick={() => checkOne(f)}
+                        >
+                          <RefreshCw className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="删除"
+                          className="ml-3 text-muted-foreground hover:text-destructive"
+                          onClick={() => remove(f)}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 

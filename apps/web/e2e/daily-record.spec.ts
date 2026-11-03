@@ -44,6 +44,8 @@ test.describe("每日记录编辑", () => {
         ).ok(),
       ).toBe(true);
       await page.goto("/dash/masturbation?year=2025");
+      // 等 hydration 完成再改值，否则早到的 change 会被 SSR 值覆盖
+      await page.waitForLoadState("networkidle");
       await page.getByLabel("日期", { exact: true }).fill(date);
       await expect(page.getByLabel("次数", { exact: true })).toHaveValue("7", { timeout: 5000 });
       await page.getByRole("button", { name: "保存次数", exact: true }).click();
@@ -86,6 +88,7 @@ test.describe("每日记录编辑", () => {
       ).json.days.find((d: { date: string }) => d.date === date)?.count ?? 0;
     try {
       await page.goto("/dash/masturbation");
+      await page.waitForLoadState("networkidle");
       await page.getByLabel("日期", { exact: true }).fill(date);
       await page.getByLabel("次数", { exact: true }).fill("2");
       await page.getByRole("button", { name: "保存次数", exact: true }).click();
