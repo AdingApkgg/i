@@ -2,7 +2,7 @@ import type { touhou } from "@i/db";
 
 type SeedTouhou = typeof touhou.$inferInsert;
 
-/** 东方页 e2e 用的全 32 作：首发倒序，封面走 picsum（CI 没有 CAS 素材） */
+/** 东方页 e2e 用的全 32 作：首发倒序，封面用本机三张不同比例的样图（CI 不依赖外网、也没有 CAS 素材） */
 export const TOUHOU_ROWS: SeedTouhou[] = [
   {
     title: "东方锦上京",
@@ -12,7 +12,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 2000,
-    coverUrl: "https://picsum.photos/seed/th20/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方兽王园",
@@ -22,7 +22,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1900,
-    coverUrl: "https://picsum.photos/seed/th19/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方刚欲异闻",
@@ -32,7 +32,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 17500,
-    coverUrl: "https://picsum.photos/seed/th175/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方虹龙洞",
@@ -42,7 +42,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1800,
-    coverUrl: "https://picsum.photos/seed/th18/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方鬼形兽",
@@ -52,7 +52,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1700,
-    coverUrl: "https://picsum.photos/seed/th17/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "秘封噩梦日记",
@@ -62,7 +62,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 16500,
-    coverUrl: "https://picsum.photos/seed/th165/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方凭依华",
@@ -72,7 +72,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 15500,
-    coverUrl: "https://picsum.photos/seed/th155/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方天空璋",
@@ -82,7 +82,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1600,
-    coverUrl: "https://picsum.photos/seed/th16/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方绀珠传",
@@ -92,7 +92,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1500,
-    coverUrl: "https://picsum.photos/seed/th15/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方深秘录",
@@ -102,7 +102,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 14500,
-    coverUrl: "https://picsum.photos/seed/th145/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "弹幕天邪鬼",
@@ -112,7 +112,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 14300,
-    coverUrl: "https://picsum.photos/seed/th143/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方辉针城",
@@ -122,7 +122,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1400,
-    coverUrl: "https://picsum.photos/seed/th14/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方心绮楼",
@@ -132,7 +132,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 13500,
-    coverUrl: "https://picsum.photos/seed/th135/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方神灵庙",
@@ -142,7 +142,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1300,
-    coverUrl: "https://picsum.photos/seed/th13/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "妖精大战争",
@@ -152,7 +152,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 12800,
-    coverUrl: "https://picsum.photos/seed/th128/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方文花帖DS",
@@ -162,7 +162,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 12500,
-    coverUrl: "https://picsum.photos/seed/th125/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方非想天则",
@@ -172,7 +172,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 12300,
-    coverUrl: "https://picsum.photos/seed/th123/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方星莲船",
@@ -182,7 +182,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1200,
-    coverUrl: "https://picsum.photos/seed/th12/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方地灵殿",
@@ -192,7 +192,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1100,
-    coverUrl: "https://picsum.photos/seed/th11/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方绯想天",
@@ -202,7 +202,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 10500,
-    coverUrl: "https://picsum.photos/seed/th105/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方风神录",
@@ -212,7 +212,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 1000,
-    coverUrl: "https://picsum.photos/seed/th10/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方文花帖",
@@ -222,7 +222,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 9500,
-    coverUrl: "https://picsum.photos/seed/th095/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方花映塚",
@@ -232,7 +232,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 900,
-    coverUrl: "https://picsum.photos/seed/th09/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方萃梦想",
@@ -242,7 +242,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 7500,
-    coverUrl: "https://picsum.photos/seed/th075/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方永夜抄",
@@ -252,7 +252,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 800,
-    coverUrl: "https://picsum.photos/seed/th08/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方妖妖梦",
@@ -262,7 +262,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 700,
-    coverUrl: "https://picsum.photos/seed/th07/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方红魔乡",
@@ -272,7 +272,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 600,
-    coverUrl: "https://picsum.photos/seed/th06/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方怪绮谈",
@@ -282,7 +282,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 500,
-    coverUrl: "https://picsum.photos/seed/th05/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方幻想乡",
@@ -292,7 +292,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 400,
-    coverUrl: "https://picsum.photos/seed/th04/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
   {
     title: "东方梦时空",
@@ -302,7 +302,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 300,
-    coverUrl: "https://picsum.photos/seed/th03/900/1300",
+    coverUrl: "/e2e-touhou/wide.webp",
   },
   {
     title: "东方封魔录",
@@ -312,7 +312,7 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 200,
-    coverUrl: "https://picsum.photos/seed/th02/900/1200",
+    coverUrl: "/e2e-touhou/near.webp",
   },
   {
     title: "东方灵异传",
@@ -322,6 +322,6 @@ export const TOUHOU_ROWS: SeedTouhou[] = [
     category: "game",
     status: "通关",
     sortOrder: 100,
-    coverUrl: "https://picsum.photos/seed/th01/900/889",
+    coverUrl: "/e2e-touhou/tall.webp",
   },
 ];

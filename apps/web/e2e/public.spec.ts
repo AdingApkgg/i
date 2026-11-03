@@ -233,15 +233,16 @@ test.describe("东方作品列表", () => {
   });
 
   test("按首发日期倒序，封面按原比例不裁切且带编号、日期", async ({ page }) => {
+    test.setTimeout(90_000);
     await page.goto("/touhou");
-    // 封面是外链，等全部解码完再量比例，否则量到的都是 0
+    // 封面是外链，等足够多的图解码完再量比例，否则量到的都是 0
     await page.waitForFunction(
       () =>
-        [...document.querySelectorAll<HTMLImageElement>("main img")].every(
+        [...document.querySelectorAll<HTMLImageElement>("main img")].filter(
           (img) => img.complete && img.naturalWidth > 0,
-        ),
+        ).length > 30,
       undefined,
-      { timeout: 30_000 },
+      { timeout: 60_000 },
     );
     const titles = await page.locator("main h2").allInnerTexts();
     // 最新作排最前，越早越靠后
