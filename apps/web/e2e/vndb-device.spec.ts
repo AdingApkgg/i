@@ -51,6 +51,9 @@ test.describe("VNDB、翻译配置与设备", () => {
       coverUrl: "",
       vndbRating: 8.64,
       descriptionOriginal: "Original description",
+      tags: ["Drama", "Romance"],
+      platforms: ["Windows"],
+      lengthMinutes: 3600,
       link: `https://vndb.org/${vndbId}`,
     };
     await page.route("**/api/rpc/vndb/search*", (r) =>
@@ -90,7 +93,7 @@ test.describe("VNDB、翻译配置与设备", () => {
     await row.getByRole("button", { name: "编辑" }).click();
     await page.getByRole("button", { name: "搜索 VNDB", exact: true }).click();
     await page.getByRole("button", { name: new RegExp(`${title}.*${vndbId}`) }).click();
-    await expect(page.getByRole("group", { name: "VNDB 资料预览" })).toContainText(
+    await expect(page.getByRole("group", { name: "资料预览" })).toContainText(
       "Original description",
     );
     await expect(page.getByLabel("VNDB ID", { exact: true })).toHaveValue("");
@@ -99,6 +102,9 @@ test.describe("VNDB、翻译配置与设备", () => {
     await expect(page.getByLabel("状态")).toHaveValue("通关");
     await expect(page.getByLabel("游玩时长(h)")).toHaveValue("50");
     await expect(page.getByLabel("备注")).toHaveValue("个人记录保留");
+    await expect(page.getByLabel("标签")).toHaveValue("Drama、Romance");
+    await expect(page.getByLabel("平台")).toHaveValue("Windows");
+    await expect(page.getByLabel("官方时长(分钟)")).toHaveValue("3600");
     await page.getByRole("button", { name: "预览 AI 简介翻译" }).click();
     await expect(page.getByRole("group", { name: "AI 翻译预览" })).toContainText("已确认中文简介");
     await expect(page.getByLabel("中文简介")).toHaveValue("");
@@ -113,6 +119,9 @@ test.describe("VNDB、翻译配置与设备", () => {
       .last();
     await expect(card).toContainText("10/10");
     await expect(card).toContainText("VNDB 8.64/10");
+    await expect(card).toContainText("Drama");
+    await expect(card).toContainText("Windows");
+    await expect(card).toContainText("官方时长约 60 小时");
     // 中文/原文合并进一个 <details>，点 summary 展开；卡片容器取 last() 不一定包含它，按内容定位
     const intro = page.locator("details").filter({ hasText: "已确认中文简介" }).last();
     await intro.locator("summary").click();

@@ -10,6 +10,16 @@ const novel = {
   developers: [{ name: "Key" }],
   rating: 86.4,
   image: { url: "https://t.vndb.org/cv/12/123.jpg", sexual: 0, violence: 0 },
+  length_minutes: 3600,
+  platforms: ["win", "ps2", "win", "nds"],
+  tags: [
+    { id: "g1", name: "Drama", rating: 2.7, spoiler: 0, category: "cont" },
+    { id: "g2", name: "School", rating: 2.1, spoiler: 1, category: "cont" },
+    { id: "g3", name: "Weak tag", rating: 1.4, spoiler: 0, category: "cont" },
+    { id: "g4", name: "Spoiler tag", rating: 2.5, spoiler: 2, category: "cont" },
+    { id: "g5", name: "Engine", rating: 2.9, spoiler: 0, category: "tech" },
+    { id: "g6", name: "Romance", rating: 2.9, spoiler: 0, category: "cont" },
+  ],
 };
 const reply = (data: unknown) =>
   new Response(JSON.stringify(data), { headers: { "content-type": "application/json" } });
@@ -41,6 +51,9 @@ describe("VNDB metadata", () => {
       vndbRating: 8.64,
       descriptionOriginal: novel.description,
       released: "2004-04-28",
+      lengthMinutes: 3600,
+      tags: ["Romance", "Drama", "School"],
+      platforms: ["Windows", "PS2", "NDS"],
     });
     expect(result[0]).not.toHaveProperty("rating");
     expect(result[1]!.coverUrl).toBe("");

@@ -2,6 +2,13 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { upstreamJson } from "./upstream-json";
 
+const rawTag = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(120),
+  rating: z.number().nullish(),
+  spoiler: z.number().nullish(),
+  category: z.enum(["cont", "ero", "tech"]).nullish(),
+});
 const rawNovel = z.object({
   id: z.string().regex(/^v[1-9]\d*$/),
   title: z.string().min(1).max(1000),
@@ -12,6 +19,9 @@ const rawNovel = z.object({
   released: z.string().nullish(),
   developers: z.array(z.object({ name: z.string() })).default([]),
   rating: z.number().min(0).max(100).nullish(),
+  length_minutes: z.number().int().nonnegative().nullish(),
+  platforms: z.array(z.string()).default([]),
+  tags: z.array(rawTag).default([]),
   image: z.object({ url: z.string(), sexual: z.number(), violence: z.number() }).nullish(),
 });
 export interface VndbNovel {
@@ -23,8 +33,55 @@ export interface VndbNovel {
   coverUrl: string;
   vndbRating: number | null;
   descriptionOriginal: string;
+  lengthMinutes: number | null;
+  tags: string[];
+  platforms: string[];
   link: string;
 }
+
+/** 只保留有共识（抽样评分 ≥2）且不剧透的标签，内容/成人分类都收，技术标签不要 */
+const TAG_MIN_RATING = 2;
+const TAG_MAX = 10;
+function pickTags(tags: z.infer<typeof rawTag>[]) {
+  return tags
+    .filter(
+      (t) =>
+        (t.rating ?? 0) >= TAG_MIN_RATING &&
+        (t.spoiler ?? 0) <= 1 &&
+        (t.category ?? "cont") !== "tech",
+    )
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, TAG_MAX)
+    .map((t) => t.name);
+}
+
+const PLATFORM_LABEL: Record<string, string> = {
+  win: "Windows",
+  lin: "Linux",
+  mac: "macOS",
+  ios: "iOS",
+  and: "Android",
+  web: "Web",
+  nds: "NDS",
+  psp: "PSP",
+  ps1: "PS1",
+  ps2: "PS2",
+  ps3: "PS3",
+  ps4: "PS4",
+  ps5: "PS5",
+  psv: "PS Vita",
+  xb1: "Xbox One",
+  xbo: "Xbox",
+  xb3: "Xbox 360",
+  sfc: "SFC",
+  gba: "GBA",
+  dos: "DOS",
+  bdp: "蓝光播放机",
+};
+function pickPlatforms(platforms: string[]) {
+  return [...new Set(platforms)].map((p) => PLATFORM_LABEL[p] ?? p.toUpperCase()).slice(0, 6);
+}
+
 function normalize(raw: z.infer<typeof rawNovel>): VndbNovel {
   const image = raw.image;
   const chinese =
@@ -46,6 +103,9 @@ function normalize(raw: z.infer<typeof rawNovel>): VndbNovel {
         : "",
     // 原文逐字保留；前端按文本渲染，绝不注入 HTML。
     descriptionOriginal: raw.description ?? "",
+    lengthMinutes: raw.length_minutes ?? null,
+    tags: pickTags(raw.tags),
+    platforms: pickPlatforms(raw.platforms),
     link: `https://vndb.org/${raw.id}`,
   };
 }
@@ -89,7 +149,7 @@ export function createVndbClient(fetcher: typeof fetch = fetch, intervalMs = 160
             body: JSON.stringify({
               filters: /^v[1-9]\d*$/.test(q) ? ["id", "=", q] : ["search", "=", q],
               fields:
-                "title,titles{lang,title,official},description,released,developers.name,image{url,sexual,violence},rating",
+                "title,titles{lang,title,official},description,released,developers.name,image{url,sexual,violence},rating,length_minutes,platforms,tags{id,name,rating,spoiler,category}",
               results: 8,
             }),
           });

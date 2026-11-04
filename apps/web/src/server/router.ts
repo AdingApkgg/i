@@ -1,6 +1,7 @@
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
 import { apiTokenRouter } from "./routers/api-token";
 import { bangumiRouter } from "./routers/bangumi";
+import { bgmRouter } from "./routers/bgm";
 import { commentRouter } from "./routers/comment";
 import {
   albumsRouter,
@@ -27,6 +28,7 @@ import { vndbRouter } from "./routers/vndb";
 export const router = {
   apiToken: apiTokenRouter,
   bangumi: bangumiRouter,
+  bgm: bgmRouter,
   dailyRecord: dailyRecordRouter,
   health: healthRouter,
   blog: postRouter,
