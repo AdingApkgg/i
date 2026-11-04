@@ -89,7 +89,7 @@ type VndbRaw = {
 };
 async function searchVndb(title: string): Promise<VndbRaw[]> {
   const body = JSON.stringify({
-    filters: ["search", "=", title],
+    filters: /^v[1-9]\d*$/.test(title) ? ["id", "=", title] : ["search", "=", title],
     fields:
       "title,description,released,rating,length_minutes,image{url,sexual,violence},developers.name,platforms,tags{name,rating,spoiler,category}",
     results: 3,
@@ -136,6 +136,24 @@ function infoValues(raw: BgmRaw, key: string): string[] {
 const COVER_VNDB = /^https:\/\/t\.vndb\.org\/cv\/\d+\/\d+\.(?:jpg|png|webp)$/;
 const COVER_BGM =
   /^https:\/\/lain\.bgm\.tv\/pic\/cover\/[lm]\/[0-9a-f]{2}\/[0-9a-f]{2}\/\d+[^/]*\.(?:jpg|png|webp)$/;
+/** VNDB 平台代码 → 展示名（与 apps/web/src/server/vndb.ts 的 PLATFORM_LABEL 一致） */
+const PLATFORM_LABEL: Record<string, string> = {
+  win: "Windows",
+  lin: "Linux",
+  mac: "macOS",
+  ios: "iOS",
+  and: "Android",
+  web: "Web",
+  nds: "NDS",
+  psp: "PSP",
+  ps1: "PS1",
+  ps2: "PS2",
+  ps3: "PS3",
+  ps4: "PS4",
+  psv: "PSV",
+  swi: "Switch",
+  bdp: "BD Player",
+};
 const TAG_NOISE = new Set(["游戏", "PC", "日本", "Galgame"]);
 
 /** 一条候选抓成可写字段 */
@@ -163,7 +181,9 @@ async function resolve(source: "vndb" | "bgm", remoteId: string) {
         .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
         .slice(0, 10)
         .map((t) => t.name),
-      platforms: raw.platforms.slice(0, 6),
+      platforms: [...new Set(raw.platforms)]
+        .map((p) => PLATFORM_LABEL[p] ?? p.toUpperCase())
+        .slice(0, 6),
       link: `https://vndb.org/${raw.id}`,
       bgmId: null as number | null,
     };
@@ -188,44 +208,60 @@ async function resolve(source: "vndb" | "bgm", remoteId: string) {
   };
 }
 
+/** 搜索用的标题变体：原标题、去副标题的主体、主体去卷号（系列作靠主体才搜得到） */
+function queries(title: string) {
+  const base = title
+    .replace(/\s*[-–—]\s*[^-–—]+[-–—]\s*$/, "")
+    .replace(/\d+$/, "")
+    .trim();
+  return [...new Set([title, base, title.replace(/\d+$/, "").trim()].filter(Boolean))];
+}
+
 async function candidates(client: Client) {
   const { rows } = await client.query<{ id: string; title: string }>(
     'select id, title from "Vn" order by "createdAt"',
   );
   const out: { id: string; title: string; picks: Pick[] }[] = [];
   for (const row of rows) {
+    const seen = new Set<string>();
     const picks: Pick[] = [];
-    try {
-      for (const raw of await searchVndb(row.title)) {
-        picks.push({
-          source: "vndb",
-          remoteId: raw.id,
-          title: raw.title,
-          originalTitle: raw.title,
-          score: similarity(row.title, raw.title),
-        });
+    for (const query of queries(row.title)) {
+      try {
+        for (const raw of await searchVndb(query)) {
+          if (seen.has(`vndb:${raw.id}`)) continue;
+          seen.add(`vndb:${raw.id}`);
+          picks.push({
+            source: "vndb",
+            remoteId: raw.id,
+            title: raw.title,
+            originalTitle: raw.title,
+            score: similarity(row.title, raw.title),
+          });
+        }
+      } catch (e) {
+        console.error(`VNDB ${query}: ${(e as Error).message}`);
       }
-    } catch (e) {
-      console.error(`VNDB ${row.title}: ${(e as Error).message}`);
-    }
-    await delay(1500);
-    try {
-      for (const raw of await searchBgm(row.title)) {
-        const label = raw.name_cn || raw.name;
-        picks.push({
-          source: "bgm",
-          remoteId: String(raw.id),
-          title: label,
-          originalTitle: raw.name,
-          score: Math.max(similarity(row.title, raw.name), similarity(row.title, label)),
-        });
+      await delay(1500);
+      try {
+        for (const raw of await searchBgm(query)) {
+          const label = raw.name_cn || raw.name;
+          if (seen.has(`bgm:${raw.id}`)) continue;
+          seen.add(`bgm:${raw.id}`);
+          picks.push({
+            source: "bgm",
+            remoteId: String(raw.id),
+            title: label,
+            originalTitle: raw.name,
+            score: Math.max(similarity(row.title, raw.name), similarity(row.title, label)),
+          });
+        }
+      } catch (e) {
+        console.error(`BGM ${query}: ${(e as Error).message}`);
       }
-    } catch (e) {
-      console.error(`BGM ${row.title}: ${(e as Error).message}`);
+      await delay(1500);
     }
-    await delay(1500);
     picks.sort((a, b) => b.score - a.score);
-    out.push({ id: row.id, title: row.title, picks: picks.slice(0, 4) });
+    out.push({ id: row.id, title: row.title, picks: picks.slice(0, 6) });
     console.error(
       `${row.title} → ${picks[0]?.title ?? "无候选"} (${picks[0]?.score.toFixed(2) ?? "-"})`,
     );
@@ -243,43 +279,50 @@ async function applyMap(client: Client, file: string) {
   const chosen = list.filter((item) => item.match);
   console.log(`确认映射 ${chosen.length} / ${list.length} 条`);
   let changed = 0;
-  for (const item of chosen) {
-    const data = await resolve(item.match!.source, item.match!.remoteId);
-    if (!data) {
-      console.warn(`跳过 ${item.title}：远端条目取不到`);
-      continue;
+  await client.query("BEGIN");
+  try {
+    for (const item of chosen) {
+      const data = await resolve(item.match!.source, item.match!.remoteId);
+      if (!data) {
+        console.warn(`跳过 ${item.title}：远端条目取不到`);
+        continue;
+      }
+      const { rows } = await client.query<Record<string, unknown>>(
+        'select * from "Vn" where id = $1',
+        [item.id],
+      );
+      const current = rows[0];
+      if (!current) {
+        console.warn(`跳过 ${item.title}：库中已无该记录`);
+        continue;
+      }
+      const sets: string[] = [];
+      const values: unknown[] = [];
+      for (const [column, value] of Object.entries(data)) {
+        if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) continue;
+        const before = current[column];
+        const empty =
+          before == null || before === "" || (Array.isArray(before) && before.length === 0);
+        if (!FORCE && !empty) continue;
+        sets.push(`"${column}" = $${values.length + 2}`);
+        values.push(value);
+      }
+      const put = (column: string, value: unknown) => {
+        sets.push(`"${column}" = $${values.length + 2}`);
+        values.push(value);
+      };
+      if (sets.length === 0) continue;
+      put("updatedAt", new Date());
+      await client.query(`update "Vn" set ${sets.join(", ")} where id = $1`, [item.id, ...values]);
+      changed++;
+      console.log(`已更新 ${item.title}`);
+      await delay(1500);
     }
-    const { rows } = await client.query<Record<string, unknown>>(
-      'select * from "Vn" where id = $1',
-      [item.id],
-    );
-    const current = rows[0];
-    if (!current) {
-      console.warn(`跳过 ${item.title}：库中已无该记录`);
-      continue;
-    }
-    const sets: string[] = [];
-    const values: unknown[] = [];
-    for (const [column, value] of Object.entries(data)) {
-      if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) continue;
-      const before = current[column];
-      const empty =
-        before == null || before === "" || (Array.isArray(before) && before.length === 0);
-      if (!FORCE && !empty) continue;
-      sets.push(`"${column}" = $${values.length + 2}`);
-      values.push(value);
-    }
-    const put = (column: string, value: unknown) => {
-      sets.push(`"${column}" = $${values.length + 2}`);
-      values.push(value);
-    };
-    if (sets.length === 0) continue;
-    put("updatedAt", new Date());
-    await client.query(`update "Vn" set ${sets.join(", ")} where id = $1`, [item.id, ...values]);
-    changed++;
-    console.log(`已更新 ${item.title}`);
-    await delay(1500);
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
   }
+  await client.query("COMMIT");
   console.log(`写入 ${changed} 条`);
 }
 
