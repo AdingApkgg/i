@@ -1,4 +1,5 @@
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
+import { apiTokenRouter } from "./routers/api-token";
 import { bangumiRouter } from "./routers/bangumi";
 import { commentRouter } from "./routers/comment";
 import {
@@ -24,6 +25,7 @@ import { translationRouter } from "./routers/translation";
 import { vndbRouter } from "./routers/vndb";
 
 export const router = {
+  apiToken: apiTokenRouter,
   bangumi: bangumiRouter,
   dailyRecord: dailyRecordRouter,
   health: healthRouter,

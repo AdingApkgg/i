@@ -7,7 +7,7 @@ import type { RichDoc } from "@/lib/content/types";
 import { assertValidDoc } from "@/lib/content/validate.server";
 import { isAdminRole } from "@/lib/roles";
 import { notFound, stripDefaults, withDbErrors } from "../crud";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { adminProcedure, publicProcedure, writeProcedure } from "../orpc";
 
 const upsert = z.object({
   slug: z
@@ -74,7 +74,7 @@ export const postRouter = {
       return row;
     }),
 
-  create: adminProcedure.input(upsert).handler(async ({ context, input }) => {
+  create: writeProcedure.input(upsert).handler(async ({ context, input }) => {
     const [row] = await withDbErrors(() =>
       context.db
         .insert(post)
@@ -89,7 +89,7 @@ export const postRouter = {
 
   // stripDefaults：后台编辑表单不带 tags，不能让 .default([]) 把标签清空；
   // 没带 status 时也不能被打回 draft
-  update: adminProcedure
+  update: writeProcedure
     .input(stripDefaults(upsert).partial().extend({ id: z.string() }))
     .handler(async ({ context, input }) => {
       const { id, ...data } = input;
@@ -110,7 +110,7 @@ export const postRouter = {
       return row ?? notFound();
     }),
 
-  delete: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
+  delete: writeProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {
     const [row] = await context.db.delete(post).where(eq(post.id, input.id)).returning();
     return row ?? notFound();
   }),

@@ -35,15 +35,22 @@ type Role = "user" | "admin" | "owner";
 /** 构造 oRPC context：role 为空表示未登录。 */
 export function makeContext(
   db: Context["db"],
-  opts: { role?: Role; headers?: Record<string, string>; email?: string } = {},
+  opts: {
+    role?: Role;
+    headers?: Record<string, string>;
+    email?: string;
+    /** 模拟 Bearer token 的权限级别 */
+    token?: "read" | "write";
+  } = {},
 ): Context {
   const user = opts.role
     ? { id: "u1", role: opts.role, email: opts.email ?? "me@x.cc", image: null, name: "me" }
     : null;
   return {
     db,
-    session: user ? ({ user } as unknown as Context["session"]) : null,
+    session: user && !opts.token ? ({ user } as unknown as Context["session"]) : null,
     user: user as unknown as Context["user"],
+    token: opts.token ? { id: "t1", scope: opts.token } : null,
     headers: new Headers(opts.headers),
   };
 }

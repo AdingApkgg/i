@@ -8,6 +8,7 @@ import {
   Film,
   Gamepad2,
   Images,
+  KeyRound,
   Laptop,
   LayoutDashboard,
   Library,
@@ -172,6 +173,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
             ),
           )}
           {item("/dash/pages", "整页", pathname.startsWith("/dash/pages"), FileText)}
+          {item("/dash/tokens", "AI 接入", pathname === "/dash/tokens", KeyRound)}
           {item("/dash/settings", "设置", pathname === "/dash/settings", Settings)}
         </nav>
         <div className="mt-6 border-t border-border px-3 pt-4">

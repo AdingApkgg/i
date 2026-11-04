@@ -481,12 +481,46 @@ export const maimaiRecord = pgTable(
   ],
 );
 
+// ==================== API token（给 AI / 脚本用的 Bearer 凭据） ====================
+
+/**
+ * 只存 sha256(token)，明文只在创建响应里出现一次。
+ * scope：read 只能读，write 可改。prefix 是明文前 8 位，列表里用来对上号。
+ */
+export const apiToken = pgTable(
+  "ApiToken",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(),
+    tokenHash: text("tokenHash").notNull(),
+    scope: text("scope").notNull().default("read"), // "read" | "write"
+    lastUsedAt: ts("lastUsedAt"),
+    expiresAt: ts("expiresAt"),
+    revokedAt: ts("revokedAt"),
+    userId: text("userId").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("ApiToken_tokenHash_key").on(t.tokenHash),
+    index("ApiToken_userId_idx").on(t.userId),
+    foreignKey({ name: "ApiToken_userId_fkey", columns: [t.userId], foreignColumns: [user.id] })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+  ],
+);
+
 // ==================== relations（db.query 的 with 用） ====================
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
   comments: many(comment),
+  apiTokens: many(apiToken),
+}));
+export const apiTokenRelations = relations(apiToken, ({ one }) => ({
+  user: one(user, { fields: [apiToken.userId], references: [user.id] }),
 }));
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),

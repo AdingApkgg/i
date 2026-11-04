@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { RichDoc } from "@/lib/content/types";
 import { assertValidDoc } from "@/lib/content/validate.server";
 import { notFound } from "../crud";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { adminProcedure, publicProcedure, writeProcedure } from "../orpc";
 
 const richDoc = z.custom<RichDoc>(
   (v) => {
@@ -35,7 +35,7 @@ export const pageRouter = {
   ),
 
   /** 后台：保存整页正文 */
-  update: adminProcedure
+  update: writeProcedure
     .input(z.object({ id: z.string(), title: z.string().min(1).optional(), content: richDoc }))
     .handler(async ({ context, input }) => {
       const { id, ...data } = input;

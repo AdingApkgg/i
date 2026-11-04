@@ -2,7 +2,7 @@ import { album, photo } from "@i/db";
 import { and, count, eq, getTableColumns, inArray, isNull, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { notFound, withDbErrors } from "../crud";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { publicProcedure, writeProcedure } from "../orpc";
 import { after, cursorValues, type OrderSpec, orderBy } from "../pagination";
 import { releaseStoredFiles } from "../stored-files";
 
@@ -106,12 +106,12 @@ export const galleryRouter = {
       return { items, nextCursor: hasMore && last ? last.id : null };
     }),
 
-  create: adminProcedure.input(photoCreateSchema).handler(async ({ context, input }) => {
+  create: writeProcedure.input(photoCreateSchema).handler(async ({ context, input }) => {
     const [row] = await withDbErrors(() => context.db.insert(photo).values(input).returning());
     return row!;
   }),
 
-  update: adminProcedure.input(photoUpdateSchema).handler(async ({ context, input }) => {
+  update: writeProcedure.input(photoUpdateSchema).handler(async ({ context, input }) => {
     const { id, ...data } = input;
     const [before] = await context.db
       .select({ imageUrl: photo.imageUrl, thumbUrl: photo.thumbUrl })
@@ -131,7 +131,7 @@ export const galleryRouter = {
     return row;
   }),
 
-  delete: adminProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().min(1) }))
     .handler(async ({ context, input }) => {
       const [row] = await context.db.delete(photo).where(eq(photo.id, input.id)).returning();
@@ -141,7 +141,7 @@ export const galleryRouter = {
     }),
 
   /** 批量移动照片到某图集（albumId null = 移出到未分类） */
-  movePhotos: adminProcedure
+  movePhotos: writeProcedure
     .input(
       z.object({ ids: z.array(z.string().min(1)).min(1), albumId: z.string().min(1).nullable() }),
     )
@@ -157,7 +157,7 @@ export const galleryRouter = {
     }),
 
   /** 批量删除照片 */
-  deletePhotos: adminProcedure
+  deletePhotos: writeProcedure
     .input(z.object({ ids: z.array(z.string().min(1)).min(1) }))
     .handler(async ({ context, input }) => {
       const rows = await context.db

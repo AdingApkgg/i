@@ -3,7 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { and, asc, eq, gte, lt, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { dailyDateSchema, dailyYearSchema, todayInShanghai } from "@/lib/daily-record";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { publicProcedure, writeProcedure } from "../orpc";
 
 const dayInput = z.object({ date: dailyDateSchema });
 function validPastDay(date: string) {
@@ -26,7 +26,7 @@ export const dailyRecordRouter = {
         )
         .orderBy(asc(masturbationDay.date)),
     })),
-  save: adminProcedure
+  save: writeProcedure
     .input(dayInput.extend({ count: z.number().int().min(0).max(1000) }))
     .handler(async ({ context, input }) => {
       validPastDay(input.date);
@@ -39,7 +39,7 @@ export const dailyRecordRouter = {
           .onConflictDoUpdate({ target: masturbationDay.date, set: { count: input.count } });
       return input;
     }),
-  increment: adminProcedure.input(dayInput).handler(async ({ context, input }) => {
+  increment: writeProcedure.input(dayInput).handler(async ({ context, input }) => {
     validPastDay(input.date);
     const [row] = await context.db
       .insert(masturbationDay)

@@ -4,7 +4,7 @@ import { asc, desc, eq, ilike, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { syncMaimai } from "@/lib/maimai";
 import { maimaiConfigSchema } from "@/lib/schemas";
-import { adminProcedure, publicProcedure } from "../orpc";
+import { adminProcedure, publicProcedure, writeProcedure } from "../orpc";
 import { escapeLike } from "../sql";
 
 /** LIKE 通配符转义（Prisma 的 contains 会自动转义，这里手动保持同样语义）。 */
@@ -26,7 +26,7 @@ export const maimaiRouter = {
     );
   }),
 
-  saveConfig: adminProcedure.input(maimaiConfigSchema).handler(async ({ context, input }) => {
+  saveConfig: writeProcedure.input(maimaiConfigSchema).handler(async ({ context, input }) => {
     const [row] = await context.db
       .insert(maimaiConfig)
       .values({ id: "current", ...input })
@@ -35,7 +35,7 @@ export const maimaiRouter = {
     return row!;
   }),
 
-  sync: adminProcedure.handler(async () => {
+  sync: writeProcedure.handler(async () => {
     try {
       return await syncMaimai();
     } catch (e) {
