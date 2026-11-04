@@ -15,6 +15,19 @@ const sortOrder = z
   .nullish()
   .transform((v) => v ?? 0);
 
+/** 后台用逗号分隔的输入框编辑数组字段；空串清空，最多 12 项 */
+const list = z
+  .string()
+  .max(800)
+  .optional()
+  .transform((v) =>
+    (v ?? "")
+      .split(/[,，、\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 12),
+  );
+
 const bySort = (t: { sortOrder: PgColumn; createdAt: PgColumn }): OrderSpec => [
   [t.sortOrder, "asc"],
   [t.createdAt, "desc"],
@@ -71,6 +84,13 @@ export const vnRouter = crudRouter({
     vndbRating: z.number().min(0).max(10).nullish(),
     descriptionOriginal: z.string().max(20000).optional(),
     descriptionZh: z.string().max(30000).optional(),
+    bgmId: z.preprocess((v) => (v === "" ? null : v), z.number().int().positive().nullish()),
+    tags: list,
+    platforms: list,
+    lengthMinutes: z.preprocess(
+      (v) => (v === "" ? null : v),
+      z.number().int().min(0).max(300000).nullish(),
+    ),
     status: z.enum(["在玩", "通关", "想玩", "搁置"]).default("在玩"),
     rating,
     playHours: z.number().int().nullish(),

@@ -22,6 +22,7 @@ export function rowToForm(fields: FieldSpec[], row: Record<string, unknown>): Fo
   return Object.fromEntries(
     fields.map((f) => {
       const raw = row[f.name];
+      if (Array.isArray(raw)) return [f.name, raw.join("、")];
       return [f.name, f.type === "boolean" ? Boolean(raw) : raw == null ? "" : String(raw)];
     }),
   );

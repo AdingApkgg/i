@@ -234,6 +234,16 @@ export const vn = pgTable(
     vndbRating: doublePrecision("vndbRating"),
     descriptionOriginal: text("descriptionOriginal"),
     descriptionZh: text("descriptionZh"),
+    bgmId: integer("bgmId"),
+    // 标签 / 平台为可空数组，默认值放应用层（原因见 Post.tags）
+    tags: text("tags")
+      .array()
+      .$defaultFn(() => []),
+    platforms: text("platforms")
+      .array()
+      .$defaultFn(() => []),
+    // VNDB length_minutes：官方平均通关分钟数，仅作参考
+    lengthMinutes: integer("lengthMinutes"),
     status: text("status").notNull().default("在玩"), // 在玩 | 通关 | 想玩 | 搁置
     rating: integer("rating"),
     playHours: integer("playHours"),
@@ -247,6 +257,7 @@ export const vn = pgTable(
   (t) => [
     index("Vn_status_createdAt_idx").on(t.status, t.createdAt),
     uniqueIndex("Vn_vndbId_key").on(t.vndbId),
+    uniqueIndex("Vn_bgmId_key").on(t.bgmId),
   ],
 );
 

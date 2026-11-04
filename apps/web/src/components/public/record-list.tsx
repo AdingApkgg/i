@@ -3,6 +3,8 @@
  * 数据大多是「标题 + 状态」，卡片式会把空白放大，所以走编号索引行：
  * 序号、可选封面、标题与徽记一行，其余元信息小字，长文本折叠。
  * 有 href 时整行可点（外链），行高固定不随内容跳。
+ * columns 时改成两列卡片，行宽短一截不至于空得发慌；没有封面就用首字占位块，
+ * 让有封面 / 无封面的行左缘对齐，不会参差。
  */
 import type { ReactNode } from "react";
 import { thumbProps } from "@/lib/thumb";
@@ -33,37 +35,86 @@ export function RecordChip({
 export interface RecordRow {
   id: string;
   title: string;
+  /** 没有封面时占位块里的一个字 */
+  initial?: string;
   coverUrl?: string | null;
   chips?: ReactNode;
   rating?: number | null;
+  /** 标签 / 平台等短词，排在标题下方 */
+  tags?: ReactNode;
   meta?: ReactNode;
   facts?: ReactNode;
   body?: ReactNode;
   links?: ReactNode;
 }
 
-export function RecordList({ items, label }: { items: RecordRow[]; label: string }) {
+export function RecordList({
+  items,
+  label,
+  columns = false,
+}: {
+  items: RecordRow[];
+  label: string;
+  columns?: boolean;
+}) {
   return (
-    <ol aria-label={label} className="overflow-hidden rounded-xl border border-border bg-card/50">
+    <ol
+      aria-label={label}
+      className={
+        columns
+          ? "grid gap-3 sm:grid-cols-2"
+          : "overflow-hidden rounded-xl border border-border bg-card/50"
+      }
+    >
       {items.map((item, index) => (
-        <li key={item.id} className="group border-b border-border/60 last:border-b-0">
-          <article className="flex gap-3 px-4 py-4 transition-colors group-hover:bg-soft/50 sm:gap-4 sm:px-5">
+        <li
+          key={item.id}
+          className={
+            columns
+              ? "group relative rounded-xl border border-border/70 bg-card/40 transition-colors hover:border-primary/35"
+              : "group border-b border-border/60 last:border-b-0"
+          }
+        >
+          <span
+            aria-hidden="true"
+            className={`absolute top-3 right-3 font-serif text-xs italic tabular-nums transition-colors group-hover:text-primary ${columns ? "text-muted-foreground/60" : "hidden"}`}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <article
+            className={`relative flex gap-3 px-4 py-4 transition-colors group-hover:bg-soft/50 sm:gap-4 ${columns ? "" : "sm:px-5"}`}
+          >
+            {!columns && (
+              <span
+                aria-hidden="true"
+                className="w-6 shrink-0 pt-1 font-serif text-sm italic tabular-nums text-muted-foreground transition-colors group-hover:text-primary"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+            )}
             <span
               aria-hidden="true"
-              className="w-6 shrink-0 pt-1 font-serif text-sm italic tabular-nums text-muted-foreground transition-colors group-hover:text-primary"
-            >
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            {item.coverUrl && (
+              className="absolute inset-y-3 left-0 w-px bg-primary/0 transition-colors group-hover:bg-primary/45"
+            />
+            {item.coverUrl ? (
               <img
-                {...thumbProps(item.coverUrl, [320, 640], "56px")}
+                {...thumbProps(item.coverUrl, [320, 640], "68px")}
                 alt=""
                 loading="lazy"
-                className="h-[74px] w-[56px] shrink-0 rounded-md object-cover ring-1 ring-border/60"
+                className="h-[90px] w-[68px] shrink-0 rounded-md object-cover ring-1 ring-border/60"
               />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex h-[90px] w-[68px] shrink-0 items-center justify-center rounded-md border border-dashed border-border/80 bg-soft/40 font-serif text-2xl italic text-primary/30"
+              >
+                {(item.initial ?? item.title).slice(0, 1)}
+              </span>
             )}
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
+              <div
+                className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 ${columns ? "pr-6" : ""}`}
+              >
                 <h2 className="min-w-0 text-[15px] leading-snug font-semibold break-words">
                   {item.title}
                 </h2>
@@ -75,6 +126,7 @@ export function RecordList({ items, label }: { items: RecordRow[]; label: string
                   </span>
                 )}
               </div>
+              {item.tags && <div className="flex flex-wrap gap-1">{item.tags}</div>}
               {item.meta && (
                 <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
                   {item.meta}
