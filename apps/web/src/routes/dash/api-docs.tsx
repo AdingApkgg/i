@@ -6,7 +6,6 @@ import { Button } from "@i/ui";
 import { BookOpen, LoaderCircle } from "lucide-react";
 import { type ComponentType, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { useMounted } from "@/components/dash/chart";
 
 type ScalarProps = { configuration: Record<string, unknown> };
 
@@ -46,10 +45,18 @@ const customCss = `
   .dash-api-docs .scalar-app .scalar-reference a { text-underline-offset: 2px; }
 `;
 
-/** 跟随系统深浅色：挂载前一律按浅色，避免 SSR 与首帧对不上 */
+/** 系统偏好是否为深色；SSR 没有 window，先按浅色 */
+function systemPrefersDark() {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+/**
+ * Scalar 的 darkMode 只收布尔值，只能由 JS 从媒体查询翻译过去。
+ * 这里不做 mounted 门控：Scalar 本身要等 useEffect 才动态引入，客户端首帧已经没有 SSR 内容，
+ * 惰性初始值就能拿到真实偏好，避免「先浅色闪一下再切黑」。
+ */
 function useDarkScheme() {
-  const mounted = useMounted();
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(systemPrefersDark);
   useEffect(() => {
     const query = window.matchMedia("(prefers-color-scheme: dark)");
     const sync = () => setDark(query.matches);
@@ -57,7 +64,7 @@ function useDarkScheme() {
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
-  return mounted && dark;
+  return dark;
 }
 
 export default function ApiDocsPage() {
