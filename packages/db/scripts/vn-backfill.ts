@@ -167,13 +167,9 @@ async function resolve(source: "vndb" | "bgm", remoteId: string) {
       brand: raw.developers.map((d) => d.name).join(" / "),
       released: raw.released ?? "",
       vndbRating: raw.rating == null ? null : Math.round(raw.rating * 10) / 100,
-      coverUrl:
-        raw.image &&
-        raw.image.sexual < 0.5 &&
-        raw.image.violence < 0.5 &&
-        COVER_VNDB.test(raw.image.url)
-          ? raw.image.url
-          : "",
+      // 封面只校验来源与格式：露点/暴力值高的作品（万华镜等）会被阈值整条过滤掉，
+      // 列表视图缩小显示时并不介意，宁可有图也不要落回首字占位块
+      coverUrl: raw.image && COVER_VNDB.test(raw.image.url) ? raw.image.url : "",
       descriptionOriginal: raw.description ?? "",
       lengthMinutes: raw.length_minutes,
       tags: raw.tags
