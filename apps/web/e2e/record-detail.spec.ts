@@ -104,7 +104,8 @@ test.describe("二级详情页", () => {
     await related.click();
     await expect(page.getByRole("heading", { level: 1, name: siblingTitle })).toBeVisible();
     // 返程：回到列表页
-    await page.getByRole("link", { name: "视觉小说" }).click();
+    // 详情页自己的返回链接（导航里也有同名项，靠 article 作用域区分）
+    await page.getByRole("article").getByRole("link", { name: "视觉小说" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "视觉小说" })).toBeVisible();
   });
 
@@ -122,7 +123,7 @@ test.describe("二级详情页", () => {
     await page.goto("/touhou");
     await page.getByRole("link", { name: `${touhouTitle} 详情` }).click();
     await expect(page.getByRole("heading", { level: 1, name: touhouTitle })).toBeVisible();
-    await expect(page.getByText(/TH99/)).toBeVisible();
+    await expect(page.getByText(/TH99/).first()).toBeVisible();
     await expect(page.getByText(touhouOriginal).first()).toBeVisible();
     await expect(page.getByText("2026.02.03")).toBeVisible();
     await expect(page.getByText(noteText).first()).toBeVisible();
