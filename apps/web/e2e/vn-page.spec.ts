@@ -9,6 +9,11 @@ const stamp = Date.now();
 const series = `e2e万华镜${stamp}`;
 const titles = [`${series} -第一话-`, `${series} -第二话-`, `${series} -第三话-`];
 const single = `e2e孤雄${stamp}`;
+const longText = `e2e长文${stamp}`;
+/** 英文原文含整段无空格的中文简介与带下划线的长 URL，两者都会把 min-content 撑大 */
+const longOriginal = `Summer Pockets is set on an isolated, rural island.
+See https://en.wikipedia.org/wiki/Summer_Pockets_visible_very_long_token for details.`;
+const longZh = `《夏季口袋》的背景设定在一个偏僻、农村而宁静的岛屿上，这个岛屿位于瀬戸内海，人口稀少，只有寥寥几户人家。`;
 const created: string[] = [];
 
 test.describe("视觉小说页排版", () => {
@@ -35,6 +40,12 @@ test.describe("视觉小说页排版", () => {
     await make({ title: titles[1], status: "搁置", rating: 7 });
     await make({ title: titles[2], status: "在玩", lengthMinutes: 1200 });
     await make({ title: single, status: "通关", rating: 8, platforms: "Windows" });
+    await make({
+      title: longText,
+      status: "在玩",
+      descriptionOriginal: longOriginal,
+      descriptionZh: longZh,
+    });
     await api.dispose();
   });
 
@@ -89,5 +100,18 @@ test.describe("视觉小说页排版", () => {
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       ),
     ).toBe(true);
+  });
+
+  test("长简介与长 URL 不撑破窄屏", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/vn");
+    const row = page.locator("li").filter({ hasText: longText }).first();
+    await expect(row).toBeVisible();
+    await row.locator("summary").click();
+    await expect(row).toContainText("Summer_Pockets_visible_very_long_token");
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 });
