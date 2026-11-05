@@ -2,11 +2,12 @@
  * 记录型名单（视觉小说 / 东方等字段稀疏的收藏页）。
  * 数据大多是「标题 + 状态」，卡片式会把空白放大，所以走编号索引行：
  * 序号、可选封面、标题与徽记一行，其余元信息小字，长文本折叠。
- * 有 href 时整行可点（外链），行高固定不随内容跳。
+ * 标题带 to 时指向站内详情页，外链（VNDB 等）仍走新标签页，行高固定不随内容跳。
  * columns 时改成两列卡片，行宽短一截不至于空得发慌；没有封面就用首字占位块，
  * 让有封面 / 无封面的行左缘对齐，不会参差。
  */
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { thumbProps } from "@/lib/thumb";
 
 const TONE: Record<string, string> = {
@@ -35,6 +36,8 @@ export function RecordChip({
 export interface RecordRow {
   id: string;
   title: string;
+  /** 站内详情页地址；给了就把标题做成链接 */
+  to?: string;
   /** 没有封面时占位块里的一个字 */
   initial?: string;
   coverUrl?: string | null;
@@ -116,7 +119,17 @@ export function RecordList({
                 className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 ${columns ? "pr-6" : ""}`}
               >
                 <h2 className="min-w-0 text-[15px] leading-snug font-semibold wrap-anywhere">
-                  {item.title}
+                  {item.to ? (
+                    <Link
+                      to={item.to}
+                      prefetch="intent"
+                      className="transition-colors hover:text-primary"
+                    >
+                      {item.title}
+                    </Link>
+                  ) : (
+                    item.title
+                  )}
                 </h2>
                 {item.chips}
                 {item.rating != null && (

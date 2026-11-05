@@ -11,6 +11,7 @@ import { PageTitle } from "@/components/public/site-header";
 import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
+import { hoursOf, STATUS_TONE, seriesOf } from "@/lib/vn";
 import type { Route } from "./+types/vn";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -21,20 +22,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export const meta: Route.MetaFunction = (args) => seo(args, { title: "视觉小说", path: "/vn" });
 
-const STATUS_TONE: Record<string, string> = {
-  在玩: "sky",
-  通关: "primary",
-  搁置: "amber",
-};
-
 /** 统计条上的状态顺序：先亮着在读的，再通关，最后搁置 */
 const STATUS_ORDER = ["在玩", "通关", "搁置"] as const;
-
-/** 系列名：「美少女万华镜 -…-」「末世孤雄1」都收敛成系列词，两组以上才当系列 */
-function seriesOf(title: string) {
-  const base = title.split(/\s*[-–—]\s*/)[0] ?? title;
-  return base.replace(/[\s0-9０-９]+$/u, "").trim() || title;
-}
 
 /** 平均分保留一位，没有评分就不显示 */
 function avgOf(list: Vn[]) {
@@ -51,6 +40,7 @@ function toRow(t: Vn): RecordRow {
   return {
     id: t.id,
     title: t.title,
+    to: `/vn/${t.id}`,
     coverUrl: t.coverUrl,
     chips: (
       <>
@@ -74,9 +64,7 @@ function toRow(t: Vn): RecordRow {
       <>
         {t.released && <span>发售 {t.released}</span>}
         {t.playHours != null && <span>游玩 {t.playHours} 小时</span>}
-        {t.lengthMinutes != null && (
-          <span>官方时长约 {Math.round(t.lengthMinutes / 6) / 10} 小时</span>
-        )}
+        {t.lengthMinutes != null && <span>官方时长约 {hoursOf(t.lengthMinutes)} 小时</span>}
         {platforms.map((p) => (
           <span key={p}>{p}</span>
         ))}
@@ -215,7 +203,7 @@ export default function VnPage({ loaderData }: Route.ComponentProps) {
           )}
           <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
             <ExternalLink className="size-3" aria-hidden="true" />
-            VNDB 与相关链接会在新标签页打开
+            点标题进详情；VNDB 与相关链接会在新标签页打开
           </p>
         </>
       )}

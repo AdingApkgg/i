@@ -3,7 +3,7 @@
  * 内容在库里，每次请求现查；绝对地址取运行时的 SITE_URL。
  */
 import { DOMAINS, siteConfig } from "@i/config";
-import { album, db, post } from "@i/db";
+import { album, db, post, touhou, vn } from "@i/db";
 import { desc, eq } from "drizzle-orm";
 import { absUrl } from "@/lib/site-url";
 import { CACHE } from "./cache";
@@ -109,14 +109,18 @@ interface SitemapEntry {
 export async function sitemapResponse(): Promise<Response> {
   let posts: { slug: string; updatedAt: Date }[];
   let albums: { name: string; updatedAt: Date }[];
+  let vns: { id: string; updatedAt: Date }[];
+  let touhous: { id: string; updatedAt: Date }[];
   try {
-    [posts, albums] = await Promise.all([
+    [posts, albums, vns, touhous] = await Promise.all([
       db
         .select({ slug: post.slug, updatedAt: post.updatedAt })
         .from(post)
         .where(eq(post.status, "published"))
         .orderBy(desc(post.publishedAt)),
       db.select({ name: album.name, updatedAt: album.updatedAt }).from(album),
+      db.select({ id: vn.id, updatedAt: vn.updatedAt }).from(vn),
+      db.select({ id: touhou.id, updatedAt: touhou.updatedAt }).from(touhou),
     ]);
   } catch (err) {
     return unavailable(err);
@@ -138,6 +142,19 @@ export async function sitemapResponse(): Promise<Response> {
     ...albums.map((a) => ({
       url: absUrl(`/gallery/${encodeURIComponent(a.name)}`),
       lastModified: a.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
+    // 收藏域的二级详情页：内容随记录更新，按 monthly 收录
+    ...vns.map((row) => ({
+      url: absUrl(`/vn/${row.id}`),
+      lastModified: row.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
+    ...touhous.map((row) => ({
+      url: absUrl(`/touhou/${row.id}`),
+      lastModified: row.updatedAt,
       changeFrequency: "monthly" as const,
       priority: 0.5,
     })),
