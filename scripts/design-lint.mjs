@@ -77,8 +77,8 @@ function checkTokens(globals) {
   const primitiveCss = readFileSync(join(TOKENS, "primitive.css"), "utf8");
   const primitives = [...primitiveCss.matchAll(/(--palette-[a-z]+-\d+)\s*:/g)].map((m) => m[1]);
   if (!primitives.length) fail("tokens", "primitive.css 没有任何色阶");
-  if (!/@import "\.\/tokens\/index\.css";/.test(globals))
-    fail("tokens", "globals.css 没有引入 tokens/index.css");
+  if (!/@import "@i\/ui\/tokens\/index\.css";/.test(globals))
+    fail("tokens", "globals.css 没有引入 @i/ui/tokens/index.css");
   if (
     !globals.includes(":root:has(.sao-site)") &&
     !readFileSync(themeFiles[1], "utf8").includes(":root:has(.sao-site)")

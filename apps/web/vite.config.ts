@@ -15,7 +15,11 @@ export default defineConfig({
   // 免得镜像 node_modules 少了新依赖就启动失败
   ssr: { noExternal: [/^recharts/] },
   resolve: {
-    alias: { "@/": fileURLToPath(new URL("./src/", import.meta.url)) },
+    alias: {
+      "@/": fileURLToPath(new URL("./src/", import.meta.url)),
+      // tokens 住在共享包里：CSS 的 @import 不支持 exports 映射，这里显式指过去
+      "@i/ui/tokens/": fileURLToPath(new URL("../../packages/ui/src/tokens/", import.meta.url)),
+    },
   },
   server: { port: 3000 },
 });

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./tokens/index.css";
+@import "@i/ui/tokens/index.css";
 @import "./asuna.css";
 
 /* Scan the app + the shared ui package for class names. */
