@@ -97,19 +97,19 @@ function toRow(t: Vn): RecordRow {
             简介
           </summary>
           {t.descriptionZh && (
-            <p className="mt-2 leading-relaxed break-words whitespace-pre-wrap">
+            <p className="mt-2 leading-relaxed wrap-anywhere whitespace-pre-wrap">
               {t.descriptionZh}
             </p>
           )}
           {t.descriptionOriginal && (
-            <p className="mt-2 leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
+            <p className="mt-2 leading-relaxed wrap-anywhere whitespace-pre-wrap text-muted-foreground">
               {t.descriptionOriginal}
             </p>
           )}
         </details>
       ) : undefined,
     links: t.note ? (
-      <span className="block border-l-2 border-primary/40 pl-3 text-sm leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">
+      <span className="block border-l-2 border-primary/40 pl-3 text-sm leading-relaxed wrap-anywhere whitespace-pre-wrap text-muted-foreground">
         {t.note}
       </span>
     ) : undefined,
@@ -133,7 +133,7 @@ function SectionHead({
       <span className="font-mono text-[10px] tracking-[0.22em] text-primary/55 uppercase tabular-nums">
         {String(index).padStart(2, "0")}
       </span>
-      <h2 className="text-sm leading-snug font-semibold break-words">{title}</h2>
+      <h2 className="text-sm leading-snug font-semibold wrap-anywhere">{title}</h2>
       <span className="text-xs text-muted-foreground tabular-nums">{count} 部</span>
       {avg && (
         <span className="ml-auto font-serif text-xs text-muted-foreground italic tabular-nums">

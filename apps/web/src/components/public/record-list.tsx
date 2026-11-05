@@ -62,7 +62,7 @@ export function RecordList({
       aria-label={label}
       className={
         columns
-          ? "grid gap-3 sm:grid-cols-2"
+          ? "grid grid-cols-1 gap-3 sm:grid-cols-2"
           : "overflow-hidden rounded-xl border border-border bg-card/50"
       }
     >
@@ -71,7 +71,7 @@ export function RecordList({
           key={item.id}
           className={
             columns
-              ? "group relative rounded-xl border border-border/70 bg-card/40 transition-colors hover:border-primary/35"
+              ? "group relative min-w-0 rounded-xl border border-border/70 bg-card/40 transition-colors hover:border-primary/35"
               : "group border-b border-border/60 last:border-b-0"
           }
         >
@@ -115,7 +115,7 @@ export function RecordList({
               <div
                 className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 ${columns ? "pr-6" : ""}`}
               >
-                <h2 className="min-w-0 text-[15px] leading-snug font-semibold break-words">
+                <h2 className="min-w-0 text-[15px] leading-snug font-semibold wrap-anywhere">
                   {item.title}
                 </h2>
                 {item.chips}
