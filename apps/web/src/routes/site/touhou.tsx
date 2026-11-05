@@ -1,5 +1,6 @@
 import { Card } from "@i/ui";
-import { Star } from "lucide-react";
+import { ExternalLink, Star } from "lucide-react";
+import { Link } from "react-router";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
 import { PageTitle } from "@/components/public/site-header";
@@ -7,6 +8,7 @@ import { degradeTo } from "@/lib/degrade.server";
 import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import { thumbProps } from "@/lib/thumb";
+import { categoryLabel, showDate } from "@/lib/touhou";
 import type { Route } from "./+types/touhou";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -16,20 +18,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = (args) => seo(args, { title: "东方", path: "/touhou" });
-
-/** 后台存的是枚举原值，前台说人话 */
-const CATEGORY_LABEL: Record<string, string> = {
-  game: "游戏",
-  music: "音乐",
-  print: "出版物",
-  doujin: "同人",
-};
-
-/** 2002-08-11 → 2002.08.11；只有年份时原样 */
-function showDate(value: string | null) {
-  if (!value) return null;
-  return value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$1.$2.$3");
-}
 
 export default function TouhouPage({ loaderData }: Route.ComponentProps) {
   const { items } = loaderData;
@@ -98,7 +86,7 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                       {item.status && <Badge>{item.status}</Badge>}
                       {item.category && item.category !== "game" && (
-                        <Badge>{CATEGORY_LABEL[item.category] ?? item.category}</Badge>
+                        <Badge>{categoryLabel(item.category)}</Badge>
                       )}
                       {showDate(item.releasedAt) && (
                         <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -122,19 +110,27 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
               );
               return (
                 <StaggerItem key={item.id} hover>
-                  {item.link ? (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${item.title} 相关链接`}
-                      className="block h-full rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
+                  <div className="flex h-full flex-col gap-1.5">
+                    <Link
+                      to={`/touhou/${item.id}`}
+                      prefetch="intent"
+                      aria-label={`${item.title} 详情`}
+                      className="block rounded-xl outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary"
                     >
                       {card}
-                    </a>
-                  ) : (
-                    card
-                  )}
+                    </Link>
+                    {item.link && (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        <ExternalLink className="size-3" aria-hidden="true" />
+                        相关链接
+                      </a>
+                    )}
+                  </div>
                 </StaggerItem>
               );
             })}
