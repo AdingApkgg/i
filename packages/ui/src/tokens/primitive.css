@@ -1,0 +1,74 @@
+/* 原始层：只有色值，没有用途；主题文件通过 var() 引用，不出现任何字面量。
+ * step 数字只表示明度顺序（越小越亮），值是当前线上值原样搬运；
+ * 第 2 步再收敛成真正的刻度，届时才允许改值。*/
+:root {
+  /* plum：月白粉：默认前台明亮主题 */
+  --palette-plum-250: oklch(1 0.003 350);
+  --palette-plum-300: oklch(0.995 0.006 350);
+  --palette-plum-350: oklch(0.99 0.005 350);
+  --palette-plum-400: oklch(0.97 0.012 345);
+  --palette-plum-450: oklch(0.96 0.03 350);
+  --palette-plum-500: oklch(0.96 0.02 345);
+  --palette-plum-550: oklch(0.94 0.035 345);
+  --palette-plum-600: oklch(0.92 0.015 345);
+  --palette-plum-650: oklch(0.72 0.17 350);
+  --palette-plum-700: oklch(0.72 0.16 350);
+  --palette-plum-800: oklch(0.52 0.03 340);
+  --palette-plum-850: oklch(0.3 0.03 340);
+  --palette-plum-900: oklch(0.3 0.05 350);
+  --palette-plum-950: oklch(0.25 0.02 340);
+
+  /* night：夜蓝：默认前台暗色主题 */
+  --palette-night-200: oklch(0.95 0.01 345);
+  --palette-night-250: oklch(0.95 0.02 350);
+  --palette-night-300: oklch(0.92 0.01 345);
+  --palette-night-350: oklch(0.78 0.16 350);
+  --palette-night-400: oklch(0.72 0.16 350);
+  --palette-night-450: oklch(0.68 0.02 340);
+  --palette-night-550: oklch(0.3 0.05 345);
+  --palette-night-600: oklch(0.3 0.02 335);
+  --palette-night-650: oklch(0.28 0.04 345);
+  --palette-night-700: oklch(0.28 0.02 335);
+  --palette-night-750: oklch(0.26 0.02 340);
+  --palette-night-800: oklch(0.24 0.02 335);
+  --palette-night-850: oklch(0.2 0.02 338);
+  --palette-night-900: oklch(0.18 0.03 340);
+  --palette-night-950: oklch(0.17 0.02 335);
+
+  /* red：危险动作，两个主题共用 */
+  --palette-red-500: oklch(0.62 0.22 25);
+  --palette-red-600: oklch(0.66 0.2 25);
+
+  /* mist：雾灰：SAO 前台明亮主题 */
+  --palette-mist-300: #ffffff;
+  --palette-mist-350: #f6f7f9;
+  --palette-mist-400: #edf0f3;
+  --palette-mist-450: #e9edf1;
+  --palette-mist-500: #ede9e3;
+  --palette-mist-550: #ece8e2;
+  --palette-mist-600: #dce2e8;
+  --palette-mist-650: #c3ccd5;
+  --palette-mist-700: #80683d;
+  --palette-mist-750: #5d6672;
+  --palette-mist-800: #b42f3c;
+  --palette-mist-850: #8f2b36;
+  --palette-mist-900: #303b49;
+  --palette-mist-950: #252b35;
+
+  /* abyss：深潮：SAO 前台暗色主题 */
+  --palette-abyss-250: #edf1f4;
+  --palette-abyss-300: #e1e8ee;
+  --palette-abyss-350: #e6d2c2;
+  --palette-abyss-400: #ceb788;
+  --palette-abyss-450: #a6b2bd;
+  --palette-abyss-500: #ed5260;
+  --palette-abyss-550: #4d606e;
+  --palette-abyss-600: #33414d;
+  --palette-abyss-650: #26333e;
+  --palette-abyss-700: #2f3032;
+  --palette-abyss-750: #2b2d30;
+  --palette-abyss-800: #202c37;
+  --palette-abyss-850: #18232d;
+  --palette-abyss-900: #25151b;
+  --palette-abyss-950: #101820;
+}
