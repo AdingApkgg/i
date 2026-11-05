@@ -58,4 +58,33 @@ test.describe("后台 API 文档", () => {
       .evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(bg).not.toBe("rgb(246, 247, 249)");
   });
+
+  test("深色偏好由 prefers-color-scheme 直接决定，Scalar 首帧就是深色", async ({ page }) => {
+    // Scalar 的 darkMode 只收布尔值，站点必须自己把系统偏好翻过去。
+    // 记首个出现且已上色的 .scalar-app 背景亮度，就是「首帧」的客观证据。
+    await page.addInitScript(() => {
+      const w = window as unknown as { __firstScalarLuma?: number };
+      const observe = () => {
+        const el = document.querySelector(".scalar-app.scalar-api-reference");
+        if (!el) return false;
+        const [r, g, b] = getComputedStyle(el).backgroundColor.match(/\d+/g)!.map(Number);
+        if (r === 0 && g === 0 && b === 0) return false;
+        w.__firstScalarLuma = 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+        return true;
+      };
+      const tick = () => {
+        if (!observe()) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/dash/api-docs");
+    await expect(page.locator(".scalar-app.scalar-api-reference")).toBeVisible({ timeout: 30_000 });
+
+    const firstLuma = await page.evaluate(
+      () => (window as unknown as { __firstScalarLuma?: number }).__firstScalarLuma,
+    );
+    expect(firstLuma).toBeDefined();
+    expect(firstLuma!).toBeLessThan(100);
+  });
 });
