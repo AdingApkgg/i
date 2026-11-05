@@ -45,6 +45,7 @@ export default [
       route("anime", "routes/dash/anime.tsx"),
       route("settings", "routes/dash/settings.tsx"),
       route("tokens", "routes/dash/tokens.tsx"),
+      route("api-docs", "routes/dash/api-docs.tsx"),
       route("masturbation", "routes/dash/masturbation.tsx"),
       route(":domain", "routes/dash/domain.tsx"),
     ]),

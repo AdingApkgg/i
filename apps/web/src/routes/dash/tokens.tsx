@@ -4,8 +4,17 @@
  */
 import { Button, Card, CardBody, cn } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, KeyRound, LoaderCircle, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Copy,
+  KeyRound,
+  LoaderCircle,
+  ShieldCheck,
+  ShieldOff,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import { inputCls } from "@/components/dash/domain-admin";
 import { orpc } from "@/lib/orpc/client";
@@ -89,6 +98,11 @@ export default function TokensPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         给自己和 AI 用的管理凭据。只读 token 只能查，写操作会被拒；明文只在创建时出现一次。
       </p>
+      <Button variant="outline" size="sm" className="mt-2" asChild>
+        <Link to="/dash/api-docs">
+          <BookOpen className="size-3.5" /> 打开 API 文档试打
+        </Link>
+      </Button>
 
       <Card className="mt-4">
         <CardBody className="space-y-3">
