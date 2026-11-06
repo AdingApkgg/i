@@ -1,0 +1,54 @@
+/* SAO / Asuna 前台：只挂在 .sao-site 上，后台继续用默认主题。 */
+:root:has(.sao-site) {
+  --background: var(--palette-mist-350);
+  --foreground: var(--palette-mist-950);
+  --muted: var(--palette-mist-400);
+  --muted-foreground: var(--palette-mist-750);
+  --border: var(--palette-mist-600);
+  --input: var(--palette-mist-600);
+  --ring: var(--palette-mist-800);
+  --primary: var(--palette-mist-800);
+  --primary-foreground: var(--palette-mist-300);
+  --secondary: var(--palette-mist-450);
+  --secondary-foreground: var(--palette-mist-900);
+  --accent: var(--palette-mist-500);
+  --accent-foreground: var(--palette-mist-850);
+  --soft: var(--palette-mist-550);
+  --destructive: var(--palette-red-500);
+  --card: var(--palette-mist-300);
+  --card-foreground: var(--palette-mist-950);
+  --popover: var(--palette-mist-300);
+  --popover-foreground: var(--palette-mist-950);
+  --radius: 0.3rem;
+  --sao-crimson: var(--palette-mist-800);
+  --sao-gold: var(--palette-mist-700);
+  --sao-panel: var(--palette-mist-300);
+  --sao-line: var(--palette-mist-650);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:has(.sao-site) {
+    --background: var(--palette-abyss-950);
+    --foreground: var(--palette-abyss-250);
+    --muted: var(--palette-abyss-800);
+    --muted-foreground: var(--palette-abyss-450);
+    --border: var(--palette-abyss-600);
+    --input: var(--palette-abyss-600);
+    --ring: var(--palette-abyss-500);
+    --primary: var(--palette-abyss-500);
+    --primary-foreground: var(--palette-abyss-900);
+    --secondary: var(--palette-abyss-650);
+    --secondary-foreground: var(--palette-abyss-300);
+    --accent: var(--palette-abyss-700);
+    --accent-foreground: var(--palette-abyss-350);
+    --soft: var(--palette-abyss-750);
+    --destructive: var(--palette-red-600);
+    --card: var(--palette-abyss-850);
+    --card-foreground: var(--palette-abyss-250);
+    --popover: var(--palette-abyss-850);
+    --popover-foreground: var(--palette-abyss-250);
+    --sao-gold: var(--palette-abyss-400);
+    --sao-panel: var(--palette-abyss-850);
+    --sao-line: var(--palette-abyss-550);
+  }
+}

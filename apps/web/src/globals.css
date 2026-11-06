@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@i/ui/tokens/index.css";
 @import "./asuna.css";
 
 /* Scan the app + the shared ui package for class names. */
@@ -64,56 +65,12 @@
   --media-focus-ring-color: var(--ring);
 }
 
-/* 后台保留原有 moe 主题；公开前台由 asuna.css 的 .sao-site 条件覆盖。 */
-/* 深色跟随系统（prefers-color-scheme），不需要 JS；Tailwind 的 dark: 变体默认也是这个媒体查询 */
+/* 主题变量都在 @i/ui 的 tokens 里：primitive 只存值，theme-* 只做语义映射。
+ * 默认主题（moe）作用于全站，SAO 主题由 asuna.css 的 .sao-site 触发；
+ * 深色一律走 prefers-color-scheme，不需要 JS，Tailwind 的 dark: 变体也是这个媒体查询。*/
 :root {
-  /* 底栏、正文留白和悬浮组件共用高度，包含 iPhone 底部安全区。 */
   --site-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
   color-scheme: light dark;
-  --background: oklch(0.995 0.006 350);
-  --foreground: oklch(0.25 0.02 340);
-  --muted: oklch(0.97 0.012 345);
-  --muted-foreground: oklch(0.52 0.03 340);
-  --border: oklch(0.92 0.015 345);
-  --input: oklch(0.92 0.015 345);
-  --ring: oklch(0.72 0.16 350);
-  --primary: oklch(0.72 0.17 350);
-  --primary-foreground: oklch(0.99 0.005 350);
-  --secondary: oklch(0.96 0.02 345);
-  --secondary-foreground: oklch(0.3 0.03 340);
-  --accent: oklch(0.94 0.035 345);
-  --accent-foreground: oklch(0.3 0.05 350);
-  --soft: oklch(0.96 0.03 350);
-  --destructive: oklch(0.62 0.22 25);
-  --card: oklch(1 0.003 350);
-  --card-foreground: oklch(0.25 0.02 340);
-  --popover: oklch(1 0.003 350);
-  --popover-foreground: oklch(0.25 0.02 340);
-  --radius: 0.9rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.17 0.02 335);
-    --foreground: oklch(0.95 0.01 345);
-    --muted: oklch(0.24 0.02 335);
-    --muted-foreground: oklch(0.68 0.02 340);
-    --border: oklch(0.3 0.02 335);
-    --input: oklch(0.28 0.02 335);
-    --ring: oklch(0.72 0.16 350);
-    --primary: oklch(0.78 0.16 350);
-    --primary-foreground: oklch(0.18 0.03 340);
-    --secondary: oklch(0.26 0.02 340);
-    --secondary-foreground: oklch(0.92 0.01 345);
-    --accent: oklch(0.3 0.05 345);
-    --accent-foreground: oklch(0.95 0.02 350);
-    --soft: oklch(0.28 0.04 345);
-    --destructive: oklch(0.66 0.2 25);
-    --card: oklch(0.2 0.02 338);
-    --card-foreground: oklch(0.95 0.01 345);
-    --popover: oklch(0.2 0.02 338);
-    --popover-foreground: oklch(0.95 0.01 345);
-  }
 }
 
 @theme inline {

@@ -1,0 +1,47 @@
+/* 默认前台：明亮即基线，暗色只在系统偏好下覆盖。 */
+:root {
+  --background: var(--palette-plum-300);
+  --foreground: var(--palette-plum-950);
+  --muted: var(--palette-plum-400);
+  --muted-foreground: var(--palette-plum-800);
+  --border: var(--palette-plum-600);
+  --input: var(--palette-plum-600);
+  --ring: var(--palette-plum-700);
+  --primary: var(--palette-plum-650);
+  --primary-foreground: var(--palette-plum-350);
+  --secondary: var(--palette-plum-500);
+  --secondary-foreground: var(--palette-plum-850);
+  --accent: var(--palette-plum-550);
+  --accent-foreground: var(--palette-plum-900);
+  --soft: var(--palette-plum-450);
+  --destructive: var(--palette-red-500);
+  --card: var(--palette-plum-250);
+  --card-foreground: var(--palette-plum-950);
+  --popover: var(--palette-plum-250);
+  --popover-foreground: var(--palette-plum-950);
+  --radius: 0.9rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--palette-night-950);
+    --foreground: var(--palette-night-200);
+    --muted: var(--palette-night-800);
+    --muted-foreground: var(--palette-night-450);
+    --border: var(--palette-night-600);
+    --input: var(--palette-night-700);
+    --ring: var(--palette-night-400);
+    --primary: var(--palette-night-350);
+    --primary-foreground: var(--palette-night-900);
+    --secondary: var(--palette-night-750);
+    --secondary-foreground: var(--palette-night-300);
+    --accent: var(--palette-night-550);
+    --accent-foreground: var(--palette-night-250);
+    --soft: var(--palette-night-650);
+    --destructive: var(--palette-red-600);
+    --card: var(--palette-night-850);
+    --card-foreground: var(--palette-night-200);
+    --popover: var(--palette-night-850);
+    --popover-foreground: var(--palette-night-200);
+  }
+}

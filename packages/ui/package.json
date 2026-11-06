@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./cn": "./src/lib/cn.ts",
-    "./components/*": "./src/components/*.tsx"
+    "./components/*": "./src/components/*.tsx",
+    "./tokens/*": "./src/tokens/*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

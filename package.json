@@ -11,7 +11,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",
-    "lint": "biome check .",
+    "lint": "biome check . && node scripts/design-lint.mjs",
     "format": "biome format --write .",
     "check": "biome check --write .",
     "typecheck": "turbo run typecheck",
@@ -21,7 +21,8 @@
     "db:migrate": "bun --filter @i/db db:migrate",
     "db:push": "bun --filter @i/db db:push",
     "db:studio": "bun --filter @i/db db:studio",
-    "db:seed": "bun --filter @i/db db:seed"
+    "db:seed": "bun --filter @i/db db:seed",
+    "lint:design": "node scripts/design-lint.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",
