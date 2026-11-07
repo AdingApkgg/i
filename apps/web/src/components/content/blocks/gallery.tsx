@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
  */
 export function Gallery({ children }: { children: ReactNode }) {
   return (
-    <div className="my-5 columns-2 gap-3 md:columns-3 [&_img]:mb-3 [&_img]:w-full [&_img]:rounded-[var(--radius-md)]">
+    <div className="my-5 columns-2 gap-3 md:columns-3 [&_img]:mb-3 [&_img]:w-full [&_img]:rounded-md">
       {children}
     </div>
   );

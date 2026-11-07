@@ -22,7 +22,7 @@ function ago(d: Date | string | null) {
 }
 
 function Dot({ ok }: { ok: boolean | null }) {
-  const color = ok == null ? "bg-gray-400" : ok ? "bg-green-500" : "bg-red-500";
+  const color = ok == null ? "bg-monitor-unknown" : ok ? "bg-monitor-online" : "bg-monitor-offline";
   return (
     <span className="relative flex size-2.5 shrink-0">
       {ok && (

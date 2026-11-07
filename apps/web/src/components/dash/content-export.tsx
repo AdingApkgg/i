@@ -88,7 +88,7 @@ export function ContentExportMenu({
         <DropdownMenu.Content
           align="end"
           sideOffset={6}
-          className="z-50 min-w-56 rounded-[var(--radius-md)] border border-border bg-popover p-1 text-sm text-foreground shadow-lg"
+          className="z-50 min-w-56 rounded-md border border-border bg-popover p-1 text-sm text-foreground shadow-lg"
         >
           <DropdownMenu.Item
             className="cursor-pointer rounded px-3 py-2 outline-none focus:bg-muted"

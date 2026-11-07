@@ -56,7 +56,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
             <Link
               prefetch="intent"
               to={href}
-              className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"
+              className="group relative shrink-0 overflow-hidden rounded-lg bg-soft"
             >
               <img
                 src={thumb(cover, 640)}
@@ -73,7 +73,7 @@ function AlbumSection({ section, index }: { section: SectionData; index: number 
                 prefetch="intent"
                 key={p.id}
                 to={href}
-                className="group relative shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft"
+                className="group relative shrink-0 overflow-hidden rounded-lg bg-soft"
               >
                 <img
                   src={thumb(p.thumbUrl || p.imageUrl, 640)}

@@ -12,8 +12,8 @@ import { thumbProps } from "@/lib/thumb";
 
 const TONE: Record<string, string> = {
   primary: "bg-primary/12 text-primary ring-primary/25",
-  sky: "bg-sky-500/12 text-sky-600 ring-sky-500/25 dark:text-sky-300",
-  amber: "bg-amber-500/12 text-amber-600 ring-amber-500/25 dark:text-amber-300",
+  sky: "bg-info/12 text-info-strong ring-info/25 dark:text-info-contrast",
+  amber: "bg-warning/12 text-warning-strong ring-warning/25 dark:text-warning-contrast",
   muted: "bg-soft text-muted-foreground ring-border",
 };
 
@@ -26,7 +26,7 @@ export function RecordChip({
 }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-pill px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${TONE[tone] ?? TONE.muted}`}
+      className={`inline-flex shrink-0 items-center rounded-pill px-2 py-0.5 text-caption font-medium ring-1 ring-inset ${TONE[tone] ?? TONE.muted}`}
     >
       {children}
     </span>
@@ -104,12 +104,12 @@ export function RecordList({
                 {...thumbProps(item.coverUrl, [320, 640], "68px")}
                 alt=""
                 loading="lazy"
-                className="h-[90px] w-[68px] shrink-0 rounded-md object-cover ring-1 ring-border/60"
+                className="h-22.5 w-17 shrink-0 rounded-md object-cover ring-1 ring-border/60"
               />
             ) : (
               <span
                 aria-hidden="true"
-                className="flex h-[90px] w-[68px] shrink-0 items-center justify-center rounded-md border border-dashed border-border/80 bg-soft/40 font-serif text-2xl italic text-primary/30"
+                className="flex h-22.5 w-17 shrink-0 items-center justify-center rounded-md border border-dashed border-border/80 bg-soft/40 font-serif text-2xl italic text-primary/30"
               >
                 {(item.initial ?? item.title).slice(0, 1)}
               </span>
@@ -118,7 +118,7 @@ export function RecordList({
               <div
                 className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 ${columns ? "pr-6" : ""}`}
               >
-                <h2 className="min-w-0 text-[15px] leading-snug font-semibold wrap-anywhere">
+                <h2 className="min-w-0 text-body leading-snug font-semibold wrap-anywhere">
                   {item.to ? (
                     <Link
                       to={item.to}
@@ -135,7 +135,7 @@ export function RecordList({
                 {item.rating != null && (
                   <span className="ml-auto shrink-0 font-serif text-sm italic tabular-nums text-primary">
                     {item.rating}
-                    <span className="text-[11px] text-muted-foreground not-italic">/10</span>
+                    <span className="text-caption text-muted-foreground not-italic">/10</span>
                   </span>
                 )}
               </div>

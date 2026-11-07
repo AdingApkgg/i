@@ -61,7 +61,7 @@ export function Tabs({ children }: { children: ReactNode }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -5 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
-          className="mt-3 rounded-[var(--radius-md)] bg-card p-4 text-[15px] leading-relaxed"
+          className="mt-3 rounded-md bg-card p-4 text-body leading-relaxed"
         >
           {tabs[current]?.props.children}
         </motion.div>

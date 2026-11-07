@@ -14,7 +14,7 @@ export function HideInline({ text, hint }: { text?: string; hint?: string }) {
       aria-pressed={shown}
       onClick={() => setShown((v) => !v)}
       className={cn(
-        "mx-0.5 inline-flex items-baseline gap-1 rounded-[var(--radius-sm)] border border-dashed px-1.5 py-0.5 align-baseline text-sm transition",
+        "mx-0.5 inline-flex items-baseline gap-1 rounded-sm border border-dashed px-1.5 py-0.5 align-baseline text-sm transition",
         shown
           ? "border-primary/40 bg-primary/10 text-foreground"
           : "border-border bg-muted/60 text-muted-foreground hover:border-primary/40 hover:text-primary",

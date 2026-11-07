@@ -12,7 +12,7 @@ export function GalleryGroup({ name, desc, url, cover }: GalleryGroupProps) {
   return (
     <a
       href={url}
-      className="group relative block aspect-video overflow-hidden rounded-[var(--radius-lg)] no-underline transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative block aspect-video overflow-hidden rounded-lg no-underline transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <img
         src={thumb(cover, 640)}

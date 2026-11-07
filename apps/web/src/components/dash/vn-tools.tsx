@@ -166,7 +166,7 @@ export function VnTools() {
   return (
     <section
       aria-label="资料导入与简介翻译"
-      className="space-y-4 rounded-[var(--radius-md)] border border-border p-4"
+      className="space-y-4 rounded-md border border-border p-4"
     >
       <div className="font-semibold">资料导入</div>
       <p className="text-sm text-muted-foreground">

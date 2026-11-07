@@ -1,0 +1,18 @@
+/* 通用刻度：沿用 Tailwind 已有的间距、阴影和时长，只补真实缺口。
+ * 这些字号原来使用 px，保留单位；不附带默认行高，避免改变正文继承。
+ * 主题相关圆角仍由 globals.css 的 --radius-{sm,md,lg} 语义映射提供。 */
+@theme {
+  --text-micro: 10px;
+  --text-caption: 11px;
+  --text-code: 13px;
+  --text-body: 15px;
+
+  --spacing-fine: 3px;
+  --spacing-cell: 13px;
+  --radius-cell: 3px;
+  --leading-cell: 13px;
+
+  --tracking-label: 0.18em;
+  --tracking-kicker: 0.2em;
+  --tracking-overline: 0.22em;
+}

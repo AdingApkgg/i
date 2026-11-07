@@ -37,7 +37,7 @@ const components: Record<string, any> = {
         ? thumbProps(p.src, [640, 960, 1280, 1920], "(min-width: 704px) 672px, 100vw")
         : {})}
       loading="lazy"
-      className="rounded-[var(--radius-md)]"
+      className="rounded-md"
     />
   ),
 };

@@ -56,7 +56,7 @@ function toRow(t: Vn): RecordRow {
             <RecordChip key={tag}>{tag}</RecordChip>
           ))}
           {tags.length > 6 && (
-            <span className="text-[11px] text-muted-foreground">+{tags.length - 6}</span>
+            <span className="text-caption text-muted-foreground">+{tags.length - 6}</span>
           )}
         </>
       ) : undefined,
@@ -118,7 +118,7 @@ function SectionHead({
 }) {
   return (
     <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-      <span className="font-mono text-[10px] tracking-[0.22em] text-primary/55 uppercase tabular-nums">
+      <span className="font-mono text-micro tracking-overline text-primary/55 uppercase tabular-nums">
         {String(index).padStart(2, "0")}
       </span>
       <h2 className="text-sm leading-snug font-semibold wrap-anywhere">{title}</h2>
@@ -165,10 +165,10 @@ export default function VnPage({ loaderData }: Route.ComponentProps) {
                     aria-hidden="true"
                     className={`size-1.5 rounded-full ${
                       status === "在玩"
-                        ? "bg-sky-500"
+                        ? "bg-info"
                         : status === "通关"
                           ? "bg-primary"
-                          : "bg-amber-500"
+                          : "bg-warning"
                     }`}
                   />
                   {status} {count}

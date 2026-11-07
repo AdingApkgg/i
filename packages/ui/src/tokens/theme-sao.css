@@ -20,6 +20,45 @@
   --popover: var(--palette-mist-300);
   --popover-foreground: var(--palette-mist-950);
   --radius: 0.3rem;
+
+  /* 状态 / 动作 / 内容兼容色：明暗保持原值，按需由 dark: 选择对比色。 */
+  --info: var(--palette-sky-500);
+  --info-strong: var(--palette-sky-600);
+  --info-contrast: var(--palette-sky-300);
+  --warning: var(--palette-amber-500);
+  --warning-strong: var(--palette-amber-600);
+  --warning-contrast: var(--palette-amber-300);
+  --warning-bright: var(--palette-amber-400);
+  --success: var(--palette-emerald-500);
+  --success-strong: var(--palette-emerald-600);
+  --status-neutral: var(--palette-zinc-500);
+  --status-error: var(--palette-rose-500);
+  --status-error-strong: var(--palette-rose-600);
+  --monitor-unknown: var(--palette-gray-400);
+  --monitor-online: var(--palette-green-500);
+  --monitor-offline: var(--palette-signal-500);
+  --action-danger: var(--palette-signal-600);
+  --action-danger-hover: var(--palette-signal-700);
+  --action-special: var(--palette-violet-500);
+  --action-special-hover: var(--palette-violet-600);
+  --action-on-bright: var(--palette-neutral-900);
+  --content-blue: var(--palette-azure-500);
+  --content-cyan: var(--palette-cyan-500);
+  --content-green: var(--palette-leaf-500);
+  --content-yellow: var(--palette-sun-500);
+  --content-orange: var(--palette-flame-500);
+  --content-red: var(--palette-scarlet-500);
+  --maimai-basic: var(--palette-leaf-500);
+  --maimai-advanced: var(--palette-sun-500);
+  --maimai-expert: var(--palette-scarlet-500);
+  --maimai-master: var(--palette-orchid-500);
+  --maimai-remaster: var(--palette-orchid-300);
+  --activity-0: var(--palette-grass-50);
+  --activity-1: var(--palette-grass-100);
+  --activity-2: var(--palette-grass-200);
+  --activity-3: var(--palette-grass-300);
+  --activity-4: var(--palette-grass-400);
+
   --sao-crimson: var(--palette-mist-800);
   --sao-gold: var(--palette-mist-700);
   --sao-panel: var(--palette-mist-300);
@@ -28,6 +67,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root:has(.sao-site) {
+    --activity-0: var(--palette-forest-50);
+    --activity-1: var(--palette-forest-100);
+    --activity-2: var(--palette-forest-200);
+    --activity-3: var(--palette-forest-300);
+    --activity-4: var(--palette-forest-400);
     --background: var(--palette-abyss-950);
     --foreground: var(--palette-abyss-250);
     --muted: var(--palette-abyss-800);

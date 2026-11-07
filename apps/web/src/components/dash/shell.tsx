@@ -86,7 +86,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
       key={href}
       to={href}
       className={cn(
-        "relative block rounded-[var(--radius-md)] px-3 py-3 text-sm transition lg:py-2",
+        "relative block rounded-md px-3 py-3 text-sm transition lg:py-2",
         active
           ? "font-medium text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -95,7 +95,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
       {active && (
         <motion.span
           layoutId="dash-nav-active"
-          className="absolute inset-0 rounded-[var(--radius-md)] bg-primary"
+          className="absolute inset-0 rounded-md bg-primary"
           transition={{ type: "spring", stiffness: 450, damping: 35 }}
         />
       )}
@@ -116,14 +116,14 @@ export function DashShell({ userName, children }: { userName: string; children: 
           aria-label="打开后台导航"
           aria-expanded={open}
           aria-controls="dash-nav"
-          className="-ml-1.5 inline-flex size-10 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="-ml-1.5 inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <Menu className="size-5" />
         </button>
         <span className="font-bold">后台</span>
         <Link
           to="/"
-          className="ml-auto rounded-[var(--radius-md)] px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="ml-auto rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           回前台
         </Link>
@@ -158,7 +158,7 @@ export function DashShell({ userName, children }: { userName: string; children: 
             type="button"
             onClick={() => setOpen(false)}
             aria-label="关闭导航"
-            className="inline-flex size-9 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground hover:bg-muted lg:hidden"
+            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted lg:hidden"
           >
             <X className="size-4.5" />
           </button>

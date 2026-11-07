@@ -172,7 +172,7 @@ export function PhotoWaterfall({
           return (
             <figure
               key={it.id}
-              className={`group m-0 overflow-hidden rounded-[var(--radius-lg)] bg-soft ${
+              className={`group m-0 overflow-hidden rounded-lg bg-soft ${
                 cell
                   ? `absolute motion-safe:transition-[top,left,width,height] ${cell.loaded ? "" : "animate-pulse"}`
                   : "relative mb-3 break-inside-avoid"

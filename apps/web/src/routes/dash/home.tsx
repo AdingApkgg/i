@@ -86,7 +86,7 @@ export default function DashHome() {
                     <LabelList
                       dataKey="n"
                       position="right"
-                      className="fill-muted-foreground text-[11px]"
+                      className="fill-muted-foreground text-caption"
                     />
                   </Bar>
                 </BarChart>

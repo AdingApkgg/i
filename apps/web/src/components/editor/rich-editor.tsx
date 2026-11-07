@@ -33,7 +33,7 @@ export function RichEditor({
     editorProps: {
       attributes: {
         class:
-          "prose-content rich-editor min-h-[60vh] px-6 py-6 text-[15px] leading-relaxed outline-none sm:px-12",
+          "prose-content rich-editor min-h-[60vh] px-6 py-6 text-body leading-relaxed outline-none sm:px-12",
         spellcheck: "false",
       },
       handleKeyDown: (_view, event) => {
@@ -52,11 +52,10 @@ export function RichEditor({
     onUpdate: ({ editor: e }) => onChange?.(e.getJSON() as RichDoc),
   });
 
-  if (!editor)
-    return <div className="min-h-[60vh] animate-pulse rounded-[var(--radius-md)] bg-muted/50" />;
+  if (!editor) return <div className="min-h-[60vh] animate-pulse rounded-md bg-muted/50" />;
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="rounded-lg border border-border bg-card">
       <Toolbar editor={editor} />
       <DragHandle editor={editor}>
         <div className="flex h-6 w-4 cursor-grab items-center justify-center rounded text-muted-foreground hover:bg-muted active:cursor-grabbing">

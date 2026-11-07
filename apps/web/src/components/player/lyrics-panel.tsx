@@ -36,7 +36,7 @@ export function LyricsPanel({ song }: { song: MetingSong }) {
 
   return (
     <section aria-label="歌词" className="mt-2 border-t border-border pt-2">
-      <div className="mb-1 flex min-h-5 items-center justify-between text-[10px] text-muted-foreground">
+      <div className="mb-1 flex min-h-5 items-center justify-between text-micro text-muted-foreground">
         <span>{lines.length ? "滚动歌词 · 点击跳转" : "歌词"}</span>
         {!following && lines.length > 0 && (
           <button type="button" className="text-primary" onClick={() => setFollowing(true)}>
@@ -89,7 +89,7 @@ export function LyricsPanel({ song }: { song: MetingSong }) {
         </section>
       ) : query.data?.text.length ? (
         <div className="max-h-44 overflow-y-auto overscroll-contain py-2 text-center text-xs leading-6 text-muted-foreground">
-          <p className="mb-1 text-[10px]">此歌词暂无时间信息</p>
+          <p className="mb-1 text-micro">此歌词暂无时间信息</p>
           {query.data.text.map((text, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: 同一首歌的纯文本行顺序固定，可能重复。
             <p key={`${index}-${text}`}>{text}</p>

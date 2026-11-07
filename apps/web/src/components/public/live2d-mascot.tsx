@@ -351,7 +351,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 500, damping: 28 }}
-            className="absolute -top-4 left-1/2 z-10 w-max max-w-[240px] -translate-x-1/2 rounded-[var(--radius-md)] border border-border bg-card/95 px-3 py-1.5 text-center text-xs text-foreground shadow-md backdrop-blur"
+            className="absolute -top-4 left-1/2 z-10 w-max max-w-60 -translate-x-1/2 rounded-md border border-border bg-card/95 px-3 py-1.5 text-center text-xs text-foreground shadow-md backdrop-blur"
             style={{ lineHeight: 1.6 }}
           >
             {tip}

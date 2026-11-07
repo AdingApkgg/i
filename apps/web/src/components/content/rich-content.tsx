@@ -185,7 +185,7 @@ function renderNode(node: RichNode, key: number): ReactNode {
             alt={str(a.alt) ?? ""}
             {...thumbProps(src, [640, 960, 1280, 1920], "(min-width: 704px) 672px, 100vw")}
             loading="lazy"
-            className="mx-auto rounded-[var(--radius-md)]"
+            className="mx-auto rounded-md"
           />
           {str(a.title) && (
             <figcaption className="mt-2 text-center text-sm text-muted-foreground">
@@ -302,7 +302,7 @@ function renderNode(node: RichNode, key: number): ReactNode {
       return (
         <div
           key={key}
-          className="my-5 overflow-hidden rounded-[var(--radius-md)] bg-muted"
+          className="my-5 overflow-hidden rounded-md bg-muted"
           style={{ aspectRatio: str(a.ratio) ?? "16/9" }}
         >
           <iframe

@@ -28,7 +28,7 @@ const CATEGORY_ICON: Record<string, typeof Laptop> = {
 
 const STATUS_STYLE: Record<string, string> = {
   在用: "bg-primary/12 text-primary ring-primary/25",
-  想要: "bg-sky-500/12 text-sky-600 ring-sky-500/25 dark:text-sky-300",
+  想要: "bg-info/12 text-info-strong ring-info/25 dark:text-info-contrast",
   退役: "bg-soft text-muted-foreground ring-border",
 };
 
@@ -69,7 +69,7 @@ function DeviceCard({ device }: { device: Device }) {
   const statusStyle = STATUS_STYLE[device.status] ?? STATUS_STYLE.退役;
   const card = (
     <Card className="group h-full overflow-hidden transition hover:border-primary/40 hover:shadow-md">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-soft via-card to-soft">
+      <div className="relative aspect-4/3 w-full overflow-hidden bg-gradient-to-br from-soft via-card to-soft">
         {device.imageUrl ? (
           <img
             {...thumbProps(
@@ -79,24 +79,24 @@ function DeviceCard({ device }: { device: Device }) {
             )}
             alt={device.name}
             loading="lazy"
-            className="size-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            className="size-full object-cover transition duration-500 group-hover:scale-103"
           />
         ) : (
           <div className="flex size-full flex-col items-center justify-center gap-2 text-primary/35">
             <Icon className="size-10" strokeWidth={1.5} />
-            <span className="text-[11px] tracking-[0.2em] uppercase">
+            <span className="text-caption tracking-kicker uppercase">
               {device.category ?? "设备"}
             </span>
           </div>
         )}
         <span
-          className={`absolute top-3 left-3 inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset backdrop-blur ${statusStyle}`}
+          className={`absolute top-3 left-3 inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-caption font-medium ring-1 ring-inset backdrop-blur ${statusStyle}`}
         >
           <StatusIcon className="size-3" />
           {device.status}
         </span>
         {device.link && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-pill bg-card/80 px-2 py-0.5 text-[11px] font-medium text-primary ring-1 ring-inset ring-primary/25 backdrop-blur">
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-pill bg-card/80 px-2 py-0.5 text-caption font-medium text-primary ring-1 ring-inset ring-primary/25 backdrop-blur">
             官网
             <ExternalLink className="size-3" />
           </span>

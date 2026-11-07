@@ -9,7 +9,13 @@ import { serverApi } from "@/lib/orpc/api.server";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/maimai";
 
-const DIFF = ["#22c55e", "#eab308", "#ef4444", "#a855f7", "#e9d5ff"]; // Basic..Re:MASTER
+const DIFF = [
+  "var(--maimai-basic)",
+  "var(--maimai-advanced)",
+  "var(--maimai-expert)",
+  "var(--maimai-master)",
+  "var(--maimai-remaster)",
+]; // Basic..Re:MASTER
 
 type Rec = {
   id: string;
@@ -88,7 +94,7 @@ function Board({ title, items }: { title: string; items: Rec[] }) {
 }
 
 function ScoreCard({ r }: { r: Rec }) {
-  const color = DIFF[r.levelIndex] ?? "#a855f7";
+  const color = DIFF[r.levelIndex] ?? "var(--maimai-master)";
   return (
     <a
       href={adxChartUrl(r.songId)}
@@ -112,19 +118,19 @@ function ScoreCard({ r }: { r: Rec }) {
             </div>
           )}
           <span
-            className="absolute right-1.5 top-1.5 rounded-pill px-2 py-0.5 text-[11px] font-bold text-white"
+            className="absolute right-1.5 top-1.5 rounded-pill px-2 py-0.5 text-caption font-bold text-white"
             style={{ backgroundColor: color }}
           >
             {r.levelLabel}
           </span>
           {r.type === "dx" && (
-            <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            <span className="absolute left-1.5 top-1.5 rounded-pill bg-black/60 px-1.5 py-0.5 text-micro font-bold text-white">
               DX
             </span>
           )}
         </div>
         <div className="p-2.5">
-          <div className="truncate text-[13px] font-semibold" title={r.title}>
+          <div className="truncate text-code font-semibold" title={r.title}>
             {r.title}
           </div>
           <div className="mt-0.5 flex items-center justify-between text-xs">
@@ -134,7 +140,7 @@ function ScoreCard({ r }: { r: Rec }) {
               {r.ra}
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-1 text-[10px] uppercase text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1 text-micro uppercase text-muted-foreground">
             {r.rate && <span className="font-bold text-primary">{r.rate}</span>}
             {r.fc && <span>{r.fc}</span>}
             {r.fs && <span>{r.fs}</span>}

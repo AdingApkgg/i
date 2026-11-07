@@ -62,7 +62,7 @@ export function SyncPreview({
           扫描 {entries.length} 部 · 导入 {entries.filter((e) => !e.local && e.remote).length} 部 ·
           推送 {entries.filter((e) => e.decision.push).length} 部 · 待选择冲突 {conflicts} 项
         </p>
-        <div className="max-h-[36rem] space-y-2 overflow-y-auto">
+        <div className="max-h-144 space-y-2 overflow-y-auto">
           {changed.map((item) => {
             const keys = [
               "type",

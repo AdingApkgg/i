@@ -12,7 +12,7 @@ import { reportAuthError } from "@/lib/form";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 // 登录表单里昵称框不显示，形状和注册保持一致，方便两种模式共用一个表单
 const visitorSignInSchema = signInSchema.extend({ name: signUpSchema.shape.name });
@@ -54,7 +54,7 @@ export function VisitorAuth() {
     <form
       noValidate
       onSubmit={submit}
-      className="space-y-2 rounded-[var(--radius-lg)] border border-border bg-soft/40 p-4"
+      className="space-y-2 rounded-lg border border-border bg-soft/40 p-4"
     >
       <div className="text-sm text-muted-foreground">
         {mode === "in" ? "登录后即可评论" : "注册一个访客账号"}

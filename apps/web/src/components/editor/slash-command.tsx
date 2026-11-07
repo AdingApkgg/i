@@ -47,7 +47,7 @@ const SlashMenu = forwardRef<MenuHandle, SuggestionProps<InsertItem>>(
 
     if (!items.length)
       return (
-        <div className="w-60 rounded-[var(--radius-md)] border border-border bg-popover p-3 text-sm text-muted-foreground shadow-lg">
+        <div className="w-60 rounded-md border border-border bg-popover p-3 text-sm text-muted-foreground shadow-lg">
           没有匹配的块
         </div>
       );
@@ -56,7 +56,7 @@ const SlashMenu = forwardRef<MenuHandle, SuggestionProps<InsertItem>>(
     return (
       <div
         ref={listRef}
-        className="max-h-80 w-60 overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+        className="max-h-80 w-60 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg"
       >
         {items.map((it, i) => {
           const header = it.group !== lastGroup ? it.group : null;
@@ -64,7 +64,7 @@ const SlashMenu = forwardRef<MenuHandle, SuggestionProps<InsertItem>>(
           return (
             <div key={it.key}>
               {header && (
-                <div className="px-2 pt-2 pb-1 text-[11px] font-medium text-muted-foreground">
+                <div className="px-2 pt-2 pb-1 text-caption font-medium text-muted-foreground">
                   {header}
                 </div>
               )}
@@ -74,11 +74,11 @@ const SlashMenu = forwardRef<MenuHandle, SuggestionProps<InsertItem>>(
                 onMouseEnter={() => setIndex(i)}
                 onClick={() => props.command(it)}
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-sm",
+                  "flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left text-sm",
                   i === index ? "bg-muted text-foreground" : "text-foreground/90",
                 )}
               >
-                <span className="inline-flex size-7 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
+                <span className="inline-flex size-7 items-center justify-center rounded-sm border border-border bg-background">
                   <it.icon className="size-4" />
                 </span>
                 {it.label}

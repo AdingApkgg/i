@@ -63,15 +63,15 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
                         )}
                         alt={`${item.title} 封面`}
                         loading="lazy"
-                        className="block h-auto w-full bg-soft transition duration-500 group-hover:scale-[1.02]"
+                        className="block h-auto w-full bg-soft transition duration-500 group-hover:scale-102"
                       />
                     ) : (
-                      <div className="flex aspect-[3/4] w-full items-center justify-center bg-soft text-xs tracking-[0.2em] text-primary/35 uppercase">
+                      <div className="flex aspect-3/4 w-full items-center justify-center bg-soft text-xs tracking-kicker text-primary/35 uppercase">
                         Touhou
                       </div>
                     )}
                     {item.code && (
-                      <span className="absolute top-2 left-2 rounded-pill bg-background/85 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary backdrop-blur">
+                      <span className="absolute top-2 left-2 rounded-pill bg-background/85 px-2 py-0.5 font-mono text-micro tracking-wider text-primary backdrop-blur">
                         {item.code}
                       </span>
                     )}
@@ -79,7 +79,7 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
                   <div className="space-y-1.5 p-3">
                     <h2 className="text-sm leading-snug font-semibold break-words">{item.title}</h2>
                     {item.originalTitle && (
-                      <p className="line-clamp-1 text-[11px] text-muted-foreground/80">
+                      <p className="line-clamp-1 text-caption text-muted-foreground/80">
                         {item.originalTitle}
                       </p>
                     )}
@@ -89,7 +89,7 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
                         <Badge>{categoryLabel(item.category)}</Badge>
                       )}
                       {showDate(item.releasedAt) && (
-                        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                        <span className="font-mono text-caption tabular-nums text-muted-foreground">
                           {showDate(item.releasedAt)}
                         </span>
                       )}
@@ -124,7 +124,7 @@ export default function TouhouPage({ loaderData }: Route.ComponentProps) {
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-primary"
+                        className="inline-flex items-center gap-1 text-caption text-muted-foreground transition-colors hover:text-primary"
                       >
                         <ExternalLink className="size-3" aria-hidden="true" />
                         相关链接

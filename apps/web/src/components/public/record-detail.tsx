@@ -86,7 +86,7 @@ export function RecordDetail({
               alt={`${title} 封面`}
               className={
                 coverFit === "portrait"
-                  ? "aspect-[3/4] w-full rounded-lg bg-soft object-cover ring-1 ring-border/60"
+                  ? "aspect-3/4 w-full rounded-lg bg-soft object-cover ring-1 ring-border/60"
                   : "block h-auto w-full rounded-lg bg-soft ring-1 ring-border/60"
               }
             />
@@ -94,7 +94,7 @@ export function RecordDetail({
         )}
         <div className="min-w-0 flex-1">
           {kicker && (
-            <p className="text-[11px] tracking-[0.18em] wrap-anywhere text-muted-foreground uppercase">
+            <p className="text-caption tracking-label wrap-anywhere text-muted-foreground uppercase">
               {kicker}
             </p>
           )}
@@ -106,7 +106,7 @@ export function RecordDetail({
                 <span className="inline-flex items-center gap-0.5 font-serif text-sm italic text-primary tabular-nums">
                   <Star className="size-3 fill-current" aria-hidden="true" />
                   {rating}
-                  <span className="text-[11px] text-muted-foreground not-italic">/10</span>
+                  <span className="text-caption text-muted-foreground not-italic">/10</span>
                 </span>
               )}
             </div>
@@ -122,7 +122,7 @@ export function RecordDetail({
             <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-border/60 pt-3 text-sm sm:grid-cols-3">
               {facts.map((fact) => (
                 <div key={fact.label} className="min-w-0">
-                  <dt className="text-[11px] tracking-wide text-muted-foreground">{fact.label}</dt>
+                  <dt className="text-caption tracking-wide text-muted-foreground">{fact.label}</dt>
                   <dd className="mt-0.5 wrap-anywhere tabular-nums">{fact.value}</dd>
                 </div>
               ))}
@@ -133,11 +133,11 @@ export function RecordDetail({
 
       {sections.map((section, index) => (
         <section key={section.label} className={index === 0 ? "mt-7" : "mt-6"}>
-          <h2 className="mb-2 flex items-center gap-2 text-xs tracking-[0.18em] text-primary/70 uppercase">
+          <h2 className="mb-2 flex items-center gap-2 text-xs tracking-label text-primary/70 uppercase">
             {section.label}
             <span className="h-px flex-1 bg-border/70" aria-hidden="true" />
           </h2>
-          <p className="text-[15px] leading-relaxed wrap-anywhere whitespace-pre-wrap text-foreground/90">
+          <p className="text-body leading-relaxed wrap-anywhere whitespace-pre-wrap text-foreground/90">
             {section.body}
           </p>
         </section>
@@ -170,9 +170,7 @@ export function RecordDetail({
 
       {related.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-2 text-xs tracking-[0.18em] text-muted-foreground uppercase">
-            相关条目
-          </h2>
+          <h2 className="mb-2 text-xs tracking-label text-muted-foreground uppercase">相关条目</h2>
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {related.map((item) => (
               <li key={item.to} className="min-w-0">
@@ -185,7 +183,7 @@ export function RecordDetail({
                     {item.title}
                   </span>
                   {item.meta && (
-                    <span className="shrink-0 font-serif text-[11px] italic text-muted-foreground tabular-nums">
+                    <span className="shrink-0 font-serif text-caption italic text-muted-foreground tabular-nums">
                       {item.meta}
                     </span>
                   )}

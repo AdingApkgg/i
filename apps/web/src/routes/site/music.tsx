@@ -8,7 +8,7 @@ import { seo } from "@/lib/seo";
 import type { Route } from "./+types/music";
 
 const prose =
-  "prose-content space-y-3 text-[15px] leading-relaxed [&_a]:text-primary [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:mt-4 [&_h4]:font-semibold [&_img]:rounded-[var(--radius-md)]";
+  "prose-content space-y-3 text-body leading-relaxed [&_a]:text-primary [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:mt-4 [&_h4]:font-semibold [&_img]:rounded-md";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);

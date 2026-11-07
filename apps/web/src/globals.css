@@ -94,6 +94,32 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
 
+  --color-info: var(--info);
+  --color-info-strong: var(--info-strong);
+  --color-info-contrast: var(--info-contrast);
+  --color-warning: var(--warning);
+  --color-warning-strong: var(--warning-strong);
+  --color-warning-contrast: var(--warning-contrast);
+  --color-warning-bright: var(--warning-bright);
+  --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-error: var(--status-error);
+  --color-status-error-strong: var(--status-error-strong);
+  --color-monitor-unknown: var(--monitor-unknown);
+  --color-monitor-online: var(--monitor-online);
+  --color-monitor-offline: var(--monitor-offline);
+  --color-action-danger: var(--action-danger);
+  --color-action-danger-hover: var(--action-danger-hover);
+  --color-action-special: var(--action-special);
+  --color-action-special-hover: var(--action-special-hover);
+  --color-action-on-bright: var(--action-on-bright);
+  --color-activity-0: var(--activity-0);
+  --color-activity-1: var(--activity-1);
+  --color-activity-2: var(--activity-2);
+  --color-activity-3: var(--activity-3);
+  --color-activity-4: var(--activity-4);
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 0.25rem);
   --radius-sm: calc(var(--radius) - 0.4rem);

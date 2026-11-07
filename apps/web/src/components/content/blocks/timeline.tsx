@@ -9,7 +9,7 @@ export function TimelineItem({ label, children }: TimelineItemProps) {
       <span className="absolute left-0 top-1.5 size-3 -translate-x-1/2 rounded-full border-2 border-background bg-primary" />
       <div className="font-semibold text-primary">{label}</div>
       {children != null && (
-        <div className="mt-1 text-[15px] leading-relaxed text-foreground">{children}</div>
+        <div className="mt-1 text-body leading-relaxed text-foreground">{children}</div>
       )}
     </li>
   );

@@ -1,7 +1,47 @@
-/* 原始层：只有色值，没有用途；主题文件通过 var() 引用，不出现任何字面量。
- * step 数字只表示明度顺序（越小越亮），值是当前线上值原样搬运；
- * 第 2 步再收敛成真正的刻度，届时才允许改值。*/
+/* 原始层：只有色值，没有用途；主题文件通过 var() 引用，不出现色值字面量。
+ * 保留现有主题家族的来源编号；状态色沿用 Tailwind v4，内容块兼容历史 sRGB。
+ * 同名颜色的不同来源不强行合并，避免状态徽记、旧文章与难度标识发生色差。 */
 :root {
+  /* 状态与动作色：逐值照搬当前 Tailwind 调色板；signal 不覆盖主题原有 red。 */
+  --palette-sky-300: oklch(82.8% 0.111 230.318);
+  --palette-sky-500: oklch(68.5% 0.169 237.323);
+  --palette-sky-600: oklch(58.8% 0.158 241.966);
+  --palette-amber-300: oklch(87.9% 0.169 91.605);
+  --palette-amber-400: oklch(82.8% 0.189 84.429);
+  --palette-amber-500: oklch(76.9% 0.188 70.08);
+  --palette-amber-600: oklch(66.6% 0.179 58.318);
+  --palette-emerald-500: oklch(69.6% 0.17 162.48);
+  --palette-emerald-600: oklch(59.6% 0.145 163.225);
+  --palette-zinc-500: oklch(55.2% 0.016 285.938);
+  --palette-rose-500: oklch(64.5% 0.246 16.439);
+  --palette-rose-600: oklch(58.6% 0.253 17.585);
+  --palette-gray-400: oklch(70.7% 0.022 261.325);
+  --palette-green-500: oklch(72.3% 0.219 149.579);
+  --palette-signal-500: oklch(63.7% 0.237 25.331);
+  --palette-signal-600: oklch(57.7% 0.245 27.325);
+  --palette-signal-700: oklch(50.5% 0.213 27.518);
+  --palette-violet-500: oklch(60.6% 0.25 292.717);
+  --palette-violet-600: oklch(54.1% 0.281 293.009);
+  --palette-neutral-900: oklch(20.5% 0 none);
+  --palette-azure-500: #3b82f6;
+  --palette-cyan-500: #06b6d4;
+  --palette-leaf-500: #22c55e;
+  --palette-sun-500: #eab308;
+  --palette-flame-500: #f97316;
+  --palette-scarlet-500: #ef4444;
+  --palette-orchid-500: #a855f7;
+  --palette-orchid-300: #e9d5ff;
+  --palette-grass-50: #ebedf0;
+  --palette-grass-100: #9be9a8;
+  --palette-grass-200: #40c463;
+  --palette-grass-300: #30a14e;
+  --palette-grass-400: #216e39;
+  --palette-forest-50: #161b22;
+  --palette-forest-100: #0e4429;
+  --palette-forest-200: #006d32;
+  --palette-forest-300: #26a641;
+  --palette-forest-400: #39d353;
+
   /* plum：月白粉：默认前台明亮主题 */
   --palette-plum-250: oklch(1 0.003 350);
   --palette-plum-300: oklch(0.995 0.006 350);

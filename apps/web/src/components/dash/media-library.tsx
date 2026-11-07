@@ -264,7 +264,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
       }}
       className={cn(
         "pb-24 sm:pb-0",
-        dragging && "rounded-[var(--radius-md)] outline-2 outline-dashed outline-primary",
+        dragging && "rounded-md outline-2 outline-dashed outline-primary",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -344,7 +344,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
             ))}
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <div className="rounded-[var(--radius-md)] border border-border p-2">
+            <div className="rounded-md border border-border p-2">
               <div className="mb-1 text-xs font-medium">类型分布</div>
               <ChartFrame className="h-32" label="媒体类型分布饼图">
                 <ResponsiveContainer width="100%" height="100%">
@@ -368,7 +368,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                   </PieChart>
                 </ResponsiveContainer>
               </ChartFrame>
-              <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
+              <div className="mt-1 flex flex-wrap gap-x-2 text-caption text-muted-foreground">
                 {TYPE_PIE.map((t) => (
                   <span key={t.key} className="inline-flex items-center gap-1">
                     <span className="size-2 rounded-full" style={{ background: t.color }} />
@@ -377,7 +377,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                 ))}
               </div>
             </div>
-            <div className="rounded-[var(--radius-md)] border border-border p-2">
+            <div className="rounded-md border border-border p-2">
               <div className="mb-1 text-xs font-medium">体积分布</div>
               <ChartFrame className="h-32" label="媒体体积分档柱状图">
                 <ResponsiveContainer width="100%" height="100%">
@@ -506,7 +506,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                       ) : null}
                     </div>
                     <CardBody className="space-y-0.5 py-2">
-                      <div className="truncate font-mono text-[11px] text-muted-foreground">
+                      <div className="truncate font-mono text-caption text-muted-foreground">
                         {item.key}
                       </div>
                       <div className="text-xs">
@@ -542,7 +542,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
       )}
 
       {selected.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-1 [&_button]:min-h-10 border-t border-border bg-background/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mt-4 sm:flex-wrap sm:rounded-[var(--radius-md)] sm:border sm:bg-muted/40 sm:p-2 sm:pb-2">
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-1 [&_button]:min-h-10 border-t border-border bg-background/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mt-4 sm:flex-wrap sm:rounded-md sm:border sm:bg-muted/40 sm:p-2 sm:pb-2">
           <span className="mr-1 shrink-0 text-xs text-muted-foreground">已选 {selected.size}</span>
           <Button variant="ghost" onClick={copySelected} aria-label="复制地址">
             <Copy className="size-4" />
@@ -578,7 +578,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
           className="fixed inset-0 z-60 flex flex-col bg-black/60 sm:grid sm:place-items-center sm:p-4"
           role="dialog"
         >
-          <Card className="flex h-full w-full flex-col overflow-y-auto rounded-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[var(--radius-lg)]">
+          <Card className="flex h-full w-full flex-col overflow-y-auto rounded-none sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg">
             <CardBody className="space-y-3 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -599,7 +599,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                     onClick={() => step(-1)}
                     disabled={openIndex <= 0}
                     aria-label="上一张"
-                    className="grid size-9 place-items-center rounded-[var(--radius-md)] text-base hover:bg-muted disabled:opacity-30 sm:size-8"
+                    className="grid size-9 place-items-center rounded-md text-base hover:bg-muted disabled:opacity-30 sm:size-8"
                   >
                     ‹
                   </button>
@@ -608,7 +608,7 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                     onClick={() => step(1)}
                     disabled={openIndex < 0 || openIndex >= items.length - 1}
                     aria-label="下一张"
-                    className="grid size-9 place-items-center rounded-[var(--radius-md)] text-base hover:bg-muted disabled:opacity-30 sm:size-8"
+                    className="grid size-9 place-items-center rounded-md text-base hover:bg-muted disabled:opacity-30 sm:size-8"
                   >
                     ›
                   </button>
@@ -616,14 +616,14 @@ export function MediaLibrary({ orphansOnly = false }: { orphansOnly?: boolean })
                     type="button"
                     onClick={() => setOpen(null)}
                     aria-label="关闭"
-                    className="grid size-9 place-items-center rounded-[var(--radius-md)] hover:bg-muted sm:size-8"
+                    className="grid size-9 place-items-center rounded-md hover:bg-muted sm:size-8"
                   >
                     <X className="size-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="grid max-h-[45vh] place-items-center overflow-hidden rounded-[var(--radius-md)] bg-muted sm:max-h-72">
+              <div className="grid max-h-[45vh] place-items-center overflow-hidden rounded-md bg-muted sm:max-h-72">
                 {open.type === "image" ? (
                   <img
                     src={openUrl}

@@ -45,8 +45,7 @@ export default function BlogEditPage({ params }: Route.ComponentProps) {
     // 编辑中不要因为切回窗口就重新拉取覆盖状态
     refetchOnWindowFocus: false,
   });
-  if (!isNew && isLoading)
-    return <div className="h-[70vh] animate-pulse rounded-[var(--radius-lg)] bg-muted/50" />;
+  if (!isNew && isLoading) return <div className="h-[70vh] animate-pulse rounded-lg bg-muted/50" />;
   if (!isNew && (isError || !data))
     return <div className="text-sm text-muted-foreground">文章不存在或加载失败</div>;
   return <PostEditor key={params.id} post={isNew ? null : data!} />;
@@ -79,7 +78,7 @@ function readDraft(key: string): Draft | null {
 }
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
+  "w-full rounded-md border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30";
 
 function PostEditor({ post }: { post: Post | null }) {
   const navigate = useNavigate();
@@ -318,7 +317,7 @@ function PostEditor({ post }: { post: Post | null }) {
       </div>
 
       {legacyOnly && (
-        <div className="mb-4 rounded-[var(--radius-md)] border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+        <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
           这篇还是旧的 Markdown
           格式，还没迁移到富文本。先在服务器上跑一次迁移脚本（apps/web/scripts/migrate-rich-content.ts）再编辑。
         </div>
@@ -334,9 +333,7 @@ function PostEditor({ post }: { post: Post | null }) {
           />
           {!legacyOnly && (
             <Suspense
-              fallback={
-                <div className="min-h-[60vh] animate-pulse rounded-[var(--radius-lg)] bg-muted/50" />
-              }
+              fallback={<div className="min-h-[60vh] animate-pulse rounded-lg bg-muted/50" />}
             >
               <RichEditor
                 key={editorKey}
@@ -357,7 +354,7 @@ function PostEditor({ post }: { post: Post | null }) {
         <aside className="w-full shrink-0 space-y-4 lg:sticky lg:top-16 lg:w-72">
           <label className="block text-sm">
             <span className="mb-1 block text-muted-foreground">Slug（网址）</span>
-            <div className="flex items-center rounded-[var(--radius-md)] border border-border bg-background text-sm focus-within:border-primary">
+            <div className="flex items-center rounded-md border border-border bg-background text-sm focus-within:border-primary">
               <span className="pl-3 text-muted-foreground">/blog/</span>
               <input
                 value={meta.slug}
@@ -380,7 +377,7 @@ function PostEditor({ post }: { post: Post | null }) {
           <div className="text-sm">
             <span className="mb-1 block text-muted-foreground">封面</span>
             {meta.coverUrl ? (
-              <div className="group relative overflow-hidden rounded-[var(--radius-md)] border border-border">
+              <div className="group relative overflow-hidden rounded-md border border-border">
                 <img
                   src={thumb(meta.coverUrl, 640)}
                   alt=""
@@ -400,7 +397,7 @@ function PostEditor({ post }: { post: Post | null }) {
                 type="button"
                 disabled={coverBusy}
                 onClick={() => void pickCover()}
-                className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-[var(--radius-md)] border border-dashed border-border text-muted-foreground transition hover:border-primary hover:text-primary"
+                className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border text-muted-foreground transition hover:border-primary hover:text-primary"
               >
                 {coverBusy ? (
                   <LoaderCircle className="size-5 animate-spin" />
