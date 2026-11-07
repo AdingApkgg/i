@@ -5,7 +5,13 @@ import { expect, test } from "./fixtures";
  * 一是防止构件被改坏（DOM 契约），二是给出视觉基线（toHaveScreenshot），
  * 三是保证预览页本身在任何宽度下都不横向溢出。
  */
-const SHOT = { animations: "disabled", caret: "hide", fullPage: true } as const;
+// 视觉基线只用来拦「构件/布局被改坏」，字体渲染的细微差异交给阈值
+const SHOT = {
+  animations: "disabled",
+  caret: "hide",
+  fullPage: true,
+  maxDiffPixelRatio: 0.02,
+} as const;
 
 test.describe("设计系统预览页", () => {
   test("三层 token 与五个模式构件都可渲染", async ({ page }) => {
@@ -24,9 +30,9 @@ test.describe("设计系统预览页", () => {
     ]) {
       await expect(page.getByTestId(`pattern-${id}`)).toBeVisible();
     }
-    await expect(page.getByTestId("status-badge").getByText("运行中")).toBeVisible();
-    await expect(page.getByTestId("empty-state").getByText("还没有记录")).toBeVisible();
-    await expect(page.getByTestId("stat-tile").getByText("1 284")).toBeVisible();
+    await expect(page.getByTestId("pattern-status-badge").getByText("运行中")).toBeVisible();
+    await expect(page.getByTestId("pattern-empty-state").getByText("还没有记录")).toBeVisible();
+    await expect(page.getByTestId("pattern-stat-tile").getByText("1 284")).toBeVisible();
 
     // 刻度与语义色区块
     await expect(page.getByTestId("tone-swatches").getByTestId("swatch")).toHaveCount(6);
@@ -40,14 +46,14 @@ test.describe("设计系统预览页", () => {
       .getByTestId("tone-swatches")
       .getByTestId("swatch")
       .first()
-      .evaluate((el) => getComputedStyle(el).backgroundColor);
+      .evaluate((el) => getComputedStyle(el.firstElementChild ?? el).backgroundColor);
 
     await page.emulateMedia({ colorScheme: "dark" });
     const dark = await page
       .getByTestId("tone-swatches")
       .getByTestId("swatch")
       .first()
-      .evaluate((el) => getComputedStyle(el).backgroundColor);
+      .evaluate((el) => getComputedStyle(el.firstElementChild ?? el).backgroundColor);
 
     expect(light).not.toBe(dark);
   });

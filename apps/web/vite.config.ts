@@ -21,5 +21,6 @@ export default defineConfig({
       "@i/ui/tokens/": fileURLToPath(new URL("../../packages/ui/src/tokens/", import.meta.url)),
     },
   },
-  server: { port: 3000 },
+  // 容器内 dev server 默认只听回环，配了反代就得显式对外开放
+  server: { host: true, port: 3000 },
 });
