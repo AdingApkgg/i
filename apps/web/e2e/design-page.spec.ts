@@ -14,7 +14,7 @@ const SHOT = {
 } as const;
 
 test.describe("设计系统预览页", () => {
-  test("三层 token 与五个模式构件都可渲染", async ({ page }) => {
+  test("三层 token 与六个模式构件都可渲染", async ({ page }) => {
     const response = await page.goto("/design");
     expect(response?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 }).first()).toHaveText("设计系统");
@@ -63,6 +63,9 @@ test.describe("设计系统预览页", () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    await expect(
+      page.getByTestId("button-state-default").getByRole("button", { name: "试用" }),
+    ).toBeEnabled();
     await expect(page).toHaveScreenshot("design-desktop.png", SHOT);
   });
 
@@ -72,12 +75,18 @@ test.describe("设计系统预览页", () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    await expect(
+      page.getByTestId("button-state-default").getByRole("button", { name: "试用" }),
+    ).toBeEnabled();
     await expect(page).toHaveScreenshot("design-mobile.png", SHOT);
   });
 
   test("暗色：整页视觉基线", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/design");
+    await expect(
+      page.getByTestId("button-state-default").getByRole("button", { name: "试用" }),
+    ).toBeEnabled();
     await expect(page).toHaveScreenshot("design-dark.png", SHOT);
   });
 });
