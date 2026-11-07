@@ -19,8 +19,8 @@ import {
   Search,
   Server,
   Sparkles,
-  TriangleAlert,
 } from "lucide-react";
+import { DesignStates } from "@/components/public/design-states";
 import { seo } from "@/lib/seo";
 import type { Route } from "./+types/design";
 
@@ -214,21 +214,7 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="space-y-4">
-        <SectionHeader title="基层构件" description="按钮变体；语义色同样只走 variant" />
-        <Card>
-          <CardBody className="flex flex-wrap gap-2">
-            <Button>主要</Button>
-            <Button variant="soft">次要</Button>
-            <Button variant="outline">描边</Button>
-            <Button variant="ghost">幽灵</Button>
-            <Button variant="destructive">
-              <TriangleAlert aria-hidden="true" />
-              危险
-            </Button>
-          </CardBody>
-        </Card>
-      </section>
+      <DesignStates />
     </div>
   );
 }
