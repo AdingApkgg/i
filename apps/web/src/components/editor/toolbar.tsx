@@ -55,7 +55,7 @@ export function Btn({
       onMouseDown={(e) => e.preventDefault()} // 不抢编辑器焦点、不丢选区
       onClick={onClick}
       className={cn(
-        "inline-flex size-8 items-center justify-center rounded-[var(--radius-sm)] transition disabled:opacity-40",
+        "inline-flex size-8 items-center justify-center rounded-sm transition disabled:opacity-40",
         active
           ? "bg-primary/15 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -94,7 +94,7 @@ export function Popover({
       {open && (
         <div
           className={cn(
-            "absolute top-full z-30 mt-1 rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg",
+            "absolute top-full z-30 mt-1 rounded-md border border-border bg-popover p-1 shadow-lg",
             align === "right" ? "right-0" : "left-0",
           )}
         >
@@ -235,7 +235,7 @@ export function Toolbar({ editor }: { editor: Editor }) {
               .setHeading({ level: Number(v) as 1 | 2 | 3 | 4 })
               .run();
         }}
-        className="h-8 rounded-[var(--radius-sm)] bg-transparent px-1.5 text-sm text-foreground outline-none hover:bg-muted"
+        className="h-8 rounded-sm bg-transparent px-1.5 text-sm text-foreground outline-none hover:bg-muted"
       >
         {BLOCK_TYPES.map((b) => (
           <option key={b.value} value={b.value}>
@@ -348,7 +348,7 @@ export function Toolbar({ editor }: { editor: Editor }) {
             onMouseDown={(e) => e.preventDefault()}
             onClick={toggle}
             className={cn(
-              "inline-flex h-8 items-center gap-1 rounded-[var(--radius-sm)] px-2 text-sm transition",
+              "inline-flex h-8 items-center gap-1 rounded-sm px-2 text-sm transition",
               open
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -371,7 +371,7 @@ export function Toolbar({ editor }: { editor: Editor }) {
                   it.run(editor);
                   close();
                 }}
-                className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-sm hover:bg-muted"
+                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
               >
                 <it.icon className="size-4 text-muted-foreground" />
                 {it.label}

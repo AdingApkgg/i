@@ -111,7 +111,7 @@ export default function TokensPage() {
             把下面这段连同 token 一起给 AI，它就有完整的接入方式；MCP 客户端直接填{" "}
             <code className="rounded bg-muted px-1">{ORIGIN}/api/mcp</code>。
           </p>
-          <pre className="max-h-56 overflow-auto rounded-[var(--radius-md)] border border-border bg-muted/40 p-3 text-xs leading-relaxed">
+          <pre className="max-h-56 overflow-auto rounded-md border border-border bg-muted/40 p-3 text-xs leading-relaxed">
             {prompt}
           </pre>
           <div className="flex flex-wrap gap-2">
@@ -180,7 +180,7 @@ export default function TokensPage() {
             </Button>
           </form>
           {secret && (
-            <div className="rounded-[var(--radius-md)] border border-primary/40 bg-primary/5 p-3">
+            <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">新 token（关掉就不再显示）</p>
               <div className="mt-1 flex items-center gap-2">
                 <code className="min-w-0 flex-1 break-all text-xs">{secret}</code>

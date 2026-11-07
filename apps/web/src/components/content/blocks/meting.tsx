@@ -75,7 +75,7 @@ function SongRow({ server, mid, onPlay }: { server: string; mid: string; onPlay:
       ref={ref}
       type="button"
       onClick={onPlay}
-      className="group my-0.5 flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-border bg-card px-3 py-2 text-left transition hover:border-primary/50 hover:bg-soft"
+      className="group my-0.5 flex w-full items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition hover:border-primary/50 hover:bg-soft"
     >
       {song?.pic ? (
         <motion.img

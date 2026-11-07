@@ -28,19 +28,19 @@ import type { RouterOutputs } from "@/server/router";
 type FriendRow = RouterOutputs["friends"]["adminList"][number];
 
 const inputCls =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-md border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  active: { label: "已通过", cls: "bg-emerald-500/10 text-emerald-600" },
-  pending: { label: "待审核", cls: "bg-amber-500/10 text-amber-600" },
-  rejected: { label: "已拒绝", cls: "bg-zinc-500/10 text-zinc-500" },
-  outdate: { label: "失联", cls: "bg-rose-500/10 text-rose-600" },
+  active: { label: "已通过", cls: "bg-success/10 text-success-strong" },
+  pending: { label: "待审核", cls: "bg-warning/10 text-warning-strong" },
+  rejected: { label: "已拒绝", cls: "bg-status-neutral/10 text-status-neutral" },
+  outdate: { label: "失联", cls: "bg-status-error/10 text-status-error-strong" },
 };
 
 function StatusBadge({ status }: { status: string }) {
   const m = STATUS_META[status] ?? { label: status, cls: "bg-soft text-muted-foreground" };
   return (
-    <span className={cn("inline-flex rounded-pill px-2 py-0.5 text-[11px] font-medium", m.cls)}>
+    <span className={cn("inline-flex rounded-pill px-2 py-0.5 text-caption font-medium", m.cls)}>
       {m.label}
     </span>
   );
@@ -67,8 +67,8 @@ function CheckInfo({ f }: { f: FriendRow }) {
           f.reachable == null
             ? "text-muted-foreground"
             : f.reachable
-              ? "text-emerald-600"
-              : "text-rose-600"
+              ? "text-success-strong"
+              : "text-status-error-strong"
         }
       >
         {f.reachable == null ? "存活未知" : f.reachable ? "存活" : `不可达 ×${f.failCount}`}
@@ -79,8 +79,8 @@ function CheckInfo({ f }: { f: FriendRow }) {
           f.backlinked == null
             ? "text-muted-foreground"
             : f.backlinked
-              ? "text-emerald-600"
-              : "text-amber-600"
+              ? "text-success-strong"
+              : "text-warning-strong"
         }
       >
         {f.backlinked == null ? "反链未知" : f.backlinked ? "有反链" : "无反链"}
@@ -364,9 +364,7 @@ export function FriendsAdmin() {
                         {f.applicantId && <span className="ml-3">已登录用户</span>}
                       </div>
                       {f.message && (
-                        <div className="mt-2 rounded-[var(--radius-md)] bg-soft/50 p-2 text-xs">
-                          {f.message}
-                        </div>
+                        <div className="mt-2 rounded-md bg-soft/50 p-2 text-xs">{f.message}</div>
                       )}
                     </div>
                     <CheckInfo f={f} />
@@ -406,7 +404,7 @@ export function FriendsAdmin() {
         {loading ? (
           <CardBody className="space-y-2.5">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-9 animate-pulse rounded-[var(--radius-md)] bg-soft" />
+              <div key={i} className="h-9 animate-pulse rounded-md bg-soft" />
             ))}
           </CardBody>
         ) : isError ? (
@@ -443,7 +441,7 @@ export function FriendsAdmin() {
                     <button
                       type="button"
                       aria-label="编辑"
-                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-primary active:bg-muted"
+                      className="grid size-10 place-items-center rounded-md text-primary active:bg-muted"
                       onClick={() => startEdit(f)}
                     >
                       <Pencil className="size-4" />
@@ -451,7 +449,7 @@ export function FriendsAdmin() {
                     <button
                       type="button"
                       aria-label="检测"
-                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-muted-foreground active:bg-muted"
+                      className="grid size-10 place-items-center rounded-md text-muted-foreground active:bg-muted"
                       onClick={() => checkOne(f)}
                     >
                       <RefreshCw className="size-4" />
@@ -459,7 +457,7 @@ export function FriendsAdmin() {
                     <button
                       type="button"
                       aria-label="删除"
-                      className="grid size-10 place-items-center rounded-[var(--radius-md)] text-muted-foreground active:bg-muted"
+                      className="grid size-10 place-items-center rounded-md text-muted-foreground active:bg-muted"
                       onClick={() => remove(f)}
                     >
                       <Trash2 className="size-4" />
@@ -485,7 +483,7 @@ export function FriendsAdmin() {
                       key={f.id}
                       className="border-b border-border/60 last:border-0 hover:bg-muted/40"
                     >
-                      <td className="max-w-[20rem] px-4 py-2.5">
+                      <td className="max-w-80 px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar f={f} />
                           <div className="min-w-0">

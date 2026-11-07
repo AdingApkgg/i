@@ -468,7 +468,7 @@ function MiniDisc({ song, visuals }: { song: MetingSong; visuals: Visuals }) {
 /** 进度条单独订阅 time，播放中每秒几次的更新只重绘这一小块 */
 function Progress() {
   return (
-    <div className="mt-3 flex items-center gap-2 text-[10px] tabular-nums text-muted-foreground">
+    <div className="mt-3 flex items-center gap-2 text-micro tabular-nums text-muted-foreground">
       <Time.Value type="current" />
       <TimeSlider.Root step={5} label="播放进度" className="music-slider flex-1">
         <TimeSlider.Track className="music-slider-track">
@@ -494,7 +494,7 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 16, scale: 0.92 }}
       transition={{ type: "spring", stiffness: 380, damping: 30 }}
-      className="max-h-[calc(100dvh-2rem)] w-72 overflow-y-auto rounded-[var(--radius-lg)] border border-border bg-card/95 p-3 shadow-lg backdrop-blur"
+      className="max-h-[calc(100dvh-2rem)] w-72 overflow-y-auto rounded-lg border border-border bg-card/95 p-3 shadow-lg backdrop-blur"
     >
       {/* header */}
       <div className="flex items-center gap-3">
@@ -504,12 +504,12 @@ function ExpandedPanel({ song, visuals }: { song: MetingSong; visuals: Visuals }
           <div className="truncate text-xs text-muted-foreground">{song.artist}</div>
         </div>
         {visuals.analyserReady && (
-          <div aria-hidden className="flex h-5 shrink-0 items-end gap-[2px]">
+          <div aria-hidden className="flex h-5 shrink-0 items-end gap-0.5">
             {visuals.bars.map((bar, i) => (
               <motion.span
                 // biome-ignore lint/suspicious/noArrayIndexKey: static band count
                 key={i}
-                className="h-full w-[3px] origin-bottom rounded-full bg-primary/80"
+                className="h-full w-0.75 origin-bottom rounded-full bg-primary/80"
                 style={{ scaleY: bar }}
               />
             ))}
@@ -628,7 +628,7 @@ function Queue() {
             ref={i === index ? currentRef : undefined}
             aria-current={i === index ? "true" : undefined}
             onClick={() => switchTo(i)}
-            className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs transition ${
+            className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs transition ${
               i === index
                 ? "bg-soft font-medium text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -636,7 +636,7 @@ function Queue() {
           >
             <span className="w-5 shrink-0 text-right tabular-nums">{i + 1}</span>
             <span className="min-w-0 flex-1 truncate">{s.name}</span>
-            <span className="max-w-[80px] shrink-0 truncate opacity-70">{s.artist}</span>
+            <span className="max-w-20 shrink-0 truncate opacity-70">{s.artist}</span>
           </button>
         ))}
       </section>

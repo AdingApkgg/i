@@ -23,8 +23,7 @@ import {
 } from "lucide-react";
 import { Btn, ColorMenu, setLink } from "./toolbar";
 
-const panel =
-  "flex items-center gap-0.5 rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg";
+const panel = "flex items-center gap-0.5 rounded-md border border-border bg-popover p-1 shadow-lg";
 
 export function TextBubbleMenu({ editor }: { editor: Editor }) {
   const s = useEditorState({

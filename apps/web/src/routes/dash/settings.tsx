@@ -11,7 +11,7 @@ import { reportAuthError } from "@/lib/form";
 import { changePasswordSchema } from "@/lib/schemas";
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-md border border-border bg-background px-3 py-2 min-h-10 sm:min-h-0 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 const EMPTY = { currentPassword: "", newPassword: "" };
 

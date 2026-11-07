@@ -3,12 +3,12 @@ import type * as React from "react";
 import { faIcon } from "./fa-icon";
 
 const COLOR_MAP: Record<string, string> = {
-  blue: "#3b82f6",
-  cyan: "#06b6d4",
-  green: "#22c55e",
-  yellow: "#eab308",
-  orange: "#f97316",
-  red: "#ef4444",
+  blue: "var(--content-blue)",
+  cyan: "var(--content-cyan)",
+  green: "var(--content-green)",
+  yellow: "var(--content-yellow)",
+  orange: "var(--content-orange)",
+  red: "var(--content-red)",
   pink: "var(--primary)",
 };
 
@@ -33,7 +33,7 @@ export function Note({
 
   return (
     <div
-      className={cn("my-4 flex items-start gap-3 rounded-[var(--radius-md)] px-4 py-3")}
+      className={cn("my-4 flex items-start gap-3 rounded-md px-4 py-3")}
       style={{
         borderLeft: `3px solid ${accent}`,
         background: `color-mix(in srgb, ${accent} 10%, transparent)`,

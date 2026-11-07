@@ -2,8 +2,7 @@ import { Button, Card, CardBody } from "@i/ui";
 import { useState } from "react";
 import { COLLECTION_LABELS, type CollectionState, EPISODE_LABELS } from "@/lib/bangumi/types";
 import type { RouterOutputs } from "@/server/router";
-export const fieldClass =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm";
+export const fieldClass = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
 type Entry = RouterOutputs["bangumi"]["list"][number];
 export function EntryEditor({
   entry,

@@ -15,11 +15,11 @@ type BtnProps = {
 const COLOR: Record<string, string> = {
   pink: "bg-primary text-primary-foreground hover:opacity-90",
   primary: "bg-primary text-primary-foreground hover:opacity-90",
-  blue: "bg-sky-500 text-white hover:bg-sky-600",
-  green: "bg-emerald-500 text-white hover:bg-emerald-600",
-  red: "bg-red-600 text-white hover:bg-red-700",
-  purple: "bg-violet-500 text-white hover:bg-violet-600",
-  yellow: "bg-amber-400 text-neutral-900 hover:bg-amber-500",
+  blue: "bg-info text-white hover:bg-info-strong",
+  green: "bg-success text-white hover:bg-success-strong",
+  red: "bg-action-danger text-white hover:bg-action-danger-hover",
+  purple: "bg-action-special text-white hover:bg-action-special-hover",
+  yellow: "bg-warning-bright text-action-on-bright hover:bg-warning",
   gray: "bg-soft text-accent-foreground hover:brightness-95",
 };
 

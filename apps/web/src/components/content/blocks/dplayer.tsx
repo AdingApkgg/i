@@ -17,7 +17,7 @@ function VideoPlayer({ url, pic }: { url: string; pic?: string }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const frame =
-    "relative aspect-video w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-black";
+    "relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-black";
   return (
     <section aria-label="视频播放器" className={cn(frame, "my-5")}>
       {failed ? (

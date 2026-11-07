@@ -25,8 +25,7 @@ export default function PageEditPage({ params }: Route.ComponentProps) {
     queryFn: () => client.page.get({ id: params.id }),
     refetchOnWindowFocus: false,
   });
-  if (isLoading)
-    return <div className="h-[70vh] animate-pulse rounded-[var(--radius-lg)] bg-muted/50" />;
+  if (isLoading) return <div className="h-[70vh] animate-pulse rounded-lg bg-muted/50" />;
   if (!data) return <div className="text-sm text-muted-foreground">页面不存在</div>;
   return <PageEditor key={data.id} page={data} />;
 }
@@ -124,7 +123,7 @@ function PageEditor({ page }: { page: Page }) {
         </div>
       </div>
       {legacyOnly && (
-        <div className="mb-4 rounded-[var(--radius-md)] border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+        <div className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
           这一页还是旧的 Markdown 格式，先跑一次迁移脚本再编辑。
         </div>
       )}
@@ -137,11 +136,7 @@ function PageEditor({ page }: { page: Page }) {
         className="mb-3 w-full bg-transparent text-3xl font-bold tracking-wide outline-none"
       />
       {!legacyOnly && (
-        <Suspense
-          fallback={
-            <div className="min-h-[60vh] animate-pulse rounded-[var(--radius-lg)] bg-muted/50" />
-          }
-        >
+        <Suspense fallback={<div className="min-h-[60vh] animate-pulse rounded-lg bg-muted/50" />}>
           <RichEditor
             initialContent={docRef.current}
             onChange={(doc) => {

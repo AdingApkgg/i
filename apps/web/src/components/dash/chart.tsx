@@ -39,7 +39,7 @@ export function ChartFrame({
   return (
     <figure className={cn("h-full min-w-0", className)} aria-label={label}>
       {!mounted || empty ? (
-        <div className="grid h-full place-items-center rounded-[var(--radius-md)] bg-soft/60 text-xs text-muted-foreground">
+        <div className="grid h-full place-items-center rounded-md bg-soft/60 text-xs text-muted-foreground">
           {mounted && empty ? "暂无数据" : null}
         </div>
       ) : (
@@ -63,7 +63,7 @@ export function ChartTip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-[var(--radius-md)] border border-border bg-card px-2.5 py-1.5 text-xs shadow-sm">
+    <div className="rounded-md border border-border bg-card px-2.5 py-1.5 text-xs shadow-sm">
       {label != null && <div className="mb-0.5 text-muted-foreground">{label}</div>}
       {payload.map((p) => (
         <div key={String(p.name)} className="flex items-center gap-1.5">

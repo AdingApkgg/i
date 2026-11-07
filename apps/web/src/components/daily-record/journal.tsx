@@ -9,11 +9,11 @@ import type { RouterOutputs } from "@/server/router";
 
 type YearData = RouterOutputs["dailyRecord"]["year"];
 const colors = [
-  "bg-[#ebedf0] dark:bg-[#161b22]",
-  "bg-[#9be9a8] dark:bg-[#0e4429]",
-  "bg-[#40c463] dark:bg-[#006d32]",
-  "bg-[#30a14e] dark:bg-[#26a641]",
-  "bg-[#216e39] dark:bg-[#39d353]",
+  "bg-activity-0",
+  "bg-activity-1",
+  "bg-activity-2",
+  "bg-activity-3",
+  "bg-activity-4",
 ];
 const input =
   "rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
@@ -130,7 +130,7 @@ export function DailyJournal({
           >
             <div className="w-max pb-1">
               <div
-                className="mb-2 ml-8 grid gap-[3px] text-[10px] text-muted-foreground"
+                className="mb-2 ml-8 grid gap-fine text-micro text-muted-foreground"
                 style={{ gridTemplateColumns: `repeat(${calendar.weeks.length}, 13px)` }}
               >
                 {calendar.months.map((month) => (
@@ -143,7 +143,7 @@ export function DailyJournal({
                 ))}
               </div>
               <div className="flex gap-2">
-                <div className="grid w-6 grid-rows-7 gap-[3px] text-[10px] leading-[13px] text-muted-foreground">
+                <div className="grid w-6 grid-rows-7 gap-fine text-micro leading-cell text-muted-foreground">
                   <span />
                   <span>一</span>
                   <span />
@@ -153,7 +153,7 @@ export function DailyJournal({
                   <span />
                 </div>
                 <div
-                  className="grid grid-flow-col grid-rows-7 gap-[3px]"
+                  className="grid grid-flow-col grid-rows-7 gap-fine"
                   style={{ gridAutoColumns: "13px" }}
                 >
                   {calendar.weeks
@@ -163,7 +163,7 @@ export function DailyJournal({
                         <span
                           key={day.date}
                           aria-hidden="true"
-                          className={cn("size-[13px] rounded-[3px]", day.inYear && "bg-muted/30")}
+                          className={cn("size-cell rounded-cell", day.inYear && "bg-muted/30")}
                         />
                       ) : (
                         <button
@@ -175,7 +175,7 @@ export function DailyJournal({
                           disabled={busy || navigation.state !== "idle"}
                           onClick={() => setSelected(day.date)}
                           className={cn(
-                            "size-[13px] rounded-[3px] outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            "size-cell rounded-cell outline-none focus-visible:ring-2 focus-visible:ring-primary",
                             colors[Math.min(4, day.count)],
                             selected === day.date &&
                               "ring-2 ring-primary ring-offset-1 ring-offset-background",
@@ -195,7 +195,7 @@ export function DailyJournal({
                 <span
                   key={color}
                   title={n === 4 ? "4 次及以上" : `${n} 次`}
-                  className={cn("size-[13px] rounded-[3px]", color)}
+                  className={cn("size-cell rounded-cell", color)}
                 />
               ))}
               多

@@ -346,10 +346,7 @@ export function PhotosAdmin() {
               {photosQ.isLoading ? (
                 <CardBody className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
                   {[...Array(12).keys()].map((i) => (
-                    <div
-                      key={i}
-                      className="aspect-square animate-pulse rounded-[var(--radius-md)] bg-soft"
-                    />
+                    <div key={i} className="aspect-square animate-pulse rounded-md bg-soft" />
                   ))}
                 </CardBody>
               ) : photosQ.isError ? (
@@ -366,7 +363,7 @@ export function PhotosAdmin() {
                       <div
                         key={p.id}
                         className={cn(
-                          "group relative aspect-square overflow-hidden rounded-[var(--radius-md)] bg-soft",
+                          "group relative aspect-square overflow-hidden rounded-md bg-soft",
                           on && "ring-2 ring-primary",
                         )}
                       >
@@ -382,7 +379,7 @@ export function PhotosAdmin() {
                             loading="lazy"
                             className={cn(
                               "h-full w-full object-cover transition",
-                              on ? "scale-95 rounded-[var(--radius-md)]" : "group-hover:scale-105",
+                              on ? "scale-95 rounded-md" : "group-hover:scale-105",
                             )}
                           />
                         </button>
@@ -397,7 +394,7 @@ export function PhotosAdmin() {
                           {on && <Check className="size-3.5" />}
                         </span>
                         {filter === "all" && p.album && (
-                          <span className="pointer-events-none absolute bottom-1 left-1.5 max-w-[80%] truncate rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+                          <span className="pointer-events-none absolute bottom-1 left-1.5 max-w-[80%] truncate rounded bg-black/50 px-1.5 py-0.5 text-micro text-white">
                             {p.album.name}
                           </span>
                         )}

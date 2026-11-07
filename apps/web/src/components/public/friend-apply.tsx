@@ -24,7 +24,7 @@ type FormOut = z.output<typeof friendApplySchema>;
 const EMPTY: FormIn = { name: "", url: "", avatarUrl: "", description: "", email: "", message: "" };
 
 const input =
-  "w-full rounded-[var(--radius-md)] border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30 aria-invalid:border-destructive";
 
 /** 自助申请友链：匿名填邮箱，登录则沿用账号信息。 */
 export function FriendApply({
@@ -104,7 +104,7 @@ export function FriendApply({
           )}
         </div>
 
-        <div className="rounded-[var(--radius-md)] bg-soft/50 p-3 font-mono text-xs leading-6 text-muted-foreground">
+        <div className="rounded-md bg-soft/50 p-3 font-mono text-xs leading-6 text-muted-foreground">
           <div>名称：{site.name}</div>
           <div>地址：{site.url}</div>
           <div>描述：{site.description}</div>

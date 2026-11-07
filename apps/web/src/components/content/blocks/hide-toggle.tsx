@@ -4,12 +4,12 @@ import type * as React from "react";
 import { useState } from "react";
 
 const COLOR_MAP: Record<string, string> = {
-  blue: "#3b82f6",
-  cyan: "#06b6d4",
-  green: "#22c55e",
-  yellow: "#eab308",
-  orange: "#f97316",
-  red: "#ef4444",
+  blue: "var(--content-blue)",
+  cyan: "var(--content-cyan)",
+  green: "var(--content-green)",
+  yellow: "var(--content-yellow)",
+  orange: "var(--content-orange)",
+  red: "var(--content-red)",
   pink: "var(--primary)",
 };
 
@@ -30,7 +30,7 @@ export function HideToggle({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="my-4 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card">
+    <div className="my-4 overflow-hidden rounded-md border border-border bg-card">
       <button
         type="button"
         aria-expanded={open}

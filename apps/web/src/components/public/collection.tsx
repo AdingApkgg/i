@@ -6,7 +6,7 @@ import { thumbProps } from "@/lib/thumb";
 
 export function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-pill bg-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+    <span className="inline-flex items-center rounded-pill bg-soft px-2 py-0.5 text-caption font-medium text-primary">
       {children}
     </span>
   );
@@ -47,10 +47,10 @@ export function Collection({ items, empty }: { items: CollectionItem[]; empty?: 
                 )}
                 alt={it.title}
                 loading="lazy"
-                className="aspect-[3/4] w-full object-cover"
+                className="aspect-3/4 w-full object-cover"
               />
             ) : (
-              <div className="flex aspect-[3/4] w-full items-center justify-center bg-soft text-primary/40">
+              <div className="flex aspect-3/4 w-full items-center justify-center bg-soft text-primary/40">
                 <ImageIcon className="size-8" />
               </div>
             )}

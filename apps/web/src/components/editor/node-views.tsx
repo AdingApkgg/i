@@ -26,18 +26,18 @@ import { thumb } from "@/lib/thumb";
 import { pickImages, uploadImage } from "./upload";
 
 const input =
-  "h-7 rounded-[var(--radius-sm)] border border-border bg-background px-2 text-xs outline-none focus:border-primary";
+  "h-7 rounded-sm border border-border bg-background px-2 text-xs outline-none focus:border-primary";
 const iconBtn =
-  "inline-flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition hover:bg-muted hover:text-foreground";
+  "inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition hover:bg-muted hover:text-foreground";
 
 export const COLORS: { value: string; label: string; css: string }[] = [
   { value: "", label: "主题色", css: "var(--primary)" },
-  { value: "blue", label: "蓝", css: "#3b82f6" },
-  { value: "cyan", label: "青", css: "#06b6d4" },
-  { value: "green", label: "绿", css: "#22c55e" },
-  { value: "yellow", label: "黄", css: "#eab308" },
-  { value: "orange", label: "橙", css: "#f97316" },
-  { value: "red", label: "红", css: "#ef4444" },
+  { value: "blue", label: "蓝", css: "var(--content-blue)" },
+  { value: "cyan", label: "青", css: "var(--content-cyan)" },
+  { value: "green", label: "绿", css: "var(--content-green)" },
+  { value: "yellow", label: "黄", css: "var(--content-yellow)" },
+  { value: "orange", label: "橙", css: "var(--content-orange)" },
+  { value: "red", label: "红", css: "var(--content-red)" },
 ];
 const colorCss = (v: unknown) => COLORS.find((c) => c.value === (v ?? ""))?.css ?? "var(--primary)";
 
@@ -98,10 +98,7 @@ export function CalloutView({ node, updateAttributes, selected }: NodeViewProps)
   const Icon = faIcon(node.attrs.icon ?? undefined);
   return (
     <NodeViewWrapper
-      className={cn(
-        "my-4 rounded-[var(--radius-md)] px-4 py-3",
-        selected && "ring-2 ring-primary/40",
-      )}
+      className={cn("my-4 rounded-md px-4 py-3", selected && "ring-2 ring-primary/40")}
       style={{
         borderLeft: `3px solid ${accent}`,
         background: `color-mix(in srgb, ${accent} 10%, transparent)`,
@@ -149,7 +146,7 @@ export function TabsView({ node, editor, getPos }: NodeViewProps) {
       .run();
   }
   return (
-    <NodeViewWrapper className="my-5 rounded-[var(--radius-md)] border border-dashed border-border p-3">
+    <NodeViewWrapper className="my-5 rounded-md border border-dashed border-border p-3">
       <Bar className="mb-2">
         <span>标签页 · {node.childCount} 个</span>
         <button type="button" className={cn(iconBtn, "w-auto gap-1 px-1.5")} onClick={addTab}>
@@ -165,7 +162,7 @@ export function TabView({ node, updateAttributes, deleteNode, editor, getPos }: 
   const pos = getPos();
   const siblings = typeof pos === "number" ? editor.state.doc.resolve(pos).parent.childCount : 1;
   return (
-    <NodeViewWrapper className="rounded-[var(--radius-md)] bg-card p-3">
+    <NodeViewWrapper className="rounded-md bg-card p-3">
       <Bar className="mb-2">
         <input
           className={cn(input, "w-40 font-medium text-foreground")}
@@ -269,7 +266,7 @@ function AtomFrame({
     <NodeViewWrapper
       data-drag-handle
       className={cn(
-        "my-4 rounded-[var(--radius-md)] border border-border bg-card p-3 transition",
+        "my-4 rounded-md border border-border bg-card p-3 transition",
         selected && "border-primary ring-2 ring-primary/30",
       )}
     >
@@ -332,7 +329,7 @@ export function GalleryView({ node, updateAttributes, deleteNode, selected }: No
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: 同一张图可能加两次，地址不唯一
             key={`${im.src}-${i}`}
-            className="group relative aspect-square overflow-hidden rounded-[var(--radius-sm)] bg-muted"
+            className="group relative aspect-square overflow-hidden rounded-sm bg-muted"
           >
             <img src={thumb(im.src, 320)} alt={im.alt ?? ""} className="size-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex justify-between bg-black/50 p-1 opacity-0 transition group-hover:opacity-100">
@@ -359,7 +356,7 @@ export function GalleryView({ node, updateAttributes, deleteNode, selected }: No
           onClick={async () =>
             run(await pickImages(), (urls) => set([...images, ...urls.map((src) => ({ src }))]))
           }
-          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-dashed border-border text-xs text-muted-foreground transition hover:border-primary hover:text-primary"
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-border text-xs text-muted-foreground transition hover:border-primary hover:text-primary"
         >
           {busy ? (
             <LoaderCircle className="size-5 animate-spin" />
@@ -387,7 +384,7 @@ export function GalleryCardView({ node, updateAttributes, deleteNode, selected }
           onClick={async () =>
             run(await pickImages(false), ([cover]) => updateAttributes({ cover }))
           }
-          className="relative aspect-video w-40 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-muted text-xs text-muted-foreground"
+          className="relative aspect-video w-40 shrink-0 overflow-hidden rounded-sm bg-muted text-xs text-muted-foreground"
           title="更换封面"
         >
           {a.cover ? (
@@ -441,7 +438,7 @@ export function VideoView({ node, updateAttributes, deleteNode, selected }: Node
           onClick={async () =>
             run(await pickImages(false), ([poster]) => updateAttributes({ poster }))
           }
-          className="relative aspect-video w-40 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-muted text-xs text-muted-foreground"
+          className="relative aspect-video w-40 shrink-0 overflow-hidden rounded-sm bg-muted text-xs text-muted-foreground"
           title="更换封面"
         >
           {node.attrs.poster ? (
@@ -534,7 +531,7 @@ export function EmbedView({ node, updateAttributes, deleteNode, selected }: Node
         </div>
         {src ? (
           <div
-            className="pointer-events-none overflow-hidden rounded-[var(--radius-sm)] bg-muted"
+            className="pointer-events-none overflow-hidden rounded-sm bg-muted"
             style={{ aspectRatio: node.attrs.ratio }}
           >
             <iframe
@@ -586,7 +583,7 @@ export function ButtonLinkView({ node, updateAttributes, selected }: NodeViewPro
       {selected && (
         <span
           contentEditable={false}
-          className="absolute top-full left-0 z-20 mt-1 flex w-72 flex-col gap-1.5 rounded-[var(--radius-md)] border border-border bg-popover p-2 shadow-lg"
+          className="absolute top-full left-0 z-20 mt-1 flex w-72 flex-col gap-1.5 rounded-md border border-border bg-popover p-2 shadow-lg"
         >
           <Field label="文字">
             <input
@@ -645,7 +642,7 @@ export function ImageView({ node, updateAttributes, selected }: NodeViewProps) {
           data-drag-handle
           src={a.src}
           alt={a.alt ?? ""}
-          className={cn("mx-auto rounded-[var(--radius-md)]", selected && "ring-2 ring-primary")}
+          className={cn("mx-auto rounded-md", selected && "ring-2 ring-primary")}
         />
         {busy && (
           <LoaderCircle className="absolute inset-0 m-auto size-6 animate-spin text-white" />
@@ -758,7 +755,7 @@ export function CodeBlockView({ node, updateAttributes }: NodeViewProps) {
           </option>
         ))}
       </select>
-      <pre className="overflow-x-auto rounded-[var(--radius-md)] bg-soft p-4 text-[13px]">
+      <pre className="overflow-x-auto rounded-md bg-soft p-4 text-code">
         <NodeViewContent<"code"> as="code" className={lang ? `hljs language-${lang}` : "hljs"} />
       </pre>
     </NodeViewWrapper>
