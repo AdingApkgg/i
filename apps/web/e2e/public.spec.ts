@@ -20,12 +20,15 @@ const PAGES = [
   "/monitor",
   "/maimai",
   "/about",
+  "/design",
 ];
 
 test.describe("前台页面（含看板娘）", () => {
   test.use({ showMascot: true });
 
   test("前台各页面服务端直出 200，水合后无报错", async ({ page }) => {
+    // 十几页逐个直出，dev 首编译慢，放宽到三倍超时
+    test.slow();
     for (const path of PAGES) {
       const res = await page.goto(path);
       expect(res?.status(), path).toBe(200);
@@ -149,11 +152,24 @@ test("友链申请：前端校验提示 → 提交成功", async ({ page }) => {
 
 test("访客注册：密码太短就地提示 → 注册成功后出现评论框", async ({ page }) => {
   await page.goto("/blog/hello-world");
-  await page.getByText("没有账号？去注册").click();
+  // SSR 出来的切换按钮在水合前点是空点：点到达成为止。
+  // 切换成功后按钮会换成「已有账号？去登录」，所以每次点击都要限时并容错。
+  for (let i = 0; i < 10; i++) {
+    try {
+      await page.getByText("没有账号？去注册").click({ timeout: 1500 });
+    } catch {
+      // 元素已被切换掉
+    }
+    if (await page.getByText("注册一个访客账号").count()) break;
+    await page.waitForTimeout(300);
+  }
+  // 切换成功后再填，否则会填进登录表单
+  await expect(page.getByText("注册一个访客账号")).toBeVisible();
   await page.getByPlaceholder("邮箱").fill(`visitor-${Date.now()}@example.org`);
   await page.getByPlaceholder("密码").fill("123");
   await page.getByRole("button", { name: "注册" }).click();
-  await expect(page.getByText("密码至少 6 位")).toBeVisible();
+  // dev 下 auth 路由首编译会明显超出默认 5s
+  await expect(page.getByText("密码至少 6 位")).toBeVisible({ timeout: 15_000 });
 
   await page.getByPlaceholder("密码").fill("visitor-pass");
   await page.getByRole("button", { name: "注册" }).click();
