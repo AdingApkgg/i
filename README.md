@@ -85,6 +85,15 @@ CI（`.github/workflows/ci.yml`）每次推送并行跑两个任务：
 lint → 迁移文件检查 → typecheck → test → build；以及 e2e（用 `compose.prod.yaml` 构建并启动完整的生产栈，
 Playwright 经 Caddy 访问，和线上部署走同一条路径）。
 
+## 设计系统
+
+`/design`（[线上预览](https://i.saop.cc/design)）集中展示语义色、字号刻度、六个模式构件与按钮变体；
+明暗主题跟随系统。设计模型采用「三层 token × 四层构件」，分层位置、当前覆盖与基线更新方法见
+[设计系统维护](docs/design-system.md)，模式构件 API 约定见 [patterns](packages/ui/src/patterns/README.md)。
+
+`bun run lint:design` 检查设计护栏；浏览器回归由 `design-page.spec.ts` 和 `design-tokens.spec.ts` 覆盖。
+运行前先准备隔离测试栈，不能指向生产：全局 setup 会创建测试账号并修改其数据库角色。
+
 ## 音乐与视频
 
 桌面左下角唱片展开后可独立打开「歌单」与「歌词」。歌单支持点击选曲并定位当前项；
