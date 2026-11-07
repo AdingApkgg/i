@@ -1,4 +1,4 @@
-import { Card, CardBody } from "@i/ui";
+import { Card, CardBody, PageHeader, SectionHeader, StatTile } from "@i/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import {
@@ -48,18 +48,20 @@ export default function DashHome() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold sm:text-2xl">仪表盘</h1>
-      <p className="mt-1 text-sm text-muted-foreground">内容概览与选择要管理的域 ✿</p>
+      <PageHeader
+        title="仪表盘"
+        description="内容概览与选择要管理的域 ✿"
+        size="md"
+        className="mt-0 mb-5"
+      />
 
       <div className="mt-5 grid gap-3 lg:grid-cols-2">
         <Card>
           <CardBody>
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="font-semibold">各域内容量</h2>
-              <span className="text-xs text-muted-foreground">
-                共 {nf.format(data?.total ?? 0)} 条
-              </span>
-            </div>
+            <SectionHeader
+              title="各域内容量"
+              description={`共 ${nf.format(data?.total ?? 0)} 条`}
+            />
             <ChartFrame
               className={counts.length > 6 ? "h-56 sm:h-80" : "h-44 sm:h-56"}
               label="各内容域的条目数条形图"
@@ -97,10 +99,7 @@ export default function DashHome() {
 
         <Card>
           <CardBody>
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="font-semibold">近 30 天新增</h2>
-              <span className="text-xs text-muted-foreground">文章 / 动态 / 相册图</span>
-            </div>
+            <SectionHeader title="近 30 天新增" description="文章 / 动态 / 相册图" />
             <ChartFrame className="h-44 sm:h-56" label="近 30 天新增内容折线图">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={days} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
@@ -144,21 +143,20 @@ export default function DashHome() {
         </Card>
       </div>
 
-      <h2 className="mt-6 font-semibold">内容域</h2>
+      <SectionHeader title="内容域" className="mt-6" />
       <Stagger className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {ADMIN_ORDER.map((k) => {
           const n = data?.counts.find((c) => c.key === k)?.n ?? 0;
           return (
             <StaggerItem key={k} hover>
               <Link prefetch="intent" to={`/dash/${k}`} className="block h-full">
-                <Card className="h-full transition hover:shadow-md">
-                  <CardBody className="py-4 text-center">
-                    <div className="font-semibold">{ADMIN_FIELDS[k]?.label ?? k}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      {k === "media" ? "对象存储" : `${nf.format(n)} 条`}
-                    </div>
-                  </CardBody>
-                </Card>
+                <StatTile
+                  align="center"
+                  className="transition hover:shadow-md"
+                  label={ADMIN_FIELDS[k]?.label ?? k}
+                  value={k === "media" ? "—" : nf.format(n)}
+                  hint={k === "media" ? "对象存储" : "条"}
+                />
               </Link>
             </StaggerItem>
           );

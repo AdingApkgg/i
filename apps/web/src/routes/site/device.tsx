@@ -1,4 +1,4 @@
-import { Card, CardBody } from "@i/ui";
+import { Card, CardBody, StatusBadge } from "@i/ui";
 import { Boxes, ExternalLink, Laptop, Smartphone, Sparkles, Undo2 } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
@@ -26,11 +26,11 @@ const CATEGORY_ICON: Record<string, typeof Laptop> = {
   手机: Smartphone,
 };
 
-const STATUS_STYLE: Record<string, string> = {
-  在用: "bg-primary/12 text-primary ring-primary/25",
-  想要: "bg-info/12 text-info-strong ring-info/25 dark:text-info-contrast",
-  退役: "bg-soft text-muted-foreground ring-border",
-};
+const STATUS_TONE = {
+  在用: "primary",
+  想要: "info",
+  退役: "neutral",
+} as const;
 
 const STATUS_ICON: Record<string, typeof Sparkles> = {
   在用: Sparkles,
@@ -66,7 +66,7 @@ function groupBy(items: Device[]): Group[] {
 function DeviceCard({ device }: { device: Device }) {
   const Icon = CATEGORY_ICON[device.category ?? ""] ?? Boxes;
   const StatusIcon = STATUS_ICON[device.status] ?? Sparkles;
-  const statusStyle = STATUS_STYLE[device.status] ?? STATUS_STYLE.退役;
+  const statusTone = STATUS_TONE[device.status as keyof typeof STATUS_TONE] ?? "neutral";
   const card = (
     <Card className="group h-full overflow-hidden transition hover:border-primary/40 hover:shadow-md">
       <div className="relative aspect-4/3 w-full overflow-hidden bg-gradient-to-br from-soft via-card to-soft">
@@ -89,17 +89,23 @@ function DeviceCard({ device }: { device: Device }) {
             </span>
           </div>
         )}
-        <span
-          className={`absolute top-3 left-3 inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-caption font-medium ring-1 ring-inset backdrop-blur ${statusStyle}`}
+        <StatusBadge
+          tone={statusTone}
+          outline
+          icon={StatusIcon}
+          className="absolute top-3 left-3 backdrop-blur"
         >
-          <StatusIcon className="size-3" />
           {device.status}
-        </span>
+        </StatusBadge>
         {device.link && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-pill bg-card/80 px-2 py-0.5 text-caption font-medium text-primary ring-1 ring-inset ring-primary/25 backdrop-blur">
+          <StatusBadge
+            tone="primary"
+            outline
+            icon={ExternalLink}
+            className="absolute top-3 right-3 bg-card/80 backdrop-blur"
+          >
             官网
-            <ExternalLink className="size-3" />
-          </span>
+          </StatusBadge>
         )}
       </div>
       <CardBody className="space-y-3">

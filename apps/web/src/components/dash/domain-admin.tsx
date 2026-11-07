@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Card, CardBody, cn } from "@i/ui";
+import { Button, Card, CardBody, cn, EmptyState } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -201,9 +201,11 @@ export function DomainAdmin({
               ) : isError ? (
                 <CardBody className="text-sm text-muted-foreground">加载失败，刷新重试 ✿</CardBody>
               ) : rows.length === 0 ? (
-                <CardBody className="text-sm text-muted-foreground">
-                  还没有记录,点右上「+ 新建」添加 ✿
-                </CardBody>
+                <EmptyState
+                  variant="bare"
+                  compact
+                  description="还没有记录,点右上「+ 新建」添加 ✿"
+                />
               ) : (
                 <>
                   {/* 窄屏：每条记录一张卡，避免横向拖表 */}

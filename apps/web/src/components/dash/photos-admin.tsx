@@ -6,7 +6,7 @@
  * - 悬停铅笔进入单张编辑（复用通用 Field + 图集下拉）
  */
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Card, CardBody, cn } from "@i/ui";
+import { Button, Card, CardBody, cn, EmptyState } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, LoaderCircle, Pencil, Plus, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -352,9 +352,11 @@ export function PhotosAdmin() {
               ) : photosQ.isError ? (
                 <CardBody className="text-sm text-muted-foreground">加载失败，刷新重试 ✿</CardBody>
               ) : photos.length === 0 ? (
-                <CardBody className="text-sm text-muted-foreground">
-                  这里还没有照片，右上「上传」或「新建」添加 ✿
-                </CardBody>
+                <EmptyState
+                  variant="bare"
+                  compact
+                  description="这里还没有照片，右上「上传」或「新建」添加 ✿"
+                />
               ) : (
                 <CardBody className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
                   {photos.map((p) => {

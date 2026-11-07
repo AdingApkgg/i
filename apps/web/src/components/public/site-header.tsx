@@ -1,4 +1,5 @@
 import { NAV_DOMAINS, siteConfig } from "@i/config";
+import { PageHeader } from "@i/ui";
 import {
   BookOpen,
   CalendarDays,
@@ -292,10 +293,8 @@ function NavLink({
 /** Page title block used at the top of every content page. */
 export function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold tracking-wide">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+    <PageHeader title={title} description={subtitle}>
       <TitleFlourish />
-    </div>
+    </PageHeader>
   );
 }

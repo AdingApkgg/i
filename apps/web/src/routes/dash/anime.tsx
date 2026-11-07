@@ -1,4 +1,4 @@
-import { Button, Card, CardBody } from "@i/ui";
+import { Button, Card, CardBody, EmptyState } from "@i/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -266,7 +266,11 @@ export default function AnimeAdmin() {
         </Button>
       </div>
       {!list.data?.length ? (
-        <p className="text-sm text-muted-foreground">暂无追番记录，可先演练导入 Bangumi 收藏。</p>
+        <EmptyState
+          variant="bare"
+          compact
+          description="暂无追番记录，可先演练导入 Bangumi 收藏。"
+        />
       ) : (
         <div className="space-y-2">
           {list.data.map((entry) => (
