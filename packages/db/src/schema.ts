@@ -143,12 +143,17 @@ export const post = pgTable(
     status: text("status").notNull().default("draft"), // "draft" | "published"
     publishedAt: ts("publishedAt"),
     views: integer("views").notNull().default(0),
+    // 语言（zh / ja / en）+ 原文 slug；译文不进 /blog 列表，只在原文页底部互相链接
+    lang: text("lang").notNull().default("zh"),
+    translationOf: text("translationOf"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     uniqueIndex("Post_slug_key").on(t.slug),
     index("Post_status_publishedAt_idx").on(t.status, t.publishedAt),
+    index("Post_lang_status_publishedAt_idx").on(t.lang, t.status, t.publishedAt),
+    index("Post_translationOf_idx").on(t.translationOf),
   ],
 );
 
@@ -522,6 +527,48 @@ export const apiToken = pgTable(
   ],
 );
 
+// ==================== 作品（自建站作品集，替代旧站 _data/projects.yml） ====================
+
+export const project = pgTable(
+  "Project",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    link: text("link"),
+    repo: text("repo"),
+    imageUrl: text("imageUrl"),
+    tag: text("tag"), // 在线站 / 镜像 / 工具 / 自托管…
+    description: text("description"),
+    sortOrder: integer("sortOrder").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("Project_sortOrder_idx").on(t.sortOrder)],
+);
+
+// ==================== 赞助（/donate 赞助墙） ====================
+
+export const sponsor = pgTable(
+  "Sponsor",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    avatarUrl: text("avatarUrl"),
+    // 微信 / 支付宝 / QQ / 爱发电 / B站 / Patreon / 其它
+    platform: text("platform").notNull().default("微信"),
+    // 解析得出的小额整数（分）；B币按“枚”×100 存，展示时换算
+    amountCents: integer("amountCents").notNull().default(0),
+    // 原始金额文本，解析不了或带附加说明（如“10B币+9电池”）时原样保留
+    amountText: text("amountText"),
+    message: text("message"),
+    sponsoredAt: ts("sponsoredAt"),
+    sortOrder: integer("sortOrder").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("Sponsor_sponsoredAt_idx").on(t.sponsoredAt)],
+);
+
 // ==================== relations（db.query 的 with 用） ====================
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -576,6 +623,8 @@ export type MonitorCheck = typeof monitorCheck.$inferSelect;
 export type MaimaiConfig = typeof maimaiConfig.$inferSelect;
 export type MaimaiProfile = typeof maimaiProfile.$inferSelect;
 export type MaimaiRecord = typeof maimaiRecord.$inferSelect;
+export type Project = typeof project.$inferSelect;
+export type Sponsor = typeof sponsor.$inferSelect;
 
 // ==================== Bangumi 单账号追番同步 ====================
 

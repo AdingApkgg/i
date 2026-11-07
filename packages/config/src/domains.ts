@@ -44,7 +44,17 @@ export const DOMAINS: DomainSpec[] = [
   { key: "device", label: "设备", path: "/device", inNav: true, admin: true, hint: "在用装备" },
   { key: "gallery", label: "相册", path: "/gallery", inNav: true, admin: true, hint: "照片上传" },
   { key: "moments", label: "说说", path: "/moments", inNav: true, admin: true, hint: "碎碎念" },
+  { key: "video", label: "视频", path: "/video", inNav: true, admin: false, hint: "喜欢的短片" },
   { key: "friends", label: "友链", path: "/friends", inNav: true, admin: true, hint: "友情链接" },
+  {
+    key: "project",
+    label: "作品",
+    path: "/projects",
+    inNav: true,
+    admin: true,
+    hint: "自建站作品集",
+  },
+  { key: "donate", label: "赞助", path: "/donate", inNav: true, admin: true, hint: "赞助墙与收款" },
   {
     key: "monitor",
     label: "监控",

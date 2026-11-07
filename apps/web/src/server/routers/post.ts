@@ -1,6 +1,6 @@
 import { post } from "@i/db";
 import { ORPCError } from "@orpc/server";
-import { desc, eq, getTableColumns } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
 import { excerptOf } from "@/lib/content/text";
 import type { RichDoc } from "@/lib/content/types";
@@ -31,6 +31,9 @@ const upsert = z.object({
   coverUrl: z.string().optional(),
   tags: z.array(z.string()).default([]),
   status: z.enum(["draft", "published"]).default("draft"),
+  lang: z.enum(["zh", "ja", "en"]).default("zh"),
+  // 译文指向原文 slug；中文原文留空
+  translationOf: z.string().nullish(),
 });
 
 // 公开列表不带正文：loader 数据会整个序列化进 HTML，列表页用不到正文
@@ -44,7 +47,15 @@ const newestFirst = [desc(post.publishedAt), desc(post.createdAt)];
 export const postRouter = {
   /** 公开：已发布文章的摘要列表；includeDrafts（后台用）只对管理员生效，含草稿（同样不带正文，编辑时用 byId 取） */
   list: publicProcedure
-    .input(z.object({ includeDrafts: z.boolean().default(false) }).optional())
+    .input(
+      z
+        .object({
+          includeDrafts: z.boolean().default(false),
+          // 默认只给中文原文；译文走 ?lang=ja|en
+          lang: z.enum(["zh", "ja", "en"]).default("zh"),
+        })
+        .optional(),
+    )
     .handler(({ context, input }) => {
       if (input?.includeDrafts) {
         if (!isAdminRole(context.user)) throw new ORPCError("FORBIDDEN");
@@ -56,9 +67,24 @@ export const postRouter = {
       return context.db
         .select(summaryColumns)
         .from(post)
-        .where(eq(post.status, "published"))
+        .where(and(eq(post.status, "published"), eq(post.lang, input?.lang ?? "zh")))
         .orderBy(...newestFirst);
     }),
+
+  /** 公开：某一篇的所有译文（按语言） */
+  translations: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .handler(async ({ context, input }) =>
+      context.db
+        .select({
+          slug: post.slug,
+          lang: post.lang,
+          title: post.title,
+        })
+        .from(post)
+        .where(and(eq(post.translationOf, input.slug), eq(post.status, "published")))
+        .orderBy(asc(post.lang)),
+    ),
 
   /** 后台编辑：按 id 取完整记录（含草稿和正文） */
   byId: adminProcedure.input(z.object({ id: z.string() })).handler(async ({ context, input }) => {

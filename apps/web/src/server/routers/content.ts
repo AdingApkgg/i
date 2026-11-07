@@ -1,4 +1,4 @@
-import { album, device, moment, movie, touhou, track, vn } from "@i/db";
+import { album, device, moment, movie, project, sponsor, touhou, track, vn } from "@i/db";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { crudRouter } from "../crud";
@@ -153,6 +153,46 @@ export const albumsRouter = crudRouter({
       .refine((v) => v !== "未分类", "「未分类」是保留名称"),
     description: text,
     coverUrl: str,
+    sortOrder,
+  }),
+});
+
+// ---- 作品 ----
+export const projectRouter = crudRouter({
+  table: project,
+  order: bySort(project),
+  createSchema: z.object({
+    name: z.string().min(1),
+    link: str,
+    repo: str,
+    imageUrl: str,
+    tag: str,
+    description: text,
+    sortOrder,
+  }),
+});
+
+// ---- 赞助 ----
+// 金额用分存，避免浮点；platform 决定前台分组（微信/支付宝/QQ 计入总额）
+export const sponsorRouter = crudRouter({
+  table: sponsor,
+  order: [
+    [sponsor.sortOrder, "asc"],
+    [sponsor.sponsoredAt, "desc"],
+  ],
+  createSchema: z.object({
+    name: z.string().min(1),
+    avatarUrl: str,
+    platform: z.enum(["微信", "支付宝", "QQ", "爱发电", "B站", "Patreon", "其它"]).default("微信"),
+    amountText: str,
+    amountCents: z
+      .number()
+      .int()
+      .min(0)
+      .nullish()
+      .transform((v) => v ?? 0),
+    message: text,
+    sponsoredAt: z.string().optional(),
     sortOrder,
   }),
 });

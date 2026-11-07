@@ -10,7 +10,9 @@ export const siteConfig = {
   locale: "zh-CN",
   socials: {
     github: "https://github.com/AdingApkgg",
-    email: "mailto:xuyuning0430@gmail.com",
+    bilibili: "https://space.bilibili.com/1198037522",
+    telegram: "https://t.me/AsunaNarusaka",
+    email: "mailto:i@saop.cc",
     rss: "/rss.xml",
   },
 } as const;

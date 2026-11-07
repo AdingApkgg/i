@@ -8,8 +8,11 @@ import {
   ChevronRight,
   Clapperboard,
   Disc3,
+  Film,
+  FolderGit2,
   Gamepad2,
   Headphones,
+  Heart,
   House,
   Library,
   MessageCircle,
@@ -41,6 +44,9 @@ const domainIcons = {
   gallery: Camera,
   moments: MessageCircle,
   friends: Users,
+  video: Film,
+  project: FolderGit2,
+  donate: Heart,
 };
 const sections = [
   {
@@ -50,7 +56,13 @@ const sections = [
     keys: ["blog", "gallery", "moments", "masturbation"],
   },
   { key: "collection", label: "收藏", icon: Library, keys: ["music", "anime", "movie", "vn"] },
-  { key: "interests", label: "兴趣", icon: Gamepad2, keys: ["maimai", "touhou", "device"] },
+  {
+    key: "interests",
+    label: "兴趣",
+    icon: Gamepad2,
+    keys: ["maimai", "touhou", "device", "video"],
+  },
+  { key: "works", label: "作品", icon: FolderGit2, keys: ["project", "donate"] },
 ].map((section) => ({
   ...section,
   domains: section.keys.map((key) => NAV_DOMAINS.find((domain) => domain.key === key)!),

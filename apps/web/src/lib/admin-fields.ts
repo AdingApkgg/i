@@ -53,6 +53,8 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
         required: true,
         options: ["draft", "published"],
       },
+      { name: "lang", label: "语言", type: "select", options: ["zh", "ja", "en"] },
+      { name: "translationOf", label: "原文 slug", type: "text", placeholder: "译文才填" },
     ],
   },
   music: {
@@ -278,6 +280,40 @@ export const ADMIN_FIELDS: Record<string, AdminDomain> = {
       sortOrder,
     ],
   },
+  project: {
+    key: "project",
+    label: "作品",
+    columns: ["name", "tag", "sortOrder"],
+    fields: [
+      { name: "name", label: "名称", type: "text", required: true },
+      { name: "link", label: "站点链接", type: "text", placeholder: "https://…" },
+      { name: "repo", label: "源码链接", type: "text", placeholder: "https://github.com/…" },
+      { name: "imageUrl", label: "截图", type: "image", placeholder: "https://… 或上传" },
+      { name: "tag", label: "标签", type: "text", placeholder: "在线站 / 工具…" },
+      { name: "description", label: "一句话介绍", type: "textarea" },
+      sortOrder,
+    ],
+  },
+  donate: {
+    key: "donate",
+    label: "赞助",
+    columns: ["name", "platform", "amountCents"],
+    fields: [
+      { name: "name", label: "称呼", type: "text", required: true },
+      { name: "avatarUrl", label: "头像", type: "image", placeholder: "https://… 或上传" },
+      {
+        name: "platform",
+        label: "渠道",
+        type: "select",
+        required: true,
+        options: ["微信", "支付宝", "QQ", "爱发电", "B站", "Patreon"],
+      },
+      { name: "amountCents", label: "金额（分）", type: "number", placeholder: "500 = ￥5" },
+      { name: "sponsoredAt", label: "日期", type: "text", placeholder: "2024-01-01" },
+      { name: "message", label: "留言", type: "textarea" },
+      sortOrder,
+    ],
+  },
   monitor: {
     key: "monitor",
     label: "监控",
@@ -313,5 +349,7 @@ export const ADMIN_ORDER = [
   "device",
   "masturbation",
   "friends",
+  "project",
+  "donate",
   "monitor",
 ];

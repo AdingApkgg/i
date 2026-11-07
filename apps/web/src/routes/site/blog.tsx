@@ -11,19 +11,44 @@ import type { Route } from "./+types/blog";
 
 const fmtDate = (d: Date | string) => formatDate(d);
 
+const LANGS = ["zh", "ja", "en"] as const;
+const LANG_LABEL = { zh: "中文", ja: "日本語", en: "English" } as const;
+
 export async function loader({ request }: Route.LoaderArgs) {
   const api = serverApi(request);
-  const items = await api.blog.list().catch(degradeTo([]));
-  return { items };
+  const url = new URL(request.url);
+  const raw = url.searchParams.get("lang");
+  const lang = (LANGS as readonly string[]).includes(raw ?? "")
+    ? (raw as (typeof LANGS)[number])
+    : "zh";
+  const items = await api.blog.list({ lang }).catch(degradeTo([]));
+  return { items, lang };
 }
 
-export const meta: Route.MetaFunction = (args) => seo(args, { title: "博客", path: "/blog" });
+export const meta: Route.MetaFunction = (args) =>
+  seo(args, {
+    title: "博客",
+    path: "/blog",
+    alternates: LANGS.map((l) => ({ lang: l, path: l === "zh" ? "/blog" : `/blog?lang=${l}` })),
+  });
 
 export default function BlogPage({ loaderData }: Route.ComponentProps) {
-  const { items } = loaderData;
+  const { items, lang } = loaderData;
   return (
     <>
-      <PageTitle title="博客" subtitle="文章" />
+      <PageTitle title="博客" subtitle={lang === "zh" ? "文章" : `文章 · ${LANG_LABEL[lang]}`} />
+      <nav aria-label="语言" className="mb-5 flex flex-wrap gap-2 text-xs">
+        {LANGS.map((l) => (
+          <Link
+            key={l}
+            to={l === "zh" ? "/blog" : `/blog?lang=${l}`}
+            aria-current={l === lang ? "page" : undefined}
+            className="rounded-full border border-border px-2.5 py-1 hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:text-primary"
+          >
+            {LANG_LABEL[l]}
+          </Link>
+        ))}
+      </nav>
       {items.length === 0 ? (
         <EmptyCard>还没有文章,先去 /dash 写一篇吧 ✿</EmptyCard>
       ) : (

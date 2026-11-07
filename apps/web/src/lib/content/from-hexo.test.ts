@@ -53,6 +53,15 @@ describe("hexoToDoc", () => {
     expect(doc.content?.map((n) => n.type)).toEqual(["paragraph", "image", "paragraph"]);
   });
 
+  it("单元格里的图片整块搬进表格，不被压成 alt 文字", () => {
+    const { doc } = convert(
+      ["| 微信 | 支付宝 |", "| --- | --- |", "| ![微信](https://x/w.png) | 感谢 |"].join("\n"),
+    );
+    const cells = doc.content?.[0]?.content?.[1]?.content ?? [];
+    expect(cells.map((c) => c.content?.map((n) => n.type))).toEqual([["image"], ["paragraph"]]);
+    expect(cells[0]?.content?.[0]?.attrs?.src).toBe("https://x/w.png");
+  });
+
   it("行内代码不叠加其他格式", () => {
     const { doc } = convert("**粗体里的 `code`**");
     const code = doc.content?.[0]?.content?.find((n) => n.text === "code");

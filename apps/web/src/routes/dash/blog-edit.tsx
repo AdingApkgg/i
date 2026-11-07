@@ -58,6 +58,8 @@ interface Meta {
   coverUrl: string;
   tags: string;
   status: "draft" | "published";
+  lang: "zh" | "ja" | "en";
+  translationOf: string;
 }
 
 interface Draft {
@@ -93,6 +95,8 @@ function PostEditor({ post }: { post: Post | null }) {
     coverUrl: post?.coverUrl ?? "",
     tags: (post?.tags ?? []).join(", "),
     status: (post?.status as Meta["status"]) ?? "draft",
+    lang: (post?.lang as Meta["lang"]) ?? "zh",
+    translationOf: post?.translationOf ?? "",
   }));
   const [initialDoc, setInitialDoc] = useState<RichDoc>(
     () => (post?.content as RichDoc | null) ?? emptyDoc(),
@@ -177,6 +181,8 @@ function PostEditor({ post }: { post: Post | null }) {
             .map((t) => t.trim())
             .filter(Boolean),
           status: m.status,
+          lang: m.lang,
+          translationOf: m.translationOf.trim() || null,
           content: docRef.current,
         };
         const row = post
@@ -422,6 +428,29 @@ function PostEditor({ post }: { post: Post | null }) {
               className={input}
             />
           </label>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <label className="block">
+              <span className="mb-1 block text-muted-foreground">语言</span>
+              <select
+                value={meta.lang}
+                onChange={(e) => setField("lang", e.target.value as Meta["lang"])}
+                className={input}
+              >
+                <option value="zh">中文（原文）</option>
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-muted-foreground">原文 slug</span>
+              <input
+                value={meta.translationOf}
+                onChange={(e) => setField("translationOf", e.target.value)}
+                placeholder={meta.lang === "zh" ? "译文才填" : "必填"}
+                className={input}
+              />
+            </label>
+          </div>
           <p className="text-xs text-muted-foreground">
             ⌘S / Ctrl+S 保存 · 改动会自动存一份本地草稿
           </p>

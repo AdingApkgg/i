@@ -9,6 +9,8 @@ import {
   momentsRouter,
   movieRouter,
   musicRouter,
+  projectRouter,
+  sponsorRouter,
   touhouRouter,
   vnRouter,
 } from "./routers/content";
@@ -43,6 +45,8 @@ export const router = {
   albums: albumsRouter,
   moments: momentsRouter,
   friends: friendsRouter,
+  project: projectRouter,
+  donate: sponsorRouter,
   monitor: monitorRouter,
   maimai: maimaiRouter,
   media: mediaRouter,

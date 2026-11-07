@@ -4,7 +4,7 @@
  */
 import { DOMAINS, siteConfig } from "@i/config";
 import { album, db, post, touhou, vn } from "@i/db";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { absUrl } from "@/lib/site-url";
 import { CACHE } from "./cache";
 
@@ -41,7 +41,7 @@ const queryFeed = () =>
       createdAt: post.createdAt,
     })
     .from(post)
-    .where(eq(post.status, "published"))
+    .where(and(eq(post.status, "published"), eq(post.lang, "zh")))
     .orderBy(desc(post.publishedAt), desc(post.createdAt))
     .limit(FEED_SIZE);
 

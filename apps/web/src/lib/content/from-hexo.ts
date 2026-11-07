@@ -330,17 +330,15 @@ class Converter {
       content: t.children.map((row, ri) => ({
         type: "tableRow",
         content: row.children.map((cell, ci) => {
-          const inl = this.inlineOnly(cell.children);
+          // 单元格是块级容器：图/列表要整块搬进来，否则二维码会被压成 alt 文字
+          const blocks = this.assemble(this.inline(cell.children));
           const align = t.align?.[ci];
+          if (blocks[0]?.type === "paragraph" && align && align !== "left") {
+            blocks[0].attrs = { ...blocks[0].attrs, textAlign: align };
+          }
           return {
             type: ri === 0 ? "tableHeader" : "tableCell",
-            content: [
-              {
-                type: "paragraph",
-                ...(align && align !== "left" ? { attrs: { textAlign: align } } : {}),
-                ...(inl.length ? { content: inl } : {}),
-              },
-            ],
+            content: blocks.length ? blocks : [{ type: "paragraph" }],
           };
         }),
       })),

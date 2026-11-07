@@ -5,9 +5,9 @@ import { Stagger, StaggerItem } from "@/components/motion";
 import { thumbProps } from "@/lib/thumb";
 
 /** 邮戳式计数标签，保持浅底主色。 */
-export function Badge({ children }: { children: ReactNode }) {
+export function Badge({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <StatusBadge tone="primary" className="bg-soft">
+    <StatusBadge tone="primary" className={["bg-soft", className].filter(Boolean).join(" ")}>
       {children}
     </StatusBadge>
   );

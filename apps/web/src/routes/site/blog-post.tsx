@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { data, Link } from "react-router";
 import { ArticleBody } from "@/components/content/article-body";
 import { Toc } from "@/components/content/toc";
 import { Badge } from "@/components/public/collection";
@@ -17,11 +17,27 @@ function fmt(d: Date | string) {
   return formatDate(d, { dateStyle: "long" });
 }
 
+const LANG_LABEL: Record<string, string> = { zh: "中文", ja: "日本語", en: "English" };
+
 export async function loader({ request, params }: Route.LoaderArgs) {
-  const post = await serverApi(request).blog.bySlug({ slug: params.slug }).catch(notFoundTo(null));
+  const api = serverApi(request);
+  const post = await api.blog.bySlug({ slug: params.slug }).catch(notFoundTo(null));
   if (!post) throw data(null, { status: 404 });
   const { contentMd, content, ...rest } = post;
-  return { post: rest, body: await loadArticleBody({ content, contentMd }) };
+  // 译文页给出原文 + 同篇其它译文；原文页只给译文
+  const canonical = post.translationOf ?? post.slug;
+  const siblings = (await api.blog.translations({ slug: canonical }).catch(() => []))
+    .filter((t) => t.slug !== post.slug)
+    .map((t) => ({ slug: t.slug, lang: t.lang, title: t.title }));
+  const versions =
+    post.lang === "zh"
+      ? [{ slug: canonical, lang: "zh", title: post.title }, ...siblings]
+      : [
+          { slug: canonical, lang: "zh", title: "" },
+          ...siblings,
+          { slug: post.slug, lang: post.lang, title: post.title },
+        ];
+  return { post: rest, body: await loadArticleBody({ content, contentMd }), versions };
 }
 
 export const meta: Route.MetaFunction = (args) => {
@@ -37,15 +53,16 @@ export const meta: Route.MetaFunction = (args) => {
     publishedTime: post.publishedAt ?? post.createdAt,
     modifiedTime: post.updatedAt,
     tags: post.tags,
+    alternates: args.loaderData?.versions.map((v) => ({ lang: v.lang, path: `/blog/${v.slug}` })),
     // 草稿可凭 slug 预览，但不让搜索引擎收录
     noindex: post.status !== "published",
   });
 };
 
 export default function PostPage({ loaderData }: Route.ComponentProps) {
-  const { post, body } = loaderData;
+  const { post, body, versions } = loaderData;
   return (
-    <article className="relative mx-auto max-w-2xl">
+    <article lang={post.lang} className="relative mx-auto max-w-2xl">
       <h1 className="text-3xl font-bold tracking-wide">{post.title}</h1>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>{fmt(post.publishedAt ?? post.createdAt)}</span>
@@ -53,6 +70,21 @@ export default function PostPage({ loaderData }: Route.ComponentProps) {
           <Badge key={t}>{t}</Badge>
         ))}
       </div>
+      {versions.length > 1 && (
+        <nav aria-label="语言" className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          {versions.map((v) => (
+            <Link
+              key={v.lang}
+              to={`/blog/${v.slug}`}
+              prefetch="intent"
+              aria-current={v.slug === post.slug ? "page" : undefined}
+              className="rounded-full border border-border px-2.5 py-1 hover:border-primary hover:text-primary aria-[current=page]:border-primary aria-[current=page]:text-primary"
+            >
+              {LANG_LABEL[v.lang] ?? v.lang}
+            </Link>
+          ))}
+        </nav>
+      )}
       {body.kind === "rich" && <Toc items={body.toc} />}
       <ArticleBody body={body} className={prose} />
       {/* key：在两篇文章之间直接跳转时重置评论区状态 */}

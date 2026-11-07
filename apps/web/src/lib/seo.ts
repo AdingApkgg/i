@@ -41,6 +41,8 @@ export interface SeoOptions {
   publishedTime?: Date | string | null;
   modifiedTime?: Date | string | null;
   tags?: readonly string[] | null;
+  /** 译文互链：输出 <link rel="alternate" hreflang> 与 og:locale */
+  alternates?: readonly { lang: string; path: string }[] | null;
   noindex?: boolean;
 }
 
@@ -82,6 +84,14 @@ export function seo(
   if (o.modifiedTime)
     tags.push({ property: "article:modified_time", content: iso(o.modifiedTime) });
   for (const t of o.tags ?? []) tags.push({ property: "article:tag", content: t });
+  for (const alt of o.alternates ?? []) {
+    tags.push({ tagName: "link", rel: "alternate", hrefLang: alt.lang, href: abs(alt.path) });
+  }
+  if (o.alternates?.length) {
+    // x-default 指向默认语言（中文），而不是当前页，免得译文页抢走默认入口
+    const fallback = o.alternates.find((alt) => alt.lang === "zh")?.path ?? o.path ?? "/";
+    tags.push({ tagName: "link", rel: "alternate", hrefLang: "x-default", href: abs(fallback) });
+  }
   if (o.noindex) tags.push({ name: "robots", content: "noindex" });
   return tags;
 }
