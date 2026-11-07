@@ -2,7 +2,7 @@
  * AI 接入：签发 / 撤销 API token，并给出 MCP、OpenAPI 的地址与一段可直接粘给 AI 的说明。
  * 明文只在创建成功那一刻显示，之后只留前缀。
  */
-import { Button, Card, CardBody, cn } from "@i/ui";
+import { Button, Card, CardBody, cn, EmptyState } from "@i/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
@@ -208,7 +208,7 @@ export default function TokensPage() {
           {list.isPending ? (
             <p className="text-sm text-muted-foreground">读取中…</p>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">还没有 token</p>
+            <EmptyState variant="bare" compact description="还没有 token" />
           ) : (
             <ul className="divide-y divide-border">
               {items.map((t) => {

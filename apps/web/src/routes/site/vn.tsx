@@ -1,3 +1,4 @@
+import { Toolbar } from "@i/ui";
 import { ExternalLink } from "lucide-react";
 import { FadeIn } from "@/components/motion";
 import { Badge, EmptyCard } from "@/components/public/collection";
@@ -157,27 +158,32 @@ export default function VnPage({ loaderData }: Route.ComponentProps) {
       ) : (
         <>
           <FadeIn>
-            <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
-              <Badge>共 {items.length} 部</Badge>
-              {counts.map(({ status, count }) => (
-                <span key={status} className="inline-flex items-center gap-1.5 tabular-nums">
-                  <span
-                    aria-hidden="true"
-                    className={`size-1.5 rounded-full ${
-                      status === "在玩"
-                        ? "bg-info"
-                        : status === "通关"
-                          ? "bg-primary"
-                          : "bg-warning"
-                    }`}
-                  />
-                  {status} {count}
-                </span>
-              ))}
-              {series.length > 0 && (
-                <span className="hidden sm:inline">· {series.length} 个系列</span>
-              )}
-            </div>
+            <Toolbar
+              className="mb-6"
+              start={
+                <>
+                  <Badge>共 {items.length} 部</Badge>
+                  {counts.map(({ status, count }) => (
+                    <span key={status} className="inline-flex items-center gap-1.5 tabular-nums">
+                      <span
+                        aria-hidden="true"
+                        className={`size-1.5 rounded-full ${
+                          status === "在玩"
+                            ? "bg-info"
+                            : status === "通关"
+                              ? "bg-primary"
+                              : "bg-warning"
+                        }`}
+                      />
+                      {status} {count}
+                    </span>
+                  ))}
+                  {series.length > 0 && (
+                    <span className="hidden sm:inline">· {series.length} 个系列</span>
+                  )}
+                </>
+              }
+            />
           </FadeIn>
           {/* 系列块带章节脊线，散条收进最后一章，避免插在中间打断系列 */}
           {series.map(([name, list], index) => (

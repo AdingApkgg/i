@@ -1,23 +1,20 @@
-import { Card } from "@i/ui";
+import { Card, EmptyState, StatusBadge } from "@i/ui";
 import { Image as ImageIcon, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { thumbProps } from "@/lib/thumb";
 
+/** 邮戳式计数标签，保持浅底主色。 */
 export function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-pill bg-soft px-2 py-0.5 text-caption font-medium text-primary">
+    <StatusBadge tone="primary" className="bg-soft">
       {children}
-    </span>
+    </StatusBadge>
   );
 }
 
 export function EmptyCard({ children }: { children: ReactNode }) {
-  return (
-    <Card>
-      <div className="p-8 text-center text-sm text-muted-foreground">{children}</div>
-    </Card>
-  );
+  return <EmptyState>{children}</EmptyState>;
 }
 
 export interface CollectionItem {
