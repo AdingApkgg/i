@@ -1,7 +1,7 @@
+import { waifuSay } from "@i/live2d";
 import { Button, Card } from "@i/ui";
 import { useEffect } from "react";
 import { Link } from "react-router";
-import { waifuSay } from "@/lib/live2d/waifu";
 
 const TIP = "呜……页面出错了，刷新一下试试？";
 

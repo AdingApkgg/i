@@ -1,24 +1,25 @@
 /* SAO / Asuna 前台：只挂在 .sao-site 上，后台继续用默认主题。 */
 :root:has(.sao-site) {
-  --background: var(--palette-mist-350);
-  --foreground: var(--palette-mist-950);
-  --muted: var(--palette-mist-400);
-  --muted-foreground: var(--palette-mist-750);
-  --border: var(--palette-mist-600);
-  --input: var(--palette-mist-600);
-  --ring: var(--palette-mist-800);
-  --primary: var(--palette-mist-800);
-  --primary-foreground: var(--palette-mist-300);
-  --secondary: var(--palette-mist-450);
-  --secondary-foreground: var(--palette-mist-900);
-  --accent: var(--palette-mist-500);
-  --accent-foreground: var(--palette-mist-850);
-  --soft: var(--palette-mist-550);
+  --background: var(--palette-frost-200);
+  --foreground: var(--palette-frost-900);
+  --muted: var(--palette-frost-100);
+  --muted-foreground: var(--palette-frost-600);
+  --border: var(--palette-frost-300);
+  --input: var(--palette-frost-600);
+  --ring: var(--palette-frost-600);
+  /* 通用强调色也用于正文链接；选择橙另设语义，避免浅底小号橙字失去对比度。 */
+  --primary: var(--palette-frost-900);
+  --primary-foreground: var(--palette-frost-50);
+  --secondary: var(--palette-frost-250);
+  --secondary-foreground: var(--palette-frost-900);
+  --accent: var(--palette-frost-100);
+  --accent-foreground: var(--palette-frost-900);
+  --soft: var(--palette-frost-250);
   --destructive: var(--palette-red-500);
-  --card: var(--palette-mist-300);
-  --card-foreground: var(--palette-mist-950);
-  --popover: var(--palette-mist-300);
-  --popover-foreground: var(--palette-mist-950);
+  --card: var(--palette-frost-50);
+  --card-foreground: var(--palette-frost-900);
+  --popover: var(--palette-frost-50);
+  --popover-foreground: var(--palette-frost-900);
   --radius: 0.3rem;
 
   /* 状态 / 动作 / 内容兼容色：明暗保持原值，按需由 dark: 选择对比色。 */
@@ -59,10 +60,14 @@
   --activity-3: var(--palette-grass-300);
   --activity-4: var(--palette-grass-400);
 
-  --sao-crimson: var(--palette-mist-800);
-  --sao-gold: var(--palette-mist-700);
-  --sao-panel: var(--palette-mist-300);
-  --sao-line: var(--palette-mist-650);
+  --sao-selection: var(--palette-citrine-400);
+  --sao-selection-hover: var(--palette-citrine-300);
+  --sao-on-selection: var(--palette-frost-900);
+  --sao-shadow-color: var(--palette-frost-950);
+  --sao-crimson: var(--primary);
+  --sao-gold: var(--muted-foreground);
+  --sao-panel: var(--card);
+  --sao-line: var(--border);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,27 +77,24 @@
     --activity-2: var(--palette-forest-200);
     --activity-3: var(--palette-forest-300);
     --activity-4: var(--palette-forest-400);
-    --background: var(--palette-abyss-950);
-    --foreground: var(--palette-abyss-250);
-    --muted: var(--palette-abyss-800);
-    --muted-foreground: var(--palette-abyss-450);
-    --border: var(--palette-abyss-600);
-    --input: var(--palette-abyss-600);
-    --ring: var(--palette-abyss-500);
-    --primary: var(--palette-abyss-500);
-    --primary-foreground: var(--palette-abyss-900);
-    --secondary: var(--palette-abyss-650);
-    --secondary-foreground: var(--palette-abyss-300);
-    --accent: var(--palette-abyss-700);
-    --accent-foreground: var(--palette-abyss-350);
-    --soft: var(--palette-abyss-750);
+    --background: var(--palette-frost-950);
+    --foreground: var(--palette-frost-150);
+    --muted: var(--palette-frost-800);
+    --muted-foreground: var(--palette-frost-400);
+    --border: var(--palette-frost-700);
+    --input: var(--palette-frost-400);
+    --ring: var(--palette-frost-400);
+    --primary: var(--palette-frost-150);
+    --primary-foreground: var(--palette-frost-900);
+    --secondary: var(--palette-frost-700);
+    --secondary-foreground: var(--palette-frost-150);
+    --accent: var(--palette-frost-800);
+    --accent-foreground: var(--palette-frost-150);
+    --soft: var(--palette-frost-800);
     --destructive: var(--palette-red-600);
-    --card: var(--palette-abyss-850);
-    --card-foreground: var(--palette-abyss-250);
-    --popover: var(--palette-abyss-850);
-    --popover-foreground: var(--palette-abyss-250);
-    --sao-gold: var(--palette-abyss-400);
-    --sao-panel: var(--palette-abyss-850);
-    --sao-line: var(--palette-abyss-550);
+    --card: var(--palette-frost-850);
+    --card-foreground: var(--palette-frost-150);
+    --popover: var(--palette-frost-850);
+    --popover-foreground: var(--palette-frost-150);
   }
 }

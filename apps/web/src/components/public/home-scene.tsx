@@ -4,7 +4,9 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowDown, ArrowUpRight, CodeXml, Shield, Sword } from "lucide-react";
 import { type ReactNode, useRef } from "react";
+import { AincradScene } from "./aincrad-scene";
 import { AsunaPortrait } from "./asuna-portrait";
+import "./aincrad-scene.css";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -80,6 +82,7 @@ export function HomeHero() {
       </div>
       <section data-home-hero className="sao-hero" aria-label="欢迎来到 Asuna 的世界">
         <div data-hero-ambient aria-hidden="true" className="sao-hero-ambient" />
+        <AincradScene />
         <div className="sao-hero-copy">
           <div data-hero-line className="sao-eyebrow">
             <Shield size={14} strokeWidth={1.5} />

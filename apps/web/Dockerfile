@@ -21,6 +21,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/ui/package.json packages/ui/
 COPY packages/config/package.json packages/config/
+COPY packages/live2d/package.json packages/live2d/
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile --production
 
 # ---- runner: Hono server (API + React Router SSR + static assets) ----

@@ -1,4 +1,8 @@
 /* SAO / Asuna：前台专属布局与构件；主题变量见 packages/ui/src/tokens/theme-sao.css。 */
+/* 手机已改顶部栏目；清除旧底栏占位，播放器与看板娘仍使用原有变量。 */
+:root:has(.sao-site) {
+  --site-nav-height: 0px;
+}
 .sao-site {
   min-height: 100dvh;
 }

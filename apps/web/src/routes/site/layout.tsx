@@ -11,13 +11,11 @@ import type { Route } from "./+types/layout";
 function Chrome({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
-    <div className="pb-[var(--site-nav-height)] lg:pb-0 lg:pl-48">
+    <div className="public-chrome">
       <SiteHeader />
       <main
         className={
-          pathname === "/"
-            ? "mx-auto max-w-7xl px-4 py-5 lg:px-8 lg:py-6"
-            : "mx-auto max-w-5xl px-4 py-8"
+          pathname === "/" ? "public-main public-main-home" : "public-main public-main-content"
         }
       >
         {children}

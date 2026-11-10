@@ -32,7 +32,10 @@ apps/web            单全栈应用（公开前台 + /dash 后台）
 packages/db         Drizzle schema + client + redis + 脚本（@i/db）
 packages/ui         shadcn 组件 + 萌系主题（@i/ui）
 packages/config     站点配置 + 内容域注册表（@i/config）
+packages/live2d     独立 Cubism 2 封装 + 本地模型与资源（@i/live2d，无 npm 运行时依赖）
 ```
+
+Live2D 的引擎封装、Core 和完整模型库统一在仓内维护，不再从外部 npm/CDN 拉取模型；资源来源、校验锁和授权边界见 [@i/live2d](packages/live2d/README.md)。
 
 ## 本地开发
 
@@ -55,7 +58,7 @@ bun run dev                          # Node ≥ 24.19（见 .node-version）
 ## 测试
 
 ```bash
-bun run test                          # turbo → vitest run（apps/web）
+bun run test                          # turbo → vitest run（apps/web + packages/live2d）
 cd apps/web && bun run test:watch     # 监听模式
 ```
 

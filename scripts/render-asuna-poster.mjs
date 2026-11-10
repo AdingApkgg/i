@@ -11,7 +11,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(base.hostname)) {
   throw new Error("静帧工具只允许连接回环地址，不允许连接生产站点");
 }
 const build = await Bun.build({
-  entrypoints: [fileURLToPath(new URL("../apps/web/src/lib/live2d/cubism2.ts", import.meta.url))],
+  entrypoints: [fileURLToPath(new URL("../packages/live2d/src/cubism2.ts", import.meta.url))],
   target: "browser",
 });
 if (!build.success) throw new Error(`引擎编译失败：${build.logs.join("\n")}`);
@@ -46,7 +46,7 @@ try {
     canvas.height = 2600;
     document.body.append(canvas);
     const engine = new Cubism2Mascot(canvas);
-    await engine.load("/live2d/asuna/asuna_01/index.json");
+    await engine.load("/live2d/model/asuna/asuna_01/index.json");
     // 此处只用于离线拍照：关闭随机动作，固定温和微笑，不修改运行时实现。
     engine.settings.motions = {};
     engine.model.setParamFloat("PARAM_MOUTH_FORM", 0.85);
@@ -56,14 +56,15 @@ try {
     return url;
   });
   if (!png.startsWith("data:image/png;base64,")) throw new Error("静帧生成失败");
-  const output = fileURLToPath(
-    new URL("../apps/web/public/images/asuna-aincrad.webp", import.meta.url),
-  );
+  // 第 4/5 个参数是输出文件名与高度，方便同一流程产出看板娘降级静帧；默认仍写首屏大图。
+  const name = process.argv[4] || "asuna-aincrad.webp";
+  const output = fileURLToPath(new URL(`../apps/web/public/images/${name}`, import.meta.url));
+  const posterHeight = Number(process.argv[5] || 2000);
   await Bun.write(
     output,
     await sharp(Buffer.from(png.split(",")[1], "base64"))
       .trim()
-      .resize({ height: 2000 })
+      .resize({ height: posterHeight })
       .webp({ quality: 88 })
       .toBuffer(),
   );

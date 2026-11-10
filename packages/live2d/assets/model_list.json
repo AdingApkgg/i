@@ -1,0 +1,125 @@
+{
+  "models": [
+    [
+      "asuna/asuna_02",
+      "asuna/asuna_01",
+      "asuna/asuna_03",
+      "asuna/asuna_04",
+      "asuna/asuna_05",
+      "asuna/asuna_06",
+      "asuna/asuna_07",
+      "asuna/asuna_08",
+      "asuna/asuna_09",
+      "asuna/asuna_12",
+      "asuna/asuna_13",
+      "asuna/asuna_14",
+      "asuna/asuna_15",
+      "asuna/asuna_16",
+      "asuna/asuna_17",
+      "asuna/asuna_18",
+      "asuna/asuna_19",
+      "asuna/asuna_20",
+      "asuna/asuna_21",
+      "asuna/asuna_22",
+      "asuna/asuna_23",
+      "asuna/asuna_24",
+      "asuna/asuna_25",
+      "asuna/asuna_26",
+      "asuna/asuna_27",
+      "asuna/asuna_28",
+      "asuna/asuna_29",
+      "asuna/asuna_30",
+      "asuna/asuna_31",
+      "asuna/asuna_33",
+      "asuna/asuna_34",
+      "asuna/asuna_35",
+      "asuna/asuna_36",
+      "asuna/asuna_37",
+      "asuna/asuna_38",
+      "asuna/asuna_39",
+      "asuna/asuna_40",
+      "asuna/asuna_41",
+      "asuna/asuna_43",
+      "asuna/asuna_44",
+      "asuna/asuna_45",
+      "asuna/asuna_46"
+    ],
+    [
+      "sagiri"
+    ],
+    [
+      "katou"
+    ],
+    [
+      "bilibili-live/22"
+    ],
+    [
+      "bilibili-live/33"
+    ],
+    [
+      "ShizukuTalk/shizuku-48",
+      "ShizukuTalk/shizuku-pajama"
+    ],
+    [
+      "HyperdimensionNeptunia/neptune_classic",
+      "HyperdimensionNeptunia/nepnep",
+      "HyperdimensionNeptunia/neptune_santa",
+      "HyperdimensionNeptunia/nepmaid",
+      "HyperdimensionNeptunia/nepswim",
+      "HyperdimensionNeptunia/noir_classic",
+      "HyperdimensionNeptunia/noir",
+      "HyperdimensionNeptunia/noir_santa",
+      "HyperdimensionNeptunia/noireswim",
+      "HyperdimensionNeptunia/blanc_classic",
+      "HyperdimensionNeptunia/blanc_normal",
+      "HyperdimensionNeptunia/blanc_swimwear",
+      "HyperdimensionNeptunia/vert_classic",
+      "HyperdimensionNeptunia/vert_normal",
+      "HyperdimensionNeptunia/vert_swimwear",
+      "HyperdimensionNeptunia/nepgear",
+      "HyperdimensionNeptunia/nepgear_extra",
+      "HyperdimensionNeptunia/nepgearswim",
+      "HyperdimensionNeptunia/histoire",
+      "HyperdimensionNeptunia/histoirenohover"
+    ],
+    [
+      "HK416/HK416_805/normal",
+      "HK416/HK416_805/destroy",
+      "HK416/HK416_3401/normal",
+      "HK416/HK416_3401/destroy"
+    ],
+    [
+      "ost14/ots14_1203/normal",
+      "ost14/ots14_1203/destroy",
+      "ost14/ots14_3001/normal",
+      "ost14/ots14_3001/destroy",
+      "ost14/ots14_4501/normal",
+      "ost14/ots14_4501/destroy"
+    ],
+    [
+      "95type/95type_405/normal",
+      "95type/95type_405/destroy",
+      "95type/95type_3702/normal",
+      "95type/95type_3702/destroy"
+    ],
+    [
+      "dsr50/dsr50_1801/normal",
+      "dsr50/dsr50_1801/destroy",
+      "dsr50/dsr50_2101/normal",
+      "dsr50/dsr50_2101/destroy"
+    ]
+  ],
+  "messages": [
+    "刀剑神域 SAO 亚丝娜 Asuna",
+    "埃罗芒阿老师 エロマンガ先生 和泉纱雾",
+    "路人女主的养成方法 冴えない彼女の育てかた 加藤惠",
+    "来自 Bilibili Live 的 22 哦 ~",
+    "来自 Bilibili Live 的 33 的说",
+    "Shizuku Talk ！这里是 Shizuku ~",
+    "Nep! Nep! 超次元游戏：海王星 系列",
+    "少女前线 Girls Frontline~ HK416_805",
+    "少女前线 Girls Frontline~ ots14",
+    "少女前线 Girls Frontline~ 95type",
+    "少女前线 Girls Frontline~ DSR50"
+  ]
+}

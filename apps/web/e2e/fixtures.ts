@@ -12,7 +12,7 @@ export const test = base.extend<{ consoleProblems: string[]; showMascot: boolean
   /** 看板娘固定在右下角，会挡住那里的按钮；默认用站点自带的“隐藏”开关收起，需要时 test.use 打开 */
   showMascot: [false, { option: true }],
   consoleProblems: [
-    async ({ page, baseURL, showMascot }, use) => {
+    async ({ page, baseURL, showMascot }, use, testInfo) => {
       if (!showMascot) {
         await page.addInitScript(() =>
           localStorage.setItem(
@@ -27,14 +27,32 @@ export const test = base.extend<{ consoleProblems: string[]; showMascot: boolean
         (route) => route.abort(),
       );
       const problems: string[] = [];
+      const gpuDiagnostics: string[] = [];
       page.on("console", (m) => {
         if (m.type() !== "error" && m.type() !== "warning") return;
+        // 无头机的原生 GPU 能力/读回诊断单独保留为附件，不放过应用警告或错误。
+        if (
+          m.type() === "warning" &&
+          (m.text() === "No available adapters." ||
+            /^\[\.WebGL-0x[\da-f]+\]GL Driver Message \(OpenGL, Performance, GL_CLOSE_PATH_NV, High\): GPU stall due to ReadPixels(?: \(this message will no longer repeat\))?$/.test(
+              m.text(),
+            ))
+        ) {
+          gpuDiagnostics.push(m.text());
+          return;
+        }
         // 被拦掉的站外资源
         if (/Failed to load resource|ERR_FAILED/.test(m.text())) return;
         problems.push(`[${m.type()}] ${pathOf(page)}: ${m.text().slice(0, 300)}`);
       });
       page.on("pageerror", (e) => problems.push(`[pageerror] ${pathOf(page)}: ${e.message}`));
       await use(problems);
+      if (gpuDiagnostics.length) {
+        await testInfo.attach("原生 GPU 环境诊断", {
+          body: gpuDiagnostics.join("\n"),
+          contentType: "text/plain",
+        });
+      }
       expect(problems, "控制台错误 / 警告").toEqual([]);
     },
     { auto: true },

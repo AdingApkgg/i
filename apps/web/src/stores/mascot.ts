@@ -2,9 +2,10 @@
  * 看板娘偏好（是否隐藏、选的人物 / 换装），持久化到 localStorage。
  * 看板娘只在浏览器里懒加载，挂载时再 rehydrate，没有 SSR 水合问题。
  */
+
+import { WAIFU_LS } from "@i/live2d";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { WAIFU_LS } from "@/lib/live2d/waifu";
 import { localStorageWithLegacy } from "./storage";
 
 interface MascotPrefs {

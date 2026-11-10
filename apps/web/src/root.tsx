@@ -7,9 +7,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from "react-router";
 import { NavProgress } from "@/components/nav-progress";
 import { Providers } from "@/components/providers";
+import { WebGpuGate } from "@/components/public/webgpu-gate";
 import { seo } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-url";
 import type { Route } from "./+types/root";
@@ -20,9 +22,12 @@ export const links: Route.LinksFunction = () => [
   { rel: "alternate", type: "application/rss+xml", href: "/rss.xml", title: siteConfig.title },
 ];
 
-/** 站点 origin 下发给各路由的 meta（OG 需要绝对地址，见 lib/seo.ts） */
+/**
+ * 站点 origin 下发给各路由的 meta（OG 需要绝对地址，见 lib/seo.ts），
+ * 以及 WebGPU 闸门开关：`WEBGPU_GATE=off` 只给无头验证用（无头机只有软件适配器）。
+ */
 export function loader() {
-  return { siteUrl: siteUrl() };
+  return { siteUrl: siteUrl(), webgpuGate: process.env.WEBGPU_GATE !== "off" };
 }
 
 /** 兜底 meta：只有更深的路由都没有 meta（或布局本身出错）时才会用到 */
@@ -50,8 +55,10 @@ export function Layout({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const data = useRouteLoaderData<typeof loader>("root");
   return (
     <>
+      <WebGpuGate enabled={data?.webgpuGate ?? true} />
       <NavProgress />
       <Outlet />
     </>

@@ -1,17 +1,15 @@
 import type { Page } from "@playwright/test";
 
-/** 按用户实际路径展开菜单并点击；调用方独立断言目标 URL、播放状态等。 */
-export async function navigateMain(page: Page, label: string, group?: string) {
-  const nav = page.getByRole("navigation", { name: "主导航" });
-  if (group) {
-    const trigger = nav.getByRole("button", { name: group, exact: true });
-    if (await trigger.isVisible()) {
-      await trigger.click();
-      await page.getByRole("dialog").getByRole("link", { name: label, exact: true }).click();
-      return;
-    }
-    const summary = nav.locator("summary").filter({ hasText: group });
-    if ((await summary.locator("..").getAttribute("open")) === null) await summary.click();
+/** 走已确认的侧栏／手机完整菜单；保留第三参以兼容播放器等已有调用。 */
+export async function navigateMain(page: Page, label: string, _group?: string) {
+  const desktop = page.getByRole("navigation", { name: "桌面主导航", exact: true });
+  if (await desktop.isVisible()) {
+    await desktop.getByRole("link", { name: label, exact: true }).click();
+    return;
   }
-  await nav.getByRole("link", { name: label, exact: true }).click();
+  await page.getByRole("button", { name: "栏目", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "全部栏目", exact: true })
+    .getByRole("link", { name: label, exact: true })
+    .click();
 }

@@ -1,0 +1,21 @@
+Live2D 第三方资源说明
+
+本目录由 monorepo 的 @i/live2d 私有包管理，所有渲染必需资源由本站提供。
+仓内维护不代表对 Cubism Core、模型或角色美术拥有著作权，也不代表商业授权。
+
+模型初始快照：AdingApkgg/live2d-api（weblive2d@1.0.12）
+源仓库：https://github.com/AdingApkgg/live2d-api
+对应 revision：47cc77140c828feab20f4fa66966ba2ea8ba85c9
+上游 MIT 原文随附于 licenses/live2d-api.LICENSE.txt。
+上游仓库的 MIT 声明不应被当作所有角色、美术和 Live2D SDK 的统一授权。
+
+core/live2d.min.js 是从本项目原有文件原样迁入的 Cubism 2 浏览器 bundle。
+原仓库未记录该 bundle 的确切 SDK 发行来源和完整授权文件；需补充核实，
+不能宣称此文件是本项目独立编写、已获再许可或已完成商业使用合规审查。
+asteroids.js 和 waifu-tips.json 同样从本项目原有文件迁入。
+
+本地补丁：两个 DSR50 destroy 模型的 tap_body 配置原本引用不存在的
+motions/wait_1.mtn；已仅移除该失效动作引用，保留其他动作。
+资源 SHA-256、初始压缩包完整性和补丁记录见包内 asset-lock.json。
+
+新增、公开分发或商业使用第三方模型/SDK 前，请核实相应权利人的许可条件。

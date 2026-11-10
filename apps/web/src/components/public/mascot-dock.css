@@ -1,0 +1,186 @@
+/* 原尺寸浮动泊位：阅读时穿透，主动打开后才接管人物与工具交互。 */
+.mascot-dock {
+  position: fixed;
+  right: 0;
+  bottom: var(--site-nav-height, 0px);
+  z-index: 40;
+  pointer-events: none;
+}
+.mascot-trigger {
+  position: fixed;
+  top: calc(50dvh - 26px);
+  left: 182px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 44px;
+  min-height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--foreground);
+  background: var(--card);
+  font-size: 11px;
+  line-height: 1.2;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.mascot-recall {
+  width: 44px;
+  height: 44px;
+}
+.mascot-panel {
+  position: relative;
+  inset: auto;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--foreground);
+  background: transparent;
+}
+.mascot-character {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 1;
+  cursor: pointer;
+}
+.mascot-panel:not([data-interactive="true"]),
+.mascot-panel:not([data-interactive="true"]) * {
+  pointer-events: none;
+}
+.mascot-message {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  width: 88px;
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  /* 独立 translate 与 motion 的 transform 都须清除，不能只修其中一种。 */
+  translate: none;
+  transform: none;
+}
+.mascot-message-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.mascot-panel[data-interactive="true"] {
+  position: fixed;
+  inset: auto 16px 16px auto;
+  z-index: 50;
+  width: 278px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--foreground);
+  background: var(--popover);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--sao-shadow-color) 18%, transparent);
+  pointer-events: auto;
+}
+.mascot-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.mascot-panel-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+.mascot-panel-heading button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+.mascot-frame canvas {
+  display: block;
+}
+/* 无 WebGL 的静帧降级：与画布同尺寸、贴底裁剪，避免人物悬在中间。 */
+.mascot-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+}
+.mascot-panel[data-interactive="true"] .mascot-message {
+  position: static;
+  width: 100%;
+  padding: 8px 10px;
+  margin: 10px 0;
+  text-align: left;
+  font-size: 12px;
+}
+.mascot-panel[data-interactive="true"] .mascot-message-text {
+  display: block;
+}
+.mascot-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+.mascot-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--foreground);
+  background: var(--card);
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.mascot-panel-heading[hidden],
+.mascot-toolbar[hidden] {
+  display: none;
+}
+.mascot-dock :is(button, canvas):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+/* 不影响首屏人物/文章关系；现有外边距已经够宽时，不额外挤压下方内容。 */
+:root:has(.mascot-dock[data-visible="true"]) :is(.reading-lower, .reading-footer) {
+  padding-right: var(--mascot-clearance, 0px);
+}
+@media (max-width: 1099px) {
+  .mascot-trigger {
+    left: 154px;
+  }
+}
+@media (max-width: 799px) {
+  .mascot-trigger {
+    top: 12px;
+    right: 112px;
+    left: auto;
+    min-height: 44px;
+  }
+}
+@media (forced-colors: active) {
+  .mascot-trigger,
+  .mascot-toolbar button,
+  .mascot-panel[data-interactive="true"] {
+    border-color: ButtonText;
+  }
+}

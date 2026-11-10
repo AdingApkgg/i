@@ -1,8 +1,5 @@
-import { Camera, Info, Quote, Rocket, Shirt, Users, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Cubism2Mascot } from "@/lib/live2d/cubism2";
 import {
+  Cubism2Mascot,
   fetchHitokoto,
   fetchModelList,
   fetchTips,
@@ -14,8 +11,13 @@ import {
   WAIFU_SAY_EVENT,
   type WaifuTips,
   welcomeMessage,
-} from "@/lib/live2d/waifu";
+} from "@i/live2d";
+import { Camera, Info, Quote, Rocket, Settings, Shirt, Users, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation } from "react-router";
 import { useMascotStore } from "@/stores/mascot";
+import "./mascot-dock.css";
 
 export interface Live2DMascotProps {
   width?: number;
@@ -25,9 +27,9 @@ export interface Live2DMascotProps {
 
 /**
  * waifu 看板娘完整版（参考 AdingApkgg/live2d-api）：
- * 42 套明日奈换装 + 11 组换人（npmmirror CDN）、工具栏（一言/打飞机/换人/换装/
+ * 42 套明日奈换装 + 11 组换人（仓内 @i/live2d 资源）、工具栏（一言/打飞机/换人/换装/
  * 拍照/信息/退出）、时段+节日问候、悬停吐槽、复制/控制台/切页彩蛋、退出记忆。
- * 渲染层为自实现 Cubism 2 引擎。
+ * 渲染层为仓内维护的 Cubism 2 封装，底层仍使用自托管的第三方 Core。
  */
 export default function Live2DMascot({ width = 230, height = 320, className }: Live2DMascotProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,8 +38,89 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   const tipsRef = useRef<WaifuTips | null>(null);
   // 偏好在 stores/mascot.ts（持久化）；null = 还没从 localStorage 读出来
   const hidden = useMascotStore((s) => (s.ready ? s.hidden : null));
+  const { pathname } = useLocation();
+  const previousPathname = useRef(pathname);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const recallRef = useRef<HTMLButtonElement>(null);
+  const focusAfterPreference = useRef(false);
+  const [interactive, setInteractive] = useState(false);
+  const [nativePopover, setNativePopover] = useState(false);
+
+  const closePanel = useCallback((returnFocus = true) => {
+    const panel = panelRef.current;
+    if (panel?.popover && panel.matches(":popover-open")) panel.hidePopover();
+    setInteractive(false);
+    if (returnFocus) triggerRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    setNativePopover(typeof HTMLElement.prototype.showPopover === "function");
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!interactive) return;
+    if (nativePopover) panelRef.current?.showPopover({ source: triggerRef.current ?? undefined });
+    closeRef.current?.focus({ preventScroll: true });
+  }, [interactive, nativePopover]);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    closePanel(false);
+  }, [pathname, closePanel]);
+
+  // 不支持原生 popover 时仍可点击、Escape 关闭；面板不设为模态、不锁住页面。
+  useEffect(() => {
+    if (!interactive || nativePopover) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closePanel();
+    };
+    const onOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!panelRef.current?.contains(target) && !triggerRef.current?.contains(target))
+        closePanel(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onOutside);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onOutside);
+    };
+  }, [interactive, nativePopover, closePanel]);
+
+  useEffect(() => {
+    if (!focusAfterPreference.current) return;
+    focusAfterPreference.current = false;
+    (hidden ? recallRef : triggerRef).current?.focus({ preventScroll: true });
+  }, [hidden]);
+
+  // 只给首页文章窗、下方两栏和页脚留泊位，不改主立绘或身份区。
+  useEffect(() => {
+    if (hidden !== false || pathname !== "/") return;
+    const main = document.querySelector<HTMLElement>(".public-main-home");
+    if (!main) return;
+    const update = () => {
+      // 泊位从内容右缘量起：清除量就是阅读内容还需让出的宽度。
+      const gap = innerWidth - main.getBoundingClientRect().right;
+      main.style.setProperty("--mascot-clearance", `${Math.max(0, 242 - gap)}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(main);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      main.style.removeProperty("--mascot-clearance");
+    };
+  }, [hidden, pathname]);
+
   const [group, setGroup] = useState(0);
   const [costume, setCostume] = useState(0);
+  // 无 WebGL 时引擎构造抛错：退回静帧，别留一块空画布和一段白白让出的泊位。
+  const [engineFailed, setEngineFailed] = useState(false);
   const switching = useRef(false);
 
   // ---- 气泡（带优先级）----
@@ -96,6 +179,7 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
     try {
       engine = new Cubism2Mascot(canvas);
     } catch {
+      setEngineFailed(true);
       return;
     }
     engineRef.current = engine;
@@ -263,35 +347,47 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
   }, [hidden, showTip]);
 
   // ---- 点击看板娘（动作插播；文案由全局 click 监听统一处理）----
-  function onTap(e: React.MouseEvent<HTMLCanvasElement>) {
+  function onTap(e: React.MouseEvent<HTMLButtonElement>) {
     const engine = engineRef.current;
     const canvas = canvasRef.current;
     if (!engine || !canvas) return;
     const r = canvas.getBoundingClientRect();
-    engine.tap(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
+    // 原生按钮为键盘/辅助技术合成的点击没有坐标，使用人物中心。
+    engine.tap(
+      e.detail ? e.clientX - r.left : r.width / 2,
+      e.detail ? e.clientY - r.top : r.height * 0.35,
+      r.width,
+      r.height,
+    );
   }
 
   function quit() {
+    closePanel(false);
+    focusAfterPreference.current = true;
     useMascotStore.getState().hide();
     setTip(null);
   }
   function restore() {
+    focusAfterPreference.current = true;
     useMascotStore.getState().show();
   }
 
   if (hidden === null) return null;
   if (hidden) {
     return (
-      <motion.button
-        type="button"
-        onClick={restore}
-        title="召唤看板娘"
-        initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="pointer-events-auto grid size-9 place-items-center rounded-full border border-border bg-card/90 text-primary shadow-md backdrop-blur transition hover:scale-110"
-      >
-        ✿
-      </motion.button>
+      <div className="mascot-dock" data-visible="false">
+        <motion.button
+          ref={recallRef}
+          type="button"
+          onClick={restore}
+          title="召唤看板娘"
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mascot-recall pointer-events-auto grid place-items-center rounded-full border border-border bg-card/90 text-primary shadow-md backdrop-blur"
+        >
+          ✿
+        </motion.button>
+      </div>
     );
   }
 
@@ -330,57 +426,119 @@ export default function Live2DMascot({ width = 230, height = 320, className }: L
       id: "info",
       icon: <Info className="size-3.5" />,
       label: "关于",
-      onClick: () => window.open("https://github.com/AdingApkgg/live2d-api", "_blank"),
+      onClick: () => window.open("/live2d/NOTICE.txt", "_blank", "noopener,noreferrer"),
     },
     { id: "quit", icon: <X className="size-3.5" />, label: "再见", onClick: quit },
   ];
 
   return (
-    <motion.div
-      className={`group/waifu pointer-events-auto ${className ?? ""}`}
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.15 }}
-      style={{ width, height, position: "relative", userSelect: "none", lineHeight: 0 }}
-    >
-      <AnimatePresence>
-        {tip && (
-          <motion.div
-            key={tip}
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 500, damping: 28 }}
-            className="absolute -top-4 left-1/2 z-10 w-max max-w-60 -translate-x-1/2 rounded-md border border-border bg-card/95 px-3 py-1.5 text-center text-xs text-foreground shadow-md backdrop-blur"
-            style={{ lineHeight: 1.6 }}
-          >
-            {tip}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 工具栏：悬停看板娘时出现 */}
-      <div className="absolute -left-7 top-10 z-10 flex flex-col gap-1 opacity-0 transition-opacity duration-300 group-hover/waifu:opacity-100">
-        {tools.map((t) => (
+    <div className="mascot-dock" data-visible="true">
+      <button
+        ref={triggerRef}
+        type="button"
+        className="mascot-trigger"
+        aria-label="看板娘工具与互动"
+        aria-haspopup="dialog"
+        aria-controls="mascot-tools-panel"
+        aria-expanded={interactive}
+        onClick={() => (interactive ? closePanel() : setInteractive(true))}
+      >
+        <Settings size={16} aria-hidden="true" />
+        <span>人物</span>
+      </button>
+      <section
+        ref={panelRef}
+        id="mascot-tools-panel"
+        className="mascot-panel"
+        data-interactive={interactive}
+        popover={interactive && nativePopover ? "auto" : undefined}
+        role={interactive ? "dialog" : undefined}
+        aria-label="看板娘工具与互动"
+        onToggle={(event) => {
+          // Escape / light-dismiss 由浏览器关闭；不抢走外部链接或表单的焦点。
+          if (event.newState === "closed" && !event.currentTarget.matches(":popover-open"))
+            setInteractive(false);
+        }}
+      >
+        <header className="mascot-panel-heading" hidden={!interactive}>
+          <h2>看板娘</h2>
           <button
-            key={t.id}
-            id={`waifu-tool-${t.id}`}
+            ref={closeRef}
             type="button"
-            title={t.label}
-            onClick={t.onClick}
-            className="grid size-6 place-items-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition hover:scale-110 hover:text-primary"
+            aria-label="关闭互动面板"
+            onClick={() => closePanel()}
           >
-            {t.icon}
+            <X size={18} aria-hidden="true" />
           </button>
-        ))}
-      </div>
-
-      <canvas
-        id="waifu-canvas"
-        ref={canvasRef}
-        onClick={onTap}
-        style={{ width: "100%", height: "100%", background: "transparent", cursor: "pointer" }}
-      />
-    </motion.div>
+        </header>
+        <motion.div
+          className={`mascot-frame ${className ?? ""}`}
+          data-engine={engineFailed ? "fallback" : "live2d"}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.15 }}
+          style={{
+            width,
+            height: interactive ? "auto" : height,
+            position: "relative",
+            userSelect: "none",
+            lineHeight: 0,
+          }}
+        >
+          <button
+            type="button"
+            className="mascot-character"
+            style={{ width, height }}
+            aria-label="与看板娘互动"
+            disabled={!interactive}
+            onClick={onTap}
+          >
+            <canvas
+              id="waifu-canvas"
+              ref={canvasRef}
+              hidden={engineFailed}
+              style={{ width: "100%", height: "100%", background: "transparent" }}
+            />
+            {engineFailed && (
+              <img
+                className="mascot-fallback"
+                src="/images/asuna-mascot.webp"
+                alt=""
+                width={width}
+                height={height}
+              />
+            )}
+          </button>
+          <AnimatePresence>
+            {tip && (
+              <motion.div
+                key={tip}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 28 }}
+                className="mascot-message rounded-md border border-border bg-card/95 text-center text-foreground shadow-md backdrop-blur"
+              >
+                <div className="mascot-message-text">{tip}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div className="mascot-toolbar" hidden={!interactive}>
+            {tools.map((tool) => (
+              <button
+                key={tool.id}
+                id={`waifu-tool-${tool.id}`}
+                type="button"
+                title={tool.label}
+                onClick={tool.onClick}
+              >
+                {tool.icon}
+                <span>{tool.label}</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+    </div>
   );
 }

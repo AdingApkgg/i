@@ -11,9 +11,7 @@
       "!packages/db/drizzle",
       "!**/dist",
       "!**/node_modules",
-      "!apps/web/public/live2d/core",
-      "!apps/web/public/live2d/asuna",
-      "!apps/web/public/live2d/asteroids.js"
+      "!packages/live2d/assets"
     ]
   },
   "formatter": {

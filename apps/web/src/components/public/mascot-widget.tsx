@@ -15,10 +15,8 @@ export function MascotWidget() {
   }, []);
   if (!enabled) return null;
   return (
-    <div className="fixed right-0 bottom-[var(--site-nav-height)] z-40 lg:bottom-0">
-      <Suspense fallback={null}>
-        <Live2DMascot width={230} height={320} />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <Live2DMascot width={230} height={320} />
+    </Suspense>
   );
 }

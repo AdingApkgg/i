@@ -1,94 +1,97 @@
 import { expect, test } from "./fixtures";
+import { navigateMain } from "./navigation-helpers";
 
-// 保留正文避让、固定位置和活动栏目验证；手机活动叶子位于分组面板中。
-for (const width of [320, 390, 768, 1023, 1024, 1440]) {
-  test(`导航随视口切换位置（${width}px）`, async ({ page }) => {
+// 已确认契约迁移：手机底栏 → 顶部完整菜单，1024 → 800px；仍验证正文避让和当前栏目。
+for (const width of [320, 390, 768, 799, 800, 1023, 1024, 1440]) {
+  test(`导航与正文在 800px 版式边界切换（${width}px）`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/blog/hello-world");
-    const header = page.locator("header");
-    const main = page.locator("main");
-    const box = await header.boundingBox();
-    const content = await main.boundingBox();
-    expect(box).not.toBeNull();
-    expect(content).not.toBeNull();
-    if (width >= 1024) {
-      expect(box!.x).toBe(0);
-      expect(box!.height).toBe(900);
-      expect(box!.width).toBeLessThanOrEqual(192);
-      expect(content!.x).toBeGreaterThanOrEqual(box!.width);
-      await expect(header.getByRole("link", { name: "博客", exact: true })).toHaveAttribute(
+    await page.goto("/blog");
+    const main = (await page.locator(".public-main").boundingBox())!;
+    if (width >= 800) {
+      const sidebar = page.locator(".public-sidebar");
+      await expect(sidebar).toBeVisible();
+      const box = (await sidebar.boundingBox())!;
+      expect(main.x).toBeGreaterThanOrEqual(box.x + box.width);
+      expect(box.width).toBeLessThanOrEqual(164);
+      expect(box.y).toBe(34);
+      await expect(sidebar.getByRole("link", { name: "博客", exact: true })).toHaveAttribute(
         "aria-current",
         "page",
       );
+      await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+      expect((await sidebar.boundingBox())!.y).toBe(box.y);
     } else {
-      expect(box!.y).toBeGreaterThan(800);
-      expect(box!.y + box!.height).toBe(900);
-      expect(box!.height).toBeLessThanOrEqual(100);
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      expect((await header.boundingBox())!.y).toBe(box!.y);
-      expect(
-        (await main.boundingBox())!.y + (await main.boundingBox())!.height,
-      ).toBeLessThanOrEqual(box!.y);
-      const group = header.getByRole("button", { name: "日常", exact: true });
-      await expect(group).toHaveAttribute("data-active", "true");
-      await group.click();
+      await expect(page.locator(".public-sidebar")).not.toBeVisible();
+      const header = (await page.locator(".public-mobile-header").boundingBox())!;
+      expect(header.y).toBe(0);
+      expect(main.y).toBeGreaterThanOrEqual(header.y + header.height);
+      await page.getByRole("button", { name: "栏目", exact: true }).click();
       await expect(
         page.getByRole("dialog").getByRole("link", { name: "博客", exact: true }),
       ).toHaveAttribute("aria-current", "page");
       await page.keyboard.press("Escape");
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    expect(
+      await page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue("--site-nav-height").trim(),
+      ),
+    ).toBe("0px");
   });
 }
 
-test("手机底栏与分组面板可键盘访问，客户端切页后能回首页", async ({ page }) => {
+test("手机完整菜单支持键盘，跨栏目切页后能回首页且不整页重载", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.waitForLoadState("networkidle");
   await page.evaluate(() => {
-    (window as unknown as { __marker: number }).__marker = 42;
+    (window as unknown as { navigationMarker: number }).navigationMarker = 42;
   });
-  const nav = page.getByRole("navigation", { name: "主导航" });
-  const friends = nav.getByRole("link", { name: "友链", exact: true });
+  const trigger = page.getByRole("button", { name: "栏目", exact: true });
+  await trigger.focus();
+  await page.keyboard.press("Enter");
+  const friends = page.getByRole("dialog").getByRole("link", { name: "友链", exact: true });
   await friends.focus();
-  await expect(friends).toBeInViewport();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL("/friends");
-  await expect(friends).toHaveAttribute("aria-current", "page");
-  await nav.getByRole("button", { name: "收藏", exact: true }).focus();
-  await page.keyboard.press("Enter");
-  const music = page.getByRole("dialog").getByRole("link", { name: "音乐", exact: true });
-  await music.focus();
-  await page.keyboard.press("Enter");
+  await trigger.click();
+  await expect(
+    page.getByRole("dialog").getByRole("link", { name: "友链", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
+  await navigateMain(page, "音乐", "收藏");
   await expect(page).toHaveURL("/music");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await nav.getByRole("link", { name: "首页", exact: true }).click();
+  await navigateMain(page, "首页");
   await expect(page).toHaveURL("/");
-  expect(await page.evaluate(() => (window as unknown as { __marker?: number }).__marker)).toBe(42);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { navigationMarker?: number }).navigationMarker,
+    ),
+  ).toBe(42);
 });
 
-test("手机直达二级栏目，底栏标明所属组且能找到当前页", async ({ page }) => {
+test("手机直达二级栏目后可找到当前项，不把首页标成当前页", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/device");
-  const group = page
-    .getByRole("navigation", { name: "主导航" })
-    .getByRole("button", { name: "兴趣", exact: true });
-  await expect(group).toHaveAttribute("data-active", "true");
-  await expect(group).toBeInViewport();
-  await group.click();
-  const current = page.getByRole("dialog").getByRole("link", { name: "设备", exact: true });
+  await page.getByRole("button", { name: "栏目", exact: true }).click();
+  const panel = page.getByRole("dialog");
+  const current = panel.getByRole("link", { name: "设备", exact: true });
   await expect(current).toHaveAttribute("aria-current", "page");
+  await current.focus();
   await expect(current).toBeInViewport();
+  await expect(panel.getByRole("link", { name: "首页", exact: true })).not.toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 });
 
-test("矮桌面展开分组后仍能滚动和聚焦最后的栏目", async ({ page }) => {
+test("矮桌面导航可以滚动并聚焦最后的栏目", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 480 });
   await page.goto("/");
-  const nav = page.getByRole("navigation", { name: "主导航" });
-  await nav.locator("summary").filter({ hasText: "收藏" }).click();
-  const friends = nav.getByRole("link", { name: "友链", exact: true });
-  await friends.focus();
-  await expect(friends).toBeInViewport();
+  const nav = page.getByRole("navigation", { name: "桌面主导航", exact: true });
+  const about = nav.getByRole("link", { name: "关于", exact: true });
+  await about.focus();
+  await expect(about).toBeInViewport();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL("/friends");
+  await expect(page).toHaveURL("/about");
 });

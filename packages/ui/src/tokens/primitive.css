@@ -79,7 +79,24 @@
   --palette-red-500: oklch(0.62 0.22 25);
   --palette-red-600: oklch(0.66 0.2 25);
 
-  /* mist：雾灰：SAO 前台明亮主题 */
+  /* frost / citrine：阅读版提案的冷灰与选择橙，本站原创值，非官方色卡。 */
+  --palette-frost-50: #f8fafb;
+  --palette-frost-100: #f1f4f6;
+  --palette-frost-150: #e8eff4;
+  --palette-frost-200: #e8eef0;
+  --palette-frost-250: #e4edf2;
+  --palette-frost-300: #ccd7de;
+  --palette-frost-400: #acbdc9;
+  --palette-frost-600: #596b76;
+  --palette-frost-700: #495e6d;
+  --palette-frost-800: #2b3b46;
+  --palette-frost-850: #293944;
+  --palette-frost-900: #293640;
+  --palette-frost-950: #1f2b34;
+  --palette-citrine-300: #edb35a;
+  --palette-citrine-400: #e5a13c;
+
+  /* mist：雾灰：旧 SAO 前台明亮主题，保留历史引用 */
   --palette-mist-300: #ffffff;
   --palette-mist-350: #f6f7f9;
   --palette-mist-400: #edf0f3;

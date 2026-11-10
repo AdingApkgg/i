@@ -1,0 +1,134 @@
+/* WebGPU 闸门：没有硬件适配器时整站只留这一屏，避免露出残破页面。 */
+.webgpu-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  /* 用 flex + 卡片 margin:auto 居中：卡片比视口高时退回顶部对齐并可以滚，
+     栅格 place-items:center 会把顶部推到视口外，矮屏直接读不到标题。 */
+  display: flex;
+  overflow: auto;
+  padding: 24px;
+  color: var(--foreground);
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      color-mix(in oklab, var(--card) 60%, transparent),
+      transparent 70%
+    ),
+    var(--background);
+}
+
+/* 透传被拦下来的会话：其它节点既不显示也拿不到焦点与滚动。 */
+html[data-webgpu-gate="blocked"] body > *:not(.webgpu-gate) {
+  display: none;
+}
+
+.webgpu-gate-card {
+  width: min(560px, 100%);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.webgpu-gate-eyebrow {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.webgpu-gate-title {
+  margin: 0;
+  font-size: clamp(20px, 4vw, 26px);
+  line-height: 1.3;
+}
+
+.webgpu-gate-lead {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.webgpu-gate-detected {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--border);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.webgpu-gate-section {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.webgpu-gate-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.webgpu-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.webgpu-gate-retry {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 18px;
+  color: var(--card);
+  background: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.webgpu-gate-retry:hover {
+  opacity: 0.88;
+}
+
+.webgpu-gate-foot {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.webgpu-gate code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.94em;
+}
+
+/* 手机竖屏放得下整张卡（390×844），矮屏才出现滚动。 */
+@media (max-width: 480px) {
+  .webgpu-gate {
+    padding: 12px;
+  }
+
+  .webgpu-gate-card {
+    gap: 10px;
+    padding: 18px;
+  }
+
+  .webgpu-gate-lead,
+  .webgpu-gate-list {
+    line-height: 1.6;
+  }
+}

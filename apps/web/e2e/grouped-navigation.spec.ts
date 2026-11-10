@@ -1,59 +1,31 @@
+import { NAV_DOMAINS } from "@i/config";
 import { expect, test } from "./fixtures";
 
-const groups = [
-  {
-    label: "日常",
-    entries: [
-      ["博客", "/blog"],
-      ["相册", "/gallery"],
-      ["说说", "/moments"],
-      ["自慰记录", "/masturbation"],
-    ],
-  },
-  {
-    label: "收藏",
-    entries: [
-      ["音乐", "/music"],
-      ["番剧", "/anime"],
-      ["影视", "/movie"],
-      ["视觉小说", "/vn"],
-    ],
-  },
-  {
-    label: "兴趣",
-    entries: [
-      ["舞萌", "/maimai"],
-      ["东方", "/touhou"],
-      ["设备", "/device"],
-    ],
-  },
-] as const;
-
-// 删除任何栏目、失去原链接，或切换组时旧组仍展开，都应被真实界面行为捕获。
-test("桌面分组可切换，十二个栏目仍可逐一访问", async ({ page }) => {
+// 已确认契约迁移：分组初始展开、完整注册表，不再锁死旧十二栏目或单组互斥。
+test("桌面初始展开全部栏目，用户仍可收起并重新展开分组", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/");
-  const nav = page.getByRole("navigation", { name: "主导航" });
-  await expect(nav.getByRole("link", { name: "音乐", exact: true })).not.toBeVisible();
-  for (const group of groups) {
-    await nav.locator("summary").filter({ hasText: group.label }).click();
-    for (const [label, href] of group.entries) {
-      const link = nav.getByRole("link", { name: label, exact: true });
-      await expect(link).toBeVisible();
-      await expect(link).toHaveAttribute("href", href);
-    }
-    await expect(nav.locator("details[open]")).toHaveCount(1);
+  const nav = page.getByRole("navigation", { name: "桌面主导航", exact: true });
+  for (const domain of NAV_DOMAINS) {
+    const link = nav.locator(`a[href="${domain.path}"]`);
+    await expect(link).toBeVisible();
+    await expect(link).toHaveText(/\S/);
   }
-  await expect(nav.getByRole("link", { name: "友链", exact: true })).toHaveAttribute(
-    "href",
-    "/friends",
-  );
+  const collection = nav.locator("details").filter({ has: page.locator('a[href="/music"]') });
+  await collection.locator("summary").click();
+  await expect(collection.getByRole("link", { name: "音乐", exact: true })).not.toBeVisible();
+  await collection.locator("summary").click();
+  await expect(collection.getByRole("link", { name: "音乐", exact: true })).toBeVisible();
+  await expect(nav.getByRole("link")).toHaveCount(NAV_DOMAINS.length + 2);
 });
 
-test("直达深层页面自动展开所属组，键盘切页保留客户端上下文", async ({ page }) => {
+test("直达真实详情自动标记文章栏目，键盘切页保留客户端上下文", async ({ page, request }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/blog/hello-world");
-  const nav = page.getByRole("navigation", { name: "主导航" });
+  const response = await request.post("/api/rpc/blog/list", { data: { json: {} } });
+  const posts = (await response.json()).json as { slug: string }[];
+  expect(posts.length).toBeGreaterThan(0);
+  await page.goto(`/blog/${encodeURIComponent(posts[0]!.slug)}`);
+  const nav = page.getByRole("navigation", { name: "桌面主导航", exact: true });
   await expect(nav.getByRole("link", { name: "博客", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
@@ -61,8 +33,6 @@ test("直达深层页面自动展开所属组，键盘切页保留客户端上�
   await page.evaluate(() => {
     (window as unknown as { previewMarker: number }).previewMarker = 42;
   });
-  await nav.locator("summary").filter({ hasText: "收藏" }).focus();
-  await page.keyboard.press("Enter");
   const music = nav.getByRole("link", { name: "音乐", exact: true });
   await music.focus();
   await page.keyboard.press("Enter");
@@ -72,58 +42,56 @@ test("直达深层页面自动展开所属组，键盘切页保留客户端上�
     await page.evaluate(() => (window as unknown as { previewMarker?: number }).previewMarker),
   ).toBe(42);
   await page.goBack();
-  await expect(nav.getByRole("link", { name: "博客", exact: true })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "博客", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 });
 
-test("手机面板保留全部分组，焦点受控且关闭后回到实际触发按钮", async ({ page }) => {
+test("手机完整菜单焦点受控，关闭后返回触发按钮，切到桌面不残留模态层", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const nav = page.getByRole("navigation", { name: "主导航" });
-  const trigger = nav.getByRole("button", { name: "收藏", exact: true });
+  const trigger = page.getByRole("button", { name: "栏目", exact: true });
   await trigger.click();
-  const panel = page.getByRole("dialog", { name: "收藏", exact: true });
-  await expect(panel).toBeVisible();
-  await expect(panel.getByRole("link", { name: "音乐", exact: true })).toBeVisible();
+  const panel = page.getByRole("dialog", { name: "全部栏目", exact: true });
+  for (const domain of NAV_DOMAINS)
+    await expect(panel.locator(`a[href="${domain.path}"]`)).toBeVisible();
   for (let i = 0; i < 10; i++) {
     await page.keyboard.press("Tab");
-    expect(await panel.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    expect(await panel.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await page.getByRole("dialog").getByRole("button", { name: "日常", exact: true }).click();
-  for (const [label, href] of groups[0]!.entries)
-    await expect(
-      page.getByRole("dialog").getByRole("link", { name: label, exact: true }),
-    ).toHaveAttribute("href", href);
-  await page.getByRole("dialog").getByRole("link", { name: "博客", exact: true }).click();
+  await panel.getByRole("link", { name: "博客", exact: true }).click();
   await expect(page).toHaveURL("/blog");
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await nav.getByRole("button", { name: "兴趣", exact: true }).click();
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(panel).toHaveCount(0);
+  await trigger.click();
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect(panel).toHaveCount(0);
   expect(await page.evaluate(() => getComputedStyle(document.body).pointerEvents)).not.toBe("none");
 });
 
-for (const width of [320, 390, 768, 1024, 1440]) {
-  test(`分组导航与正文在 ${width}px 不发生横向溢出`, async ({ page }) => {
+for (const width of [320, 390, 768, 799, 800, 1024, 1440]) {
+  test(`分组与正文在 ${width}px 不横溢，完整栏目仍可操作`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
-    const nav = page.getByRole("navigation", { name: "主导航" });
-    if (width < 1024) await nav.getByRole("button", { name: "收藏", exact: true }).click();
-    else await nav.locator("summary").filter({ hasText: "收藏" }).click();
+    if (width < 800) {
+      await page.getByRole("button", { name: "栏目", exact: true }).click();
+      const music = page.getByRole("dialog").getByRole("link", { name: "音乐", exact: true });
+      await music.focus();
+      await expect(music).toBeInViewport();
+    } else {
+      const nav = page.getByRole("navigation", { name: "桌面主导航", exact: true });
+      await expect(nav.getByRole("link", { name: "音乐", exact: true })).toBeVisible();
+      expect((await page.locator(".public-sidebar").boundingBox())!.width).toBeLessThanOrEqual(164);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
-    if (width >= 1024)
-      expect((await page.locator("header").boundingBox())!.width).toBeLessThanOrEqual(192);
-    else
-      await expect(
-        page.getByRole("dialog").getByRole("link", { name: "音乐", exact: true }),
-      ).toBeInViewport();
   });
 }
 
-test("禁用 JavaScript 后仍能展开桌面菜单或使用手机全部栏目导航", async ({ browser, baseURL }) => {
+test("无脚本完整菜单保留所有注册入口，手机和桌面都能进入栏目", async ({ browser, baseURL }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
     viewport: { width: 390, height: 844 },
@@ -131,21 +99,23 @@ test("禁用 JavaScript 后仍能展开桌面菜单或使用手机全部栏目�
   const page = await context.newPage();
   try {
     await page.route(
-      (u) => u.origin !== new URL(baseURL!).origin,
-      (r) => r.abort(),
+      (url) => url.origin !== new URL(baseURL!).origin,
+      (route) => route.abort(),
     );
     await page.goto(baseURL!);
-    const nav = page.getByRole("navigation", { name: "全部栏目" });
+    const nav = page.getByRole("navigation", { name: "无脚本全部栏目", exact: true });
+    await expect(nav.getByRole("link")).toHaveCount(NAV_DOMAINS.length + 2);
+    for (const domain of NAV_DOMAINS)
+      await expect(nav.locator(`a[href="${domain.path}"]`)).toBeVisible();
     await nav.getByRole("link", { name: "设备", exact: true }).click();
     await expect(page).toHaveURL(`${baseURL}/device`);
-    const home = nav.getByRole("link", { name: "首页", exact: true });
-    await expect(home).toBeVisible();
-    await home.click();
+    await page
+      .getByRole("navigation", { name: "无脚本全部栏目", exact: true })
+      .getByRole("link", { name: "首页", exact: true })
+      .click();
     await expect(page).toHaveURL(`${baseURL}/`);
-    await expect(nav.getByRole("link")).toHaveCount(13);
     await page.setViewportSize({ width: 1440, height: 900 });
-    const desktop = page.getByRole("navigation", { name: "主导航" });
-    await desktop.locator("summary").filter({ hasText: "收藏" }).click();
+    const desktop = page.getByRole("navigation", { name: "桌面主导航", exact: true });
     await desktop.getByRole("link", { name: "音乐", exact: true }).click();
     await expect(page).toHaveURL(`${baseURL}/music`);
   } finally {
