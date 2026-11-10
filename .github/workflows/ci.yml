@@ -77,6 +77,7 @@ jobs:
     timeout-minutes: 25
     env:
       COMPOSE: docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml
+      E2E_WEBGPU_GATE: "off"
     steps:
       - uses: actions/checkout@v7
 
@@ -112,6 +113,7 @@ jobs:
 
       # web 等数据库健康、迁移完成、SeaweedFS 健康后才启动
       - name: Start stack
+        id: stack
         run: |
           $COMPOSE up -d
           timeout 180 bash -c 'until curl -sf -o /dev/null http://localhost:8099/robots.txt; do sleep 2; done'
@@ -134,7 +136,7 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       # DATABASE_URL 只在这一步设：放到任务级会被 compose.prod.yaml 的 ${DATABASE_URL:-…} 插值进容器
-      - name: E2E
+      - name: E2E (业务回归，闸门关闭)
         run: bun run test:e2e
         env:
           E2E_BASE_URL: http://localhost:8099
@@ -142,15 +144,32 @@ jobs:
           # 给 e2e 的 global setup 提权管理员用（compose.e2e.yaml 开放了本机端口）
           DATABASE_URL: postgres://i:i@localhost:5432/i
 
+      # 即使业务测试失败也验证准入，避免把两类失败混为一个原因。
+      # 同一生产镜像仅切换运行期变量，不重新构建或影响生产默认值。
+      - name: E2E (准入回归，闸门开启)
+        if: ${{ !cancelled() && steps.stack.outcome == 'success' }}
+        run: |
+          $COMPOSE up -d --no-build --no-deps --force-recreate web
+          timeout 180 bash -c 'until curl -sf -o /dev/null http://localhost:8099/robots.txt; do sleep 2; done'
+          cd apps/web
+          bunx playwright test --config=playwright.gate.config.ts --output=e2e/.gate-results
+        env:
+          E2E_WEBGPU_GATE: "on"
+          E2E_BASE_URL: http://localhost:8099
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-gate-report
+
       - name: Stack logs
-        if: failure()
-        run: $COMPOSE logs --tail 200
+        if: ${{ failure() || cancelled() }}
+        run: timeout 60 $COMPOSE logs --tail 200
 
       - uses: actions/upload-artifact@v7
-        if: failure()
+        if: always()
         with:
           name: playwright-report
+          include-hidden-files: true
           path: |
             apps/web/playwright-report
+            apps/web/playwright-gate-report
             apps/web/e2e/.results
+            apps/web/e2e/.gate-results
           retention-days: 7

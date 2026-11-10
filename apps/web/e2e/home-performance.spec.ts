@@ -62,7 +62,10 @@ test("离开首屏停动、回顶恢复，且不劫持滚动", async ({ page }) 
     .first()
     .evaluate((element) => element.getBoundingClientRect().top < innerHeight);
   expect(journalVisible, "动态不换走首屏文章").toBe(true);
+  // 上面的首屏断言保留 900×1000；短 seed 需缩短窗口，才能真的把演出区完全滚出。
+  await page.setViewportSize({ width: 900, height: 360 });
   await page.evaluate(() => scrollTo(0, 4000));
+  await expect(field(page)).not.toBeInViewport();
   await expect(stage(page)).toHaveAttribute("data-scene-running", "false");
   await expect.poll(async () => (await motionOf(page)).running).toBe(0);
   expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
@@ -76,18 +79,22 @@ test("页面隐藏时停动，返回后继续", async ({ page }) => {
   await page.addInitScript(() => {
     let state: DocumentVisibilityState = "visible";
     Object.defineProperty(document, "visibilityState", { get: () => state, configurable: true });
-    (window as Window & { __set: (next: DocumentVisibilityState) => void }).__set = (next) => {
+    (window as unknown as Window & { __set: (next: DocumentVisibilityState) => void }).__set = (
+      next,
+    ) => {
       state = next;
       document.dispatchEvent(new Event("visibilitychange"));
     };
   });
   await page.goto("/");
   await enterPerformance(page);
-  await page.evaluate(() => (window as Window & { __set: (next: string) => void }).__set("hidden"));
+  await page.evaluate(() =>
+    (window as unknown as Window & { __set: (next: string) => void }).__set("hidden"),
+  );
   await expect(stage(page)).toHaveAttribute("data-scene-running", "false");
   await expect.poll(async () => (await motionOf(page)).running).toBe(0);
   await page.evaluate(() =>
-    (window as Window & { __set: (next: string) => void }).__set("visible"),
+    (window as unknown as Window & { __set: (next: string) => void }).__set("visible"),
   );
   await expect(stage(page)).toHaveAttribute("data-scene-running", "true");
 });
@@ -219,7 +226,11 @@ test.describe("无 WebGL 降级", () => {
   test("看板娘退回静帧，不留空画布", async ({ page }) => {
     await page.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function (type: string, ...rest: unknown[]) {
+      HTMLCanvasElement.prototype.getContext = function (
+        this: HTMLCanvasElement,
+        type: string,
+        ...rest: unknown[]
+      ) {
         return /^webgl/.test(type) ? null : original.call(this, type as "2d", ...(rest as []));
       } as typeof original;
     });

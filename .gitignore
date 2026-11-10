@@ -37,4 +37,6 @@ data/
 # e2e (Playwright)
 apps/web/e2e/.auth/
 apps/web/e2e/.results/
+apps/web/e2e/.gate-results/
 apps/web/playwright-report/
+apps/web/playwright-gate-report/

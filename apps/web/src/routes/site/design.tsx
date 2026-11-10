@@ -67,7 +67,10 @@ export default function Page() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="tone-swatches">
           {TONES.map((item) => (
             <div className="min-w-0 space-y-1.5" data-testid="swatch" key={item.tone}>
-              <div className={`h-12 rounded-md ring-1 ring-border ring-inset ${item.className}`} />
+              <div
+                data-tone={item.tone}
+                className={`h-12 rounded-md ring-1 ring-border ring-inset ${item.className}`}
+              />
               <div className="text-caption text-muted-foreground">{item.label}</div>
             </div>
           ))}
@@ -92,15 +95,25 @@ export default function Page() {
         <SectionHeader title="模式构件" description="组合固定、只暴露必要维度；调用页只传内容" />
 
         <div className="space-y-3" data-testid="pattern-page-header">
-          <div className="text-caption text-muted-foreground">PageHeader / SectionHeader</div>
+          <div className="text-caption text-muted-foreground">
+            PageHeader：标题 + 说明 + 右侧操作
+          </div>
           <Card>
-            <CardBody className="space-y-4">
+            <CardBody>
               <PageHeader
                 size="md"
                 title="页面主标题"
                 description="一句说明，交代这页做什么"
                 actions={<Button size="sm">主操作</Button>}
               />
+            </CardBody>
+          </Card>
+        </div>
+
+        <div className="space-y-3" data-testid="pattern-section-header">
+          <div className="text-caption text-muted-foreground">SectionHeader：区块标题 + 计数</div>
+          <Card>
+            <CardBody>
               <SectionHeader
                 title="区块小标题"
                 description="计数或补充说明"

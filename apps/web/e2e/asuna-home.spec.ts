@@ -52,9 +52,18 @@ test("首页读取当前公开文章、说说与作品，不把随机相册或�
     "href",
     "https://github.com/AdingApkgg",
   );
-  await page.getByRole("link", { name: "看作品", exact: true }).click();
-  await expect(page).toHaveURL(/\/#projects$/);
-  await page.locator("#projects").getByRole("link", { name: "全部作品", exact: true }).click();
+  const projectLink = page.getByRole("link", { name: "看作品", exact: true });
+  if (projects.length > 0) {
+    await expect(projectLink).toHaveAttribute("href", "/#projects");
+    await projectLink.click();
+    await expect(page).toHaveURL(/\/#projects$/);
+    await page.locator("#projects").getByRole("link", { name: "全部作品", exact: true }).click();
+  } else {
+    // 成功空结果不渲染空预览，入口必须直达真实作品列表，而非不存在的锚点。
+    await expect(page.locator("#projects")).toHaveCount(0);
+    await expect(projectLink).toHaveAttribute("href", "/projects");
+    await projectLink.click();
+  }
   await expect(page).toHaveURL("/projects");
 });
 

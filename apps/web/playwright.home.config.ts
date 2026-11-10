@@ -15,7 +15,7 @@ export default defineConfig({
     "home-performance.spec.ts",
     "mascot-dock.probe.ts",
     "live2d.spec.ts",
-    "webgpu-gate.spec.ts",
+    "webgpu-gate-off.spec.ts",
     ...(process.env.SAO_HOME_STATE_URL ? ["home-state.probe.ts"] : []),
   ],
 });

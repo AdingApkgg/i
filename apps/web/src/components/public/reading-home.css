@@ -443,15 +443,15 @@
   background: color-mix(in srgb, var(--foreground) 5%, transparent);
   opacity: 0.65;
 }
-:root:has(.reading-stage[data-scene-mode="performance"]) .scene-plane-far {
+.reading-stage[data-scene-mode="performance"] .scene-plane-far {
   transform: perspective(1200px) translate3d(28px, -18px, -100px) rotateY(-26deg) rotateX(8deg);
   opacity: 1;
 }
-:root:has(.reading-stage[data-scene-mode="performance"]) .scene-plane-mid {
+.reading-stage[data-scene-mode="performance"] .scene-plane-mid {
   transform: perspective(1200px) translate3d(-22px, 12px, 35px) rotateY(22deg) rotateX(-12deg);
   opacity: 0.85;
 }
-:root:has(.reading-stage[data-scene-mode="performance"]) .scene-plane-near {
+.reading-stage[data-scene-mode="performance"] .scene-plane-near {
   transform: perspective(900px) translate3d(10px, -32px, 60px) rotateX(65deg) rotateZ(-9deg);
   opacity: 0.9;
 }

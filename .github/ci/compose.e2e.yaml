@@ -7,6 +7,9 @@ services:
   # 测试替身仅由 CI override 注入，不打入镜像，不改变生产 API 地址。
   web:
     environment:
+      # 普通业务回归默认关闸门；独立准入步骤用 E2E_WEBGPU_GATE=on 重建 web。
+      # 只影响 CI override，生产 Compose 仍默认开启准入。
+      WEBGPU_GATE: ${E2E_WEBGPU_GATE:-off}
       BANGUMI_ACCESS_TOKEN: e2e-bangumi-token
       BANGUMI_TEST_MODE: "1"
       NODE_OPTIONS: --import /app/apps/web/test/bangumi-preload.mjs

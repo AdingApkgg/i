@@ -13,7 +13,11 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
+  // 准入开启态由 playwright.gate.config.ts 独立执行；这里跑关闭态与全部业务测试。
+  testIgnore: "**/webgpu-gate.spec.ts",
   outputDir: "e2e/.results",
+  // 缺基线也必须报错，不把一次测试产生的图片悄悄变成下一次的“已批准”基线。
+  updateSnapshots: "none",
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,

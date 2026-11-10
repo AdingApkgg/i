@@ -69,24 +69,36 @@ oRPC 路由用 `call(procedure, input, { context })` 直接调用。
 浏览器端到端测试（`apps/web/e2e/`，Playwright + Chromium）有两种跑法：
 
 ```bash
-cd apps/web && bunx playwright install chromium   # 首次
+(cd apps/web && bunx playwright install chromium) # 首次；以下命令仍在仓库根目录执行
 
-# 1) 对着完整的生产栈（和 CI 一样）：Docker 镜像 + Postgres / Redis / SeaweedFS / 迁移 / Caddy
+# 1) 在隔离测试环境对着完整的生产栈（和 CI 一样），不要对线上项目执行
+export BETTER_AUTH_URL=http://localhost:8099 SITE_URL=http://localhost:8099
 docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml up -d --build
+timeout 180 bash -c 'until curl -sf -o /dev/null http://localhost:8099/robots.txt; do sleep 2; done'
 docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml run --rm migrate bash -lc 'bun run --filter @i/db db:seed'
-E2E_BASE_URL=http://localhost:8099 DATABASE_URL=postgres://i:i@localhost:5432/i bun run test:e2e
+E2E_BASE_URL=http://localhost:8099 BANGUMI_FIXTURE_URL=http://127.0.0.1:3413 DATABASE_URL=postgres://i:i@localhost:5432/i bun run test:e2e
+
+# 同一镜像开启准入，独立验证拦截、重试、小屏布局和检测通过后的放行
+E2E_WEBGPU_GATE=on docker compose -f compose.prod.yaml -f .github/ci/compose.e2e.yaml up -d --no-build --no-deps --force-recreate web
+timeout 180 bash -c 'until curl -sf -o /dev/null http://localhost:8099/robots.txt; do sleep 2; done'
+(cd apps/web && E2E_BASE_URL=http://localhost:8099 bunx playwright test --config=playwright.gate.config.ts)
 
 # 2) 对着本机的生产构建（需要迁移 + seed 过的 Postgres / Redis / SeaweedFS，环境变量同 .env）
-bun run db:migrate && bun run db:seed && bun run build && bun run test:e2e
+bun run db:migrate && bun run db:seed && bun run build
+BETTER_AUTH_URL=http://localhost:3123 SITE_URL=http://localhost:3123 WEBGPU_GATE=off bun run test:e2e
 ```
 
 覆盖前台各页（状态码 / 水合告警 / 客户端路由 / 404 / 深色模式 / 缓存头）、登录、访客注册、
 上传照片 → 缩略图 → 删除后存储回收、后台增改与表单校验、评论、友链申请与审核。
-每个用例都会断言浏览器控制台没有错误和警告。
+业务用例会断言浏览器控制台没有应用错误和警告。
+
+普通业务测试必须使用 `WEBGPU_GATE=off` 的服务（CI override 默认如此）；准入开启态只由
+`playwright.gate.config.ts` 运行，不创建管理员、不依赖 CI 的 GPU 型号，也不会因环境变量缺失而跳过。
+准入测试之后若要重跑业务测试，须用 `E2E_WEBGPU_GATE=off` 重新创建 web。生产 Compose 不受这个开关默认值影响。
 
 CI（`.github/workflows/ci.yml`）每次推送并行跑两个任务：
 lint → 迁移文件检查 → typecheck → test → build；以及 e2e（用 `compose.prod.yaml` 构建并启动完整的生产栈，
-Playwright 经 Caddy 访问，和线上部署走同一条路径）。
+Playwright 经 Caddy 访问；同一镜像依次验证闸门关闭的业务与闸门开启的准入，并分别保留报告）。
 
 ## 音乐与视频
 

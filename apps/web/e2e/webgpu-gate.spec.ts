@@ -1,77 +1,98 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 /**
- * WebGPU 闸门：无硬件适配器时整站只留拦截页。
- *
- * 无头 Chromium 只有 SwiftShader（fallback adapter），默认的 e2e 预览用
- * `WEBGPU_GATE=off` 起服务，否则整套用例都会被拦在门外；
- * 只有显式 `E2E_WEBGPU_GATE=on` 时这组用例才跑，验证闸门本身。
+ * 开启态独立运行：不依赖 CI 是否恰好有硬件 GPU，也不跳过服务配置错误。
+ * 能力替身只驱动准入判断；实际硬件绘制不是这组测试的验证范围。
  */
-const gateOn = process.env.E2E_WEBGPU_GATE === "on";
+async function useAdapter(
+  page: Page,
+  kind: "no-api" | "no-adapter" | "software" | "error" | "hardware",
+) {
+  await page.addInitScript((kind) => {
+    Object.defineProperty(navigator, "gpu", {
+      configurable: true,
+      value:
+        kind === "no-api"
+          ? undefined
+          : {
+              requestAdapter: async () => {
+                const root = document.documentElement;
+                root.dataset.gateRequests = String(Number(root.dataset.gateRequests ?? 0) + 1);
+                if (kind === "error") throw new Error("GPU process unavailable");
+                return kind === "no-adapter"
+                  ? null
+                  : { info: { isFallbackAdapter: kind === "software" } };
+              },
+            },
+    });
+  }, kind);
+}
 
-/** 闸门用例不装站点 fixture：这里要看的正是"页面根本没开始跑"的状态。 */
-test.describe("WebGPU 闸门", () => {
-  test.skip(!gateOn, "预览未开闸门（无头机没有硬件 GPU），跳过闸门用例");
+test.beforeEach(async ({ page, baseURL }) => {
+  // 只使用本站资源；业务初始化与管理员账号不属于准入回归。
+  const origin = new URL(baseURL!).origin;
+  await page.route(
+    (url) => url.origin !== origin,
+    (route) => route.abort(),
+  );
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "i.mascot",
+      JSON.stringify({ state: { hidden: true, group: null, costume: 0 }, version: 0 }),
+    ),
+  );
+});
 
+test.describe("WebGPU 闸门开启", () => {
   test("没有硬件适配器时首页被整屏拦下", async ({ page }) => {
+    await useAdapter(page, "no-adapter");
     await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-webgpu-gate", "blocked");
-
     const gate = page.locator(".webgpu-gate");
     await expect(gate).toBeVisible();
     await expect(gate.getByRole("heading", { level: 1 })).toHaveText("这台设备暂时进不来");
-    // 无头 Chromium 不给适配器（除非显式开 SwiftShader），所以这里是 no-adapter；
-    // 拿到软件适配器的设备会落到 software。两者都算拦下，理由必须是具体的。
-    await expect(gate).toHaveAttribute("data-webgpu-gate-reason", /^(software|no-adapter)$/);
+    await expect(gate).toHaveAttribute("data-webgpu-gate-reason", "no-adapter");
     await expect(gate).toContainText("适配器");
-    // 焦点必须落在闸门里，键盘用户不会困在"看不见的页面"上。
     await expect(gate.getByRole("button", { name: "重新检测" })).toBeFocused();
-
-    // 被拦下的站点内容既不显示，也拿不到焦点。
     await expect(page.locator(".public-chrome")).toBeHidden();
-
-    // 横向不溢出。
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
-
     await page.screenshot({ path: test.info().outputPath("gate-home.png"), fullPage: true });
   });
 
-  test("其它路由同样被拦，重新检测仍拦住", async ({ page }) => {
+  test("其它路由同样被拦，重新检测会再次请求适配器", async ({ page }) => {
+    await useAdapter(page, "no-adapter");
     await page.goto("/blog");
     const gate = page.locator(".webgpu-gate");
     await expect(gate).toBeVisible();
     await expect(page.locator(".public-chrome")).toBeHidden();
-
+    const attempts = await page.evaluate(() =>
+      Number(document.documentElement.dataset.gateRequests),
+    );
     await gate.getByRole("button", { name: "重新检测" }).click();
+    await expect
+      .poll(() => page.evaluate(() => Number(document.documentElement.dataset.gateRequests)))
+      .toBeGreaterThan(attempts);
     await expect(gate).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("data-webgpu-gate", "blocked");
     await page.screenshot({ path: test.info().outputPath("gate-blog.png"), fullPage: true });
   });
 
   test("矮屏上闸门页可滚动到底，不被裁掉", async ({ page }) => {
+    await useAdapter(page, "no-adapter");
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
-    const gate = page.locator(".webgpu-gate");
-    await expect(gate).toBeVisible();
-
-    // 卡片比视口高时，栅格居中会把顶部推到视口外，因此必须能滚到底部的脚注。
+    await expect(page.locator(".webgpu-gate")).toBeVisible();
     const reach = await page.evaluate(() => {
-      const box = document.querySelector(".webgpu-gate") as HTMLElement;
+      const box = document.querySelector<HTMLElement>(".webgpu-gate")!;
       box.scrollTop = box.scrollHeight;
-      const foot = document.querySelector(".webgpu-gate-foot") as HTMLElement;
-      const rect = foot.getBoundingClientRect();
+      const foot = document.querySelector(".webgpu-gate-foot")!.getBoundingClientRect();
       box.scrollTop = 0;
-      const title = (
-        document.querySelector(".webgpu-gate-title") as HTMLElement
-      ).getBoundingClientRect();
+      const title = document.querySelector(".webgpu-gate-title")!.getBoundingClientRect();
       return {
-        footBottom: Math.round(rect.bottom),
-        viewport: window.innerHeight,
+        footBottom: Math.round(foot.bottom),
+        viewport: innerHeight,
         titleTop: Math.round(title.top),
-        scrollable: box.scrollHeight > box.clientHeight,
       };
     });
     expect(reach.titleTop).toBeGreaterThanOrEqual(0);
@@ -79,29 +100,38 @@ test.describe("WebGPU 闸门", () => {
   });
 
   test("手机上闸门页同样不横向溢出", async ({ page }) => {
+    await useAdapter(page, "no-adapter");
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    const gate = page.locator(".webgpu-gate");
-    await expect(gate).toBeVisible();
-
+    await expect(page.locator(".webgpu-gate")).toBeVisible();
     const metrics = await page.evaluate(() => ({
-      overflow: document.documentElement.scrollWidth - window.innerWidth,
-      card: document.querySelector(".webgpu-gate-card")?.getBoundingClientRect().width ?? 0,
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      card: document.querySelector(".webgpu-gate-card")!.getBoundingClientRect().width,
     }));
     expect(metrics.overflow).toBeLessThanOrEqual(0);
     expect(metrics.card).toBeLessThanOrEqual(390);
     await page.screenshot({ path: test.info().outputPath("gate-390.png"), fullPage: true });
   });
-});
 
-/** 反向保护：关闸门时必须真的不拦，否则正常预览会被这条用例以外的东西挡住。 */
-test.describe("WebGPU 闸门已关闭", () => {
-  test.skip(gateOn, "预览开闸门，跳过关闭态用例");
+  for (const reason of ["no-api", "software", "error"] as const) {
+    test(`检测为 ${reason} 时，后台入口也被拦截`, async ({ page }) => {
+      await useAdapter(page, reason);
+      await page.goto("/dash/login");
+      await expect(page.locator(".webgpu-gate")).toBeVisible();
+      await expect(page.locator(".webgpu-gate")).toHaveAttribute("data-webgpu-gate-reason", reason);
+      await expect(page.locator("html")).toHaveAttribute("data-webgpu-gate", "blocked");
+    });
+  }
 
-  test("关闸门时首页正常出内容", async ({ page }) => {
+  test("非软件适配器通过准入后，正文与演出控制可用", async ({ page }) => {
+    await useAdapter(page, "hardware");
     await page.goto("/");
+    const stage = page.locator(".reading-stage");
+    await expect(stage).toHaveAttribute("data-scene-mode", "reading");
     await expect(page.locator(".webgpu-gate")).toHaveCount(0);
-    await expect(page.locator("html")).not.toHaveAttribute("data-webgpu-gate", "blocked");
     await expect(page.locator(".public-chrome")).toBeVisible();
+    await page.getByRole("button", { name: "演出模式", exact: true }).click();
+    await expect(stage).toHaveAttribute("data-scene-mode", "performance");
+    await expect(page.locator("html")).not.toHaveAttribute("data-webgpu-gate", "blocked");
   });
 });

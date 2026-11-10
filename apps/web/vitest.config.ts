@@ -10,6 +10,8 @@ export default defineConfig({
     },
   },
   test: {
+    // 数据层文件各自启动 WASM Postgres，限制并发以免抢占资源后触发启动超时。
+    maxWorkers: 2,
     environment: "node",
     include: ["src/**/*.test.ts"],
   },

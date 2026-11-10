@@ -48,15 +48,21 @@ describe("Live2D 仓内资源完整性", () => {
     const files = await readdir(root, { recursive: true, withFileTypes: true });
     expect(files.filter((file) => file.isSymbolicLink())).toEqual([]);
     const actual: Record<string, string> = {};
-    for (const file of files.filter((file) => file.isFile())) {
-      const path = resolve(file.parentPath, file.name);
-      const key = path
-        .slice(root.length + 1)
-        .split(sep)
-        .join("/");
-      actual[key] = createHash("sha256")
-        .update(await readFile(path))
-        .digest("hex");
+    const regularFiles = files.filter((file) => file.isFile());
+    // 小批并发减少逐个等待磁盘的开销，同时避免一次把所有贴图读进内存。
+    for (let start = 0; start < regularFiles.length; start += 8) {
+      await Promise.all(
+        regularFiles.slice(start, start + 8).map(async (file) => {
+          const path = resolve(file.parentPath, file.name);
+          const key = path
+            .slice(root.length + 1)
+            .split(sep)
+            .join("/");
+          actual[key] = createHash("sha256")
+            .update(await readFile(path))
+            .digest("hex");
+        }),
+      );
     }
     expect(actual).toEqual(lock.files);
   });

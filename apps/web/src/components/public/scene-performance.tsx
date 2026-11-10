@@ -77,6 +77,8 @@ export function ScenePerformance() {
     let nextY = 0;
     const applyCamera = () => {
       frame = 0;
+      // 暂停可能先于已排队的指针帧提交，不能把归零后的视点再写回旧位置。
+      if (!runningRef.current) return;
       stage.style.setProperty("--camera-x", `${nextX}px`);
       stage.style.setProperty("--camera-y", `${nextY}px`);
     };

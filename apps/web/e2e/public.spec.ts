@@ -25,16 +25,18 @@ const PAGES = [
 test.describe("前台页面（含看板娘）", () => {
   test.use({ showMascot: true });
 
-  test("前台各页面服务端直出 200，水合后无报错", async ({ page }) => {
-    for (const path of PAGES) {
+  // 每页独立准备和收集控制台，避免 16 页共用一个用例的超时预算。
+  for (const path of PAGES) {
+    test(`${path} 服务端直出 200，水合后无报错`, async ({ page }) => {
       const res = await page.goto(path);
       expect(res?.status(), path).toBe(200);
       await page.waitForLoadState("networkidle");
-    }
-    await page.goto("/blog/hello-world");
-    await expect(page.getByRole("heading", { name: "你好，世界", exact: true })).toBeVisible();
-    await expect(page).toHaveTitle(/^你好，世界 ✿ · /);
-  });
+      if (path === "/blog/hello-world") {
+        await expect(page.getByRole("heading", { name: "你好，世界", exact: true })).toBeVisible();
+        await expect(page).toHaveTitle(/^你好，世界 ✿ · /);
+      }
+    });
+  }
 });
 
 test("设备页按分类分组，卡片带状态徽章", async ({ page }) => {
@@ -56,10 +58,9 @@ test("设备页按分类分组，卡片带状态徽章", async ({ page }) => {
   );
 });
 
-test("关于页：顶栏可达，行内剧透点开才显示", async ({ page }) => {
+test("关于页：主导航可达，行内剧透点开才显示", async ({ page }) => {
   await page.goto("/");
-  // 桌面与手机导航各有一个「关于」入口，点桌面的那个
-  await page.locator("header nav").getByRole("link", { name: "关于" }).first().click();
+  await navigateMain(page, "关于");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page).toHaveURL(/\/about$/);
   // 种子只放一条剧透，线上正文有多条，这里只要求至少一条可点；
@@ -83,7 +84,7 @@ test("不存在的页面：404、保留站点外壳、noindex", async ({ page })
   const res = await page.goto("/no-such-page");
   expect(res?.status()).toBe(404);
   await expect(page.getByText("这一页迷路了")).toBeVisible();
-  await expect(page.locator("header nav")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "桌面主导航", exact: true })).toBeVisible();
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
 });
 
